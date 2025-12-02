@@ -10,6 +10,6 @@ inline std::array<std::uint8_t, 16> fill_header(std::array<std::uint8_t, 16>& he
     memcpy(&header[14], &version, sizeof(version));
 }
 
-inline void parse_header(std::array<std::uint8_t, 16>& header) {
-    
+inline bool parse_header(std::array<std::uint8_t, 16>& header, Header& buffer) {
+    memcpy(&buffer.magic, &header[0], 2);
 }
