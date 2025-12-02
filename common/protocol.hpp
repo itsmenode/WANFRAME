@@ -9,6 +9,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#define CURRENT_PROTOCOL_VERSION 1
+#define EXPECTED_MAGIC 0xABCD
+
 enum class MessageType : std::uint8_t
 {
     // Phase 1 / testing
@@ -55,3 +58,4 @@ enum class MessageType : std::uint8_t
 
 inline std::array<std::uint8_t, 16> fill_header(std::array<std::uint8_t, 16>& header, std::uint16_t magic, std::uint8_t version, std::uint8_t msg_type, std::uint16_t flags, std::uint32_t payload_length, std::uint32_t request_id, std::uint16_t reserved);
 
+inline void parse_header(std::array<std::uint8_t, 16>& header);

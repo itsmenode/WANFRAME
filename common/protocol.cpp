@@ -9,3 +9,7 @@ inline std::array<std::uint8_t, 16> fill_header(std::array<std::uint8_t, 16>& he
     memcpy(&header[10], &request_id, sizeof(request_id));
     memcpy(&header[14], &version, sizeof(version));
 }
+
+inline void parse_header(std::array<std::uint8_t, 16>& header) {
+    
+}
