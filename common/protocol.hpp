@@ -8,8 +8,8 @@
 #include <cstdint>
 #include <stdio.h>
 #include <string.h>
-
-
+#include <sys/types.h> 
+#include <netinet/in.h>
 
 namespace netops::protocol
 {
@@ -55,7 +55,8 @@ namespace netops::protocol
         ErrorResp = 0xFF
     };
 
-    enum class HeaderParseError {
+    enum class HeaderParseError
+    {
         None,
         InvalidMagic,
         UnsupportedVersion,
@@ -75,45 +76,34 @@ namespace netops::protocol
         std::uint16_t reserved;
     };
 
-    bool send_all(int socket_fd, const std::uint8_t* data, std::size_t length);
-    bool recv_exact(int socket_fd, std::uint8_t* dest, std::size_t length);
+    bool send_all(int socket_fd, const std::uint8_t *data, std::size_t length);
+    bool recv_exact(int socket_fd, std::uint8_t *dest, std::size_t length);
 
+    std::array<std::uint8_t, 16> fill_header(std::uint8_t header[16],
+                                             std::uint16_t magic,
+                                             std::uint8_t version,
+                                             MessageType msg_type,
+                                             std::uint16_t flags,
+                                             std::uint32_t payload_length,
+                                             std::uint32_t request_id,
+                                             std::uint16_t reserved);
 
+    void serialize_header(const Header &header, std::uint8_t buffer[16]);
 
+    bool parse_header(std::uint8_t buffer[16], Header &header, HeaderParseError &err);
 
-
-
-    std::array<std::uint8_t, 16> fill_header(std::array<std::uint8_t, 16> &header,
-                    std::uint16_t magic,
-                    std::uint8_t version,
-                    MessageType msg_type,
-                    std::uint16_t flags,
-                    std::uint32_t payload_length,
-                    std::uint32_t request_id,
-                    std::uint16_t reserved);
-
-    void serialize_header(const Header& hdr, std::uint8_t out[16]);
-
-    bool parse_header(std::array<std::uint8_t, 16> &header, HeaderParseError& err);
-
-    void message_type_to_byte(const MessageType &msg_type, std::uint8_t &raw);
+    std::uint8_t message_type_to_byte(MessageType msg_type);
     MessageType message_type_from_byte(MessageType &msg_type, const std::uint8_t &raw);
 
-
-
-
-
-
     bool send_message(int socket_fd,
-                    MessageType type,
-                    std::uint32_t request_id,
-                    const std::uint8_t* payload,
-                    std::uint32_t payload_len);
+                      MessageType type,
+                      std::uint32_t request_id,
+                      const std::uint8_t *payload,
+                      std::uint32_t payload_len);
 
     bool recv_message(int socket_fd,
-                    Header& out_header,
-                    std::vector<std::uint8_t>& out_payload,
-                    HeaderParseError& err);
-
+                      Header &out_header,
+                      std::vector<std::uint8_t> &out_payload,
+                      HeaderParseError &err);
 
 }

@@ -3,22 +3,17 @@
 namespace netops::protocol
 {
 
-    bool send_all(int socket_fd, const std::uint8_t* data, std::size_t length);
-    bool recv_exact(int socket_fd, std::uint8_t* dest, std::size_t length);
-
-
-
-    
-
+    bool send_all(int socket_fd, const std::uint8_t *data, std::size_t length);
+    bool recv_exact(int socket_fd, std::uint8_t *dest, std::size_t length);
 
     std::array<std::uint8_t, 16> fill_header(std::uint8_t header[16],
-                    std::uint16_t magic,
-                    std::uint8_t version,
-                    MessageType msg_type,
-                    std::uint16_t flags,
-                    std::uint32_t payload_length,
-                    std::uint32_t request_id,
-                    std::uint16_t reserved)
+                                             std::uint16_t magic,
+                                             std::uint8_t version,
+                                             MessageType msg_type,
+                                             std::uint16_t flags,
+                                             std::uint32_t payload_length,
+                                             std::uint32_t request_id,
+                                             std::uint16_t reserved)
     {
         memcpy(&header[0], &magic, sizeof(magic));
         memcpy(&header[2], &version, sizeof(version));
@@ -29,9 +24,23 @@ namespace netops::protocol
         memcpy(&header[14], &reserved, sizeof(reserved));
     }
 
-    void serialize_header(const Header& hdr, std::uint8_t out[16]);
+    void serialize_header(const Header &header, std::uint8_t buffer[16]){
+        std::uint16_t magic_be = htons(header.magic);
+        buffer[0] = static_cast<std::uint8_t> ((magic_be >> 8) & 0xFF);
+        buffer[1] = static_cast<std::uint8_t> (magic_be & 0xFF);
 
-    bool parse_header(std::uint8_t header[16], Header &buffer, HeaderParseError& err)
+        buffer[2] = header.version;
+
+        buffer[3] = message_type_to_byte(header.msg_type);
+
+        std::uint16_t flags_be = htons(header.flags);
+        buffer[4] = static_cast<std::uint8_t> ((flags_be >> 8) & 0xFF);
+        buffer[5] = static_cast<std::uint8_t> (flags_be & 0xFF);
+
+        std::uint32_t payload_length_be = htons(header.payload_length);
+    }
+
+    bool parse_header(std::uint8_t header[16], Header &buffer, HeaderParseError &err)
     {
         memcpy(&buffer.magic, &header[0], 2);
         memcpy(&buffer.version, &header[2], 1);
@@ -42,13 +51,9 @@ namespace netops::protocol
         memcpy(&buffer.reserved, &header[14], 2);
     }
 
-    void message_type_to_byte(const MessageType &msg_type, std::uint8_t &raw){
-        raw = static_cast<std::uint8_t> (msg_type);
+    std::uint8_t message_type_to_byte(MessageType msg_type)
+    {
+        return static_cast<std::uint8_t>(msg_type);
     }
-
-    MessageType message_type_from_byte(MessageType &msg_type, const std::uint8_t &raw){
-
-    }
-
 
 }
