@@ -38,6 +38,16 @@ namespace netops::protocol
         buffer[5] = static_cast<std::uint8_t> (flags_be & 0xFF);
 
         std::uint32_t payload_length_be = htons(header.payload_length);
+        buffer[6] = static_cast<std::uint8_t> ((payload_length_be >> 24) & 0xFF);
+        buffer[7] = static_cast<std::uint8_t> ((payload_length_be >> 16) & 0xFF);
+        buffer[8] = static_cast<std::uint8_t> ((payload_length_be >> 8) & 0xFF);
+        buffer[9] = static_cast<std::uint8_t> (payload_length_be & 0xFF);
+
+        std::uint32_t request_id_be = htons(header.request_id);
+        buffer[10] = static_cast<std::uint8_t> ((request_id_be >> 24) & 0xFF);
+        buffer[11] = static_cast<std::uint8_t> ((request_id_be >> 16) & 0xFF);
+        buffer[12] = static_cast<std::uint8_t> ((request_id_be >> 8) & 0xFF);
+        buffer[13] = static_cast<std::uint8_t> (request_id_be & 0xFF);
     }
 
     bool parse_header(std::uint8_t header[16], Header &buffer, HeaderParseError &err)
