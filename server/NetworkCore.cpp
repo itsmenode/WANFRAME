@@ -9,14 +9,10 @@
 #include "NetworkCore.hpp"
 #include "../common/ByteBuffer.hpp"
 #include "../common/protocol.hpp"
+#include <netinet/in.h>
 
 namespace net_ops::server
 {
-    int m_server_fd;
-    int m_epoll_fd;
-    int m_port;
-    bool m_running;
-    std::map<int, ClientContext> registry;
 
     void NetworkCore::NonBlockingMode(int fd)
     {
@@ -62,7 +58,13 @@ namespace net_ops::server
         {
             throw std::runtime_error("Failed to accept client connection.");
         }
+
+        NonBlockingMode(m_client_fd);
         EpollControlAdd(m_client_fd);
+
+        registry[m_client_fd].socketfd = m_client_fd;
+        std::cout << "[Server] New connection accepted: " << m_client_fd << std::endl;
+
     }
 
     void NetworkCore::HandleClientData(int fd)
@@ -118,8 +120,8 @@ namespace net_ops::server
 
         using namespace net_ops::protocol;
 
-        std::cout << "[Client " << fd << "] Received Message Type: " 
-                  << static_cast<int>(type) 
+        std::cout << "[Client " << fd << "] Received Message Type: "
+                  << static_cast<int>(type)
                   << " | Size: " << payload.size() << " bytes." << std::endl;
 
         switch (type)
@@ -137,8 +139,8 @@ namespace net_ops::server
 
             Header resp_header;
             resp_header.magic = EXPECTED_MAGIC;
-            resp_header.msg_type = static_cast<uint8_t> (MessageType::LoginResp);
-            resp_header.payload_length = static_cast<uint32_t> (resp_payload.size());
+            resp_header.msg_type = static_cast<uint8_t>(MessageType::LoginResp);
+            resp_header.payload_length = static_cast<uint32_t>(resp_payload.size());
             resp_header.reserved = 0;
 
             uint8_t header_buf[HEADER_SIZE];
@@ -216,29 +218,81 @@ namespace net_ops::server
         }
     }
 
-    explicit NetworkCore::NetworkCore(int port){
+    NetworkCore::NetworkCore(int port)
+    {
         m_port = port;
         m_server_fd = -1;
         m_epoll_fd = -1;
         m_running = false;
     }
 
-    NetworkCore::~NetworkCore(){
-        
-        for(auto it: registry) {
+    NetworkCore::~NetworkCore()
+    {
+
+        for (auto it : registry)
+        {
             close(it.first);
         }
         registry.clear();
 
-        if (m_server_fd != -1) close(m_server_fd);
-        if (m_epoll_fd != -1) close(m_epoll_fd);
-        
+        if (m_server_fd != -1)
+            close(m_server_fd);
+        if (m_epoll_fd != -1)
+            close(m_epoll_fd);
     }
 
-    void Init(){
+    void NetworkCore::Init()
+    {
         m_server_fd = socket(AF_INET, SOCK_STREAM, 0);
-        
+        int opt = 1;
+
+        setsockopt(m_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+        NonBlockingMode(m_server_fd);
+
+        struct sockaddr_in serverAddress;
+        serverAddress.sin_family = AF_INET;
+        serverAddress.sin_port = htons(m_port);
+        serverAddress.sin_addr.s_addr = INADDR_ANY;
+
+        if (bind(m_server_fd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) != 0)
+        {
+            throw std::runtime_error("Failed to bind server socket.");
+        }
+
+        if ((listen(m_server_fd, SOMAXCONN)) != 0)
+        {
+            throw std::runtime_error("Failed to listen server socket.");
+        }
+
+        m_epoll_fd = epoll_create1(0);
+        if (m_epoll_fd == -1)
+        {
+            throw std::runtime_error("Failed to create epoll file descriptor.");
+        }
+
+        EpollControlAdd(m_server_fd);
     }
 
-    void Run();
+    void NetworkCore::Run()
+    {
+        m_running = true;
+
+        std::cout << "Server started on port 8080..." << std::endl;
+
+        struct epoll_event ev[128];
+        int count = 0;
+        while (m_running) {
+            if ((count = epoll_wait(m_epoll_fd, ev, 128, -1)) == -1) {
+                if (errno == EINTR) continue;
+                else break;
+            }
+
+            for (int i = 0; i < count; i++) {
+                int m_current_fd = ev[i].data.fd;
+                if (m_current_fd == m_server_fd) HandleNewConnection();
+                else HandleClientData(m_current_fd);
+            }
+        }
+    }
 }
