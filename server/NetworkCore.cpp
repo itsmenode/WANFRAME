@@ -47,6 +47,11 @@ namespace net_ops::server
         EpollControlRemove(fd);
         close(fd);
         registry.erase(fd);
+        if (registry[fd].ssl_handle)
+        {
+            SSL_shutdown(registry[fd].ssl_handle);
+            SSL_free(registry[fd].ssl_handle);
+        }
     }
 
     void NetworkCore::HandleNewConnection()
@@ -64,7 +69,6 @@ namespace net_ops::server
 
         registry[m_client_fd].socketfd = m_client_fd;
         std::cout << "[Server] New connection accepted: " << m_client_fd << std::endl;
-
     }
 
     void NetworkCore::HandleClientData(int fd)
@@ -239,14 +243,44 @@ namespace net_ops::server
             close(m_server_fd);
         if (m_epoll_fd != -1)
             close(m_epoll_fd);
+        if (m_ssl_ctx)
+            SSL_CTX_free(m_ssl_ctx);
     }
 
     void NetworkCore::Init()
     {
-        m_server_fd = socket(AF_INET, SOCK_STREAM, 0);
-        int opt = 1;
+        m_ssl_ctx = SSL_CTX_new(TLS_server_method());
+        if (m_ssl_ctx == nullptr)
+        {
+            throw std::runtime_error("Failed to create SSL Context. Is OpenSSL installed?");
+        }
 
-        setsockopt(m_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        if (SSL_CTX_use_certificate_file(m_ssl_ctx, "certs/server.crt", SSL_FILETYPE_PEM) <= 0)
+        {
+            throw std::runtime_error("Failed to load 'certs/server.crt'. Check your paths!");
+        }
+
+        if (SSL_CTX_use_PrivateKey_file(m_ssl_ctx, "certs/server.key", SSL_FILETYPE_PEM) <= 0)
+        {
+            throw std::runtime_error("Failed to load 'certs/server.key'.");
+        }
+
+        if (!SSL_CTX_check_private_key(m_ssl_ctx))
+        {
+            throw std::runtime_error("Private Key does not match the Certificate!");
+        }
+
+        m_server_fd = socket(AF_INET, SOCK_STREAM, 0);
+        if (m_server_fd == -1)
+        {
+            throw std::runtime_error("Failed to create socket.");
+        }
+
+        int opt = 1;
+        if (setsockopt(m_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+        {
+            throw std::runtime_error("Failed to set SO_REUSEADDR.");
+        }
 
         NonBlockingMode(m_server_fd);
 
@@ -257,7 +291,7 @@ namespace net_ops::server
 
         if (bind(m_server_fd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) != 0)
         {
-            throw std::runtime_error("Failed to bind server socket.");
+            throw std::runtime_error("Failed to bind server socket. Is the port taken?");
         }
 
         if ((listen(m_server_fd, SOMAXCONN)) != 0)
@@ -282,16 +316,23 @@ namespace net_ops::server
 
         struct epoll_event ev[128];
         int count = 0;
-        while (m_running) {
-            if ((count = epoll_wait(m_epoll_fd, ev, 128, -1)) == -1) {
-                if (errno == EINTR) continue;
-                else break;
+        while (m_running)
+        {
+            if ((count = epoll_wait(m_epoll_fd, ev, 128, -1)) == -1)
+            {
+                if (errno == EINTR)
+                    continue;
+                else
+                    break;
             }
 
-            for (int i = 0; i < count; i++) {
+            for (int i = 0; i < count; i++)
+            {
                 int m_current_fd = ev[i].data.fd;
-                if (m_current_fd == m_server_fd) HandleNewConnection();
-                else HandleClientData(m_current_fd);
+                if (m_current_fd == m_server_fd)
+                    HandleNewConnection();
+                else
+                    HandleClientData(m_current_fd);
             }
         }
     }
