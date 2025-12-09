@@ -6,6 +6,9 @@
 #include <sys/epoll.h>
 #include <vector>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
 #include "../common/ByteBuffer.hpp"
 #include "../common/protocol.hpp"
 
@@ -15,6 +18,8 @@ namespace net_ops::server
     {
         int socketfd;
         net_ops::common::ByteBuffer buff;
+
+        SSL* ssl_handle;
     };
 
     class NetworkCore
@@ -25,6 +30,10 @@ namespace net_ops::server
         int m_port;
         bool m_running;
         std::map<int, ClientContext> registry;
+
+        SSL_CTX* m_ssl_ctx;
+
+        void LogOpenSSLErrors();
 
         void NonBlockingMode(int fd);
         void EpollControlAdd(int fd);
