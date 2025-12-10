@@ -46,13 +46,17 @@ namespace net_ops::server
     void NetworkCore::DisconnectClient(int fd)
     {
         EpollControlRemove(fd);
-        close(fd);
-        registry.erase(fd);
+
         if (registry[fd].ssl_handle)
         {
             SSL_shutdown(registry[fd].ssl_handle);
+
             SSL_free(registry[fd].ssl_handle);
         }
+
+        close(fd);
+
+        registry.erase(fd);
     }
 
     void NetworkCore::HandleNewConnection()
@@ -149,27 +153,31 @@ namespace net_ops::server
             {
                 int err = SSL_get_error(ctx.ssl_handle, count);
 
-                if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) break;
-                else if (err == SSL_ERROR_ZERO_RETURN) {
+                if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
+                    break;
+                else if (err == SSL_ERROR_ZERO_RETURN)
+                {
                     DisconnectClient(fd);
                     return;
                 }
-                else {
+                else
+                {
                     DisconnectClient(fd);
                     return;
                 }
             }
         }
 
-        while (ctx.buff.HasHeader()) {
+        while (ctx.buff.HasHeader())
+        {
             auto header = ctx.buff.PeekHeader();
-            if (!ctx.buff.HasCompleteMessage(header)) break;
+            if (!ctx.buff.HasCompleteMessage(header))
+                break;
 
             std::vector<uint8_t> payload = ctx.buff.ExtractPayload(header.payload_length);
             ctx.buff.Consume(net_ops::protocol::HEADER_SIZE + header.payload_length);
-            
-            ProcessMessage(fd, static_cast<net_ops::protocol::MessageType>(header.msg_type), payload);
 
+            ProcessMessage(fd, static_cast<net_ops::protocol::MessageType>(header.msg_type), payload);
         }
     }
 
@@ -184,15 +192,13 @@ namespace net_ops::server
 
         switch (type)
         {
-        case MessageType::Test:
-            break;
 
         case MessageType::LoginReq:
         {
             std::string user_data(payload.begin(), payload.end());
             std::cout << " -> Login Attempt Data: " << user_data << std::endl;
 
-            std::string response_text = "AUTH_SUCCESS_PHASE_1";
+            std::string response_text = "AUTH_SUCCESS_PHASE_2";
             std::vector<uint8_t> resp_payload(response_text.begin(), response_text.end());
 
             Header resp_header;
@@ -204,11 +210,13 @@ namespace net_ops::server
             uint8_t header_buf[HEADER_SIZE];
             SerializeHeader(resp_header, header_buf);
 
-            send(fd, header_buf, HEADER_SIZE, 0);
-            send(fd, resp_payload.data(), resp_payload.size(), 0);
+            if (registry[fd].ssl_handle)
+            {
+                SSL_write(registry[fd].ssl_handle, header_buf, HEADER_SIZE);
+                SSL_write(registry[fd].ssl_handle, resp_payload.data(), resp_payload.size());
+            }
 
-            std::cout << " -> Sent LoginResp." << std::endl;
-
+            std::cout << " -> Sent LoginResp (Encrypted)." << std::endl;
             break;
         }
         case MessageType::LoginResp:
