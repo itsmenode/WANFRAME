@@ -17,9 +17,9 @@ namespace net_ops::server
     struct ClientContext
     {
         int socketfd;
-        net_ops::common::ByteBuffer buff;
-
         SSL* ssl_handle;
+        net_ops::common::ByteBuffer buff;
+        bool is_handshake_complete;
     };
 
     class NetworkCore

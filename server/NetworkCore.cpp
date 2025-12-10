@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <sys/socket.h>
 #include <stdio.h>
+#include <iostream>
 
 #include "NetworkCore.hpp"
 #include "../common/ByteBuffer.hpp"
@@ -58,64 +59,117 @@ namespace net_ops::server
     {
         struct sockaddr clientAddress;
         socklen_t clientAddressLength = sizeof(clientAddress);
-        int m_client_fd = accept(m_server_fd, (struct sockaddr *)&clientAddress, &clientAddressLength);
+        int m_client_fd = accept(m_server_fd, static_cast<struct sockaddr *>(&clientAddress), &clientAddressLength);
         if (m_client_fd == -1)
         {
             throw std::runtime_error("Failed to accept client connection.");
         }
 
         NonBlockingMode(m_client_fd);
-        EpollControlAdd(m_client_fd);
-
         registry[m_client_fd].socketfd = m_client_fd;
-        std::cout << "[Server] New connection accepted: " << m_client_fd << std::endl;
+
+        SSL *ssl_handle = SSL_new(m_ssl_ctx);
+        if (!ssl_handle)
+        {
+            close(m_client_fd);
+            throw std::runtime_error("Failed to allocate new SSL session.");
+        }
+
+        SSL_set_fd(ssl_handle, m_client_fd);
+        registry[m_client_fd].ssl_handle = ssl_handle;
+
+        int ret = SSL_accept(ssl_handle);
+
+        if (ret == 1)
+        {
+            registry[m_client_fd].is_handshake_complete = true;
+            std::cout << "[Server] New connection accepted: and Handshake COMPLETE: " << m_client_fd << std::endl;
+
+            EpollControlAdd(m_client_fd);
+        }
+        else
+        {
+            int ssl_error = SSL_get_error(ssl_handle, ret);
+
+            if (ssl_error == SSL_ERROR_WANT_READ)
+            {
+                registry[m_client_fd].is_handshake_complete = false;
+                EpollControlAdd(m_client_fd);
+                std::cout << "[Server] New connection accepted, Handshake PENDING: " << m_client_fd << std::endl;
+            }
+            else
+            {
+                std::cerr << "[Server] Fatal SSL Handshake Error on " << m_client_fd << ". Disconnecting." << std::endl;
+                close(m_client_fd);
+            }
+        }
     }
 
     void NetworkCore::HandleClientData(int fd)
     {
-        uint8_t temp_buffer[4096];
 
-        while (true)
+        ClientContext &ctx = registry[fd];
+
+        if (ctx.is_handshake_complete == false)
         {
-            ssize_t count = recv(fd, temp_buffer, sizeof(temp_buffer), 0);
+            int ret = SSL_accept(ctx.ssl_handle);
 
-            if (count > 0)
+            if (ret == 1)
             {
-                registry[fd].buff.Append(temp_buffer, count);
-            }
-            else if (count == 0)
-            {
-                DisconnectClient(fd);
-                return;
+                ctx.is_handshake_complete = true;
+                std::cout << "[Server] TLS Handshake complete for client " << fd << std::endl;
             }
             else
             {
-                if (errno == EAGAIN || errno == EWOULDBLOCK)
-                    break;
+                int err = SSL_get_error(ctx.ssl_handle, ret);
+                if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
+                {
+                    return;
+                }
                 else
                 {
+                    std::cerr << "SSL Handshake Failed. Error: " << err << std::endl;
                     DisconnectClient(fd);
                     return;
                 }
             }
         }
 
-        auto &m_client_buffer = registry[fd].buff;
+        uint8_t temp_buffer[4096];
 
-        while (m_client_buffer.HasHeader())
+        while (true)
         {
-            auto header = m_client_buffer.PeekHeader();
+            ssize_t count = SSL_read(ctx.ssl_handle, temp_buffer, sizeof(temp_buffer));
 
-            if (!m_client_buffer.HasCompleteMessage(header))
+            if (count > 0)
             {
-                break;
+                ctx.buff.Append(temp_buffer, count);
             }
+            else
+            {
+                int err = SSL_get_error(ctx.ssl_handle, count);
 
-            std::vector<uint8_t> payload = m_client_buffer.ExtractPayload(header.payload_length);
+                if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) break;
+                else if (err == SSL_ERROR_ZERO_RETURN) {
+                    DisconnectClient(fd);
+                    return;
+                }
+                else {
+                    DisconnectClient(fd);
+                    return;
+                }
+            }
+        }
 
-            m_client_buffer.Consume(net_ops::protocol::HEADER_SIZE + header.payload_length);
+        while (ctx.buff.HasHeader()) {
+            auto header = ctx.buff.PeekHeader();
+            if (!ctx.buff.HasCompleteMessage(header)) break;
 
+            std::vector<uint8_t> payload = ctx.buff.ExtractPayload(header.payload_length);
+            ctx.buff.Consume(net_ops::protocol::HEADER_SIZE + header.payload_length);
+            
             ProcessMessage(fd, static_cast<net_ops::protocol::MessageType>(header.msg_type), payload);
+
         }
     }
 
