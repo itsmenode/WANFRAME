@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(SQLite3 REQUIRED)
 find_package(Threads REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 include_directories(server client common)
 
@@ -16,10 +17,15 @@ add_executable(Server
     server/main.cpp
     server/NetworkCore.cpp
     server/DatabaseManager.cpp
+    common/ByteBuffer.cpp
 )
 
-target_link_libraries(Server PRIVATE SQLite::SQLite3 Threads::Threads)
-
+target_link_libraries(Server PRIVATE 
+    SQLite::SQLite3 
+    Threads::Threads
+    OpenSSL::SSL
+    OpenSSL::Crypto
+)
 
 # ==========================================
 #               CLIENT BUILD
@@ -28,4 +34,8 @@ add_executable(Client
     client/main.cpp
 )
 
-target_link_libraries(Client PRIVATE Threads::Threads)
+target_link_libraries(Client PRIVATE 
+    Threads::Threads 
+    OpenSSL::SSL 
+    OpenSSL::Crypto
+)

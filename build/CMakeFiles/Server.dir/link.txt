@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/Server.dir/server/main.cpp.o CMakeFiles/Server.dir/server/NetworkCore.cpp.o CMakeFiles/Server.dir/server/DatabaseManager.cpp.o CMakeFiles/Server.dir/common/ByteBuffer.cpp.o -o Server  /usr/lib/x86_64-linux-gnu/libsqlite3.so /usr/lib/x86_64-linux-gnu/libssl.so /usr/lib/x86_64-linux-gnu/libcrypto.so 

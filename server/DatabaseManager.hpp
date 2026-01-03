@@ -25,6 +25,7 @@ namespace net_ops::server {
             sqlite3_stmt* stmt_get_user_;
 
             DatabaseManager();
+            ~DatabaseManager();
         public:
             static DatabaseManager& GetInstance();
 
@@ -35,6 +36,6 @@ namespace net_ops::server {
             void Shutdown();
 
             bool CreateUser(const std::string& username, const std::vector<uint8_t>& hash, const std::vector<uint8_t>& salt);
-            std::optional<UserRecord> DatabaseManager::GetUserByName(const std::string& username);
+            std::optional<UserRecord> GetUserByName(const std::string& username);
     };
 }

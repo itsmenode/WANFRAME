@@ -8,8 +8,7 @@ namespace net_ops::server {
         return instance;
     }
 
-    DatabaseManager::DatabaseManager() 
-        : db_(nullptr), stmt_insert_user_(nullptr), stmt_get_user_(nullptr) {}
+    DatabaseManager::DatabaseManager(): db_(nullptr), stmt_insert_user_(nullptr), stmt_get_user_(nullptr) {}
 
     DatabaseManager::~DatabaseManager() {
         Shutdown();
