@@ -5,6 +5,7 @@
 #include <vector>
 #include <optional>
 #include <mutex>
+#include <thread>
 
 #include <sqlite3.h>
 
@@ -33,7 +34,7 @@ namespace net_ops::server {
             bool Initialize(const std::string& db_path);
             void Shutdown();
 
-            bool CreateUser(std::string username, std::vector<uint8_t> password_hash, std::vector<uint8_t> salt);
-            std::optional<UserRecord> GetUserByName(std::string username);
+            bool CreateUser(const std::string& username, const std::vector<uint8_t>& hash, const std::vector<uint8_t>& salt);
+            std::optional<UserRecord> DatabaseManager::GetUserByName(const std::string& username);
     };
 }
