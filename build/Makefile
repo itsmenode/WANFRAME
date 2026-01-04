@@ -142,6 +142,30 @@ Client/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/build
 .PHONY : Client/fast
 
+client/ClientNetwork.o: client/ClientNetwork.cpp.o
+.PHONY : client/ClientNetwork.o
+
+# target to build an object file
+client/ClientNetwork.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/ClientNetwork.cpp.o
+.PHONY : client/ClientNetwork.cpp.o
+
+client/ClientNetwork.i: client/ClientNetwork.cpp.i
+.PHONY : client/ClientNetwork.i
+
+# target to preprocess a source file
+client/ClientNetwork.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/ClientNetwork.cpp.i
+.PHONY : client/ClientNetwork.cpp.i
+
+client/ClientNetwork.s: client/ClientNetwork.cpp.s
+.PHONY : client/ClientNetwork.s
+
+# target to generate assembly for a file
+client/ClientNetwork.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/ClientNetwork.cpp.s
+.PHONY : client/ClientNetwork.cpp.s
+
 client/main.o: client/main.cpp.o
 .PHONY : client/main.o
 
@@ -172,6 +196,7 @@ common/ByteBuffer.o: common/ByteBuffer.cpp.o
 # target to build an object file
 common/ByteBuffer.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/common/ByteBuffer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/common/ByteBuffer.cpp.o
 .PHONY : common/ByteBuffer.cpp.o
 
 common/ByteBuffer.i: common/ByteBuffer.cpp.i
@@ -180,6 +205,7 @@ common/ByteBuffer.i: common/ByteBuffer.cpp.i
 # target to preprocess a source file
 common/ByteBuffer.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/common/ByteBuffer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/common/ByteBuffer.cpp.i
 .PHONY : common/ByteBuffer.cpp.i
 
 common/ByteBuffer.s: common/ByteBuffer.cpp.s
@@ -188,6 +214,7 @@ common/ByteBuffer.s: common/ByteBuffer.cpp.s
 # target to generate assembly for a file
 common/ByteBuffer.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/common/ByteBuffer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/common/ByteBuffer.cpp.s
 .PHONY : common/ByteBuffer.cpp.s
 
 server/DatabaseManager.o: server/DatabaseManager.cpp.o
@@ -296,6 +323,9 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... Client"
 	@echo "... Server"
+	@echo "... client/ClientNetwork.o"
+	@echo "... client/ClientNetwork.i"
+	@echo "... client/ClientNetwork.s"
 	@echo "... client/main.o"
 	@echo "... client/main.i"
 	@echo "... client/main.s"

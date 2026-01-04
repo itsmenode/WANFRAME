@@ -35,6 +35,8 @@ target_link_libraries(Server PRIVATE
 # ==========================================
 add_executable(Client
     client/main.cpp
+    client/ClientNetwork.cpp
+    common/ByteBuffer.cpp
 )
 
 target_link_libraries(Client PRIVATE 

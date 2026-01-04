@@ -8,7 +8,9 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/home/andrew/Documents/GitHub/WANFRAME/client/ClientNetwork.cpp" "CMakeFiles/Client.dir/client/ClientNetwork.cpp.o" "gcc" "CMakeFiles/Client.dir/client/ClientNetwork.cpp.o.d"
   "/home/andrew/Documents/GitHub/WANFRAME/client/main.cpp" "CMakeFiles/Client.dir/client/main.cpp.o" "gcc" "CMakeFiles/Client.dir/client/main.cpp.o.d"
+  "/home/andrew/Documents/GitHub/WANFRAME/common/ByteBuffer.cpp" "CMakeFiles/Client.dir/common/ByteBuffer.cpp.o" "gcc" "CMakeFiles/Client.dir/common/ByteBuffer.cpp.o.d"
   )
 
 # Targets to which this target links.
