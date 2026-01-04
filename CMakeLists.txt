@@ -4,10 +4,12 @@ project(WANFRAME VERSION 1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# --- 1. FIND PACKAGES ---
 find_package(SQLite3 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
 
+# --- 2. INCLUDES ---
 include_directories(server client common)
 
 # ==========================================
@@ -17,6 +19,7 @@ add_executable(Server
     server/main.cpp
     server/NetworkCore.cpp
     server/DatabaseManager.cpp
+    server/Worker.cpp
     common/ByteBuffer.cpp
 )
 
