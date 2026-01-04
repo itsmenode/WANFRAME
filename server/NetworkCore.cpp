@@ -8,12 +8,37 @@
 #include <iostream>
 
 #include "NetworkCore.hpp"
+#include "Worker.hpp"
 #include "../common/ByteBuffer.hpp"
 #include "../common/protocol.hpp"
 #include <netinet/in.h>
 
 namespace net_ops::server
 {
+    NetworkCore::NetworkCore(int port, Worker *worker)
+    {
+        m_port = port;
+        m_worker = worker;
+        m_server_fd = -1;
+        m_epoll_fd = -1;
+        m_running = false;
+    }
+
+    NetworkCore::~NetworkCore()
+    {
+        for (auto it : registry)
+        {
+            close(it.first);
+        }
+        registry.clear();
+
+        if (m_server_fd != -1)
+            close(m_server_fd);
+        if (m_epoll_fd != -1)
+            close(m_epoll_fd);
+        if (m_ssl_ctx)
+            SSL_CTX_free(m_ssl_ctx);
+    }
 
     void NetworkCore::NonBlockingMode(int fd)
     {
@@ -23,9 +48,7 @@ namespace net_ops::server
     void NetworkCore::EpollControlAdd(int fd)
     {
         struct epoll_event event;
-
         std::memset(&event, 0, sizeof(event));
-
         event.events = EPOLLIN;
         event.data.fd = fd;
 
@@ -46,16 +69,12 @@ namespace net_ops::server
     void NetworkCore::DisconnectClient(int fd)
     {
         EpollControlRemove(fd);
-
         if (registry[fd].ssl_handle)
         {
             SSL_shutdown(registry[fd].ssl_handle);
-
             SSL_free(registry[fd].ssl_handle);
         }
-
         close(fd);
-
         registry.erase(fd);
     }
 
@@ -87,14 +106,12 @@ namespace net_ops::server
         if (ret == 1)
         {
             registry[m_client_fd].is_handshake_complete = true;
-            std::cout << "[Server] New connection accepted: and Handshake COMPLETE: " << m_client_fd << std::endl;
-
+            std::cout << "[Server] New connection accepted and Handshake COMPLETE: " << m_client_fd << std::endl;
             EpollControlAdd(m_client_fd);
         }
         else
         {
             int ssl_error = SSL_get_error(ssl_handle, ret);
-
             if (ssl_error == SSL_ERROR_WANT_READ)
             {
                 registry[m_client_fd].is_handshake_complete = false;
@@ -111,13 +128,11 @@ namespace net_ops::server
 
     void NetworkCore::HandleClientData(int fd)
     {
-
         ClientContext &ctx = registry[fd];
 
         if (ctx.is_handshake_complete == false)
         {
             int ret = SSL_accept(ctx.ssl_handle);
-
             if (ret == 1)
             {
                 ctx.is_handshake_complete = true;
@@ -155,7 +170,7 @@ namespace net_ops::server
 
                 if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
                     break;
-                else if (err == SSL_ERROR_ZERO_RETURN)
+                else if (err == SSL_ERROR_ZERO_RETURN || err == SSL_ERROR_SYSCALL)
                 {
                     DisconnectClient(fd);
                     return;
@@ -183,130 +198,14 @@ namespace net_ops::server
 
     void NetworkCore::ProcessMessage(int fd, net_ops::protocol::MessageType type, const std::vector<uint8_t> &payload)
     {
-
-        using namespace net_ops::protocol;
-
-        std::cout << "[Client " << fd << "] Received Message Type: "
+        std::cout << "[Client " << fd << "] Dispatched Message Type: "
                   << static_cast<int>(type)
                   << " | Size: " << payload.size() << " bytes." << std::endl;
 
-        switch (type)
+        if (m_worker)
         {
-
-        case MessageType::LoginReq:
-        {
-            std::string user_data(payload.begin(), payload.end());
-            std::cout << " -> Login Attempt Data: " << user_data << std::endl;
-
-            std::string response_text = "AUTH_SUCCESS_PHASE_2";
-            std::vector<uint8_t> resp_payload(response_text.begin(), response_text.end());
-
-            Header resp_header;
-            resp_header.magic = EXPECTED_MAGIC;
-            resp_header.msg_type = static_cast<uint8_t>(MessageType::LoginResp);
-            resp_header.payload_length = static_cast<uint32_t>(resp_payload.size());
-            resp_header.reserved = 0;
-
-            uint8_t header_buf[HEADER_SIZE];
-            SerializeHeader(resp_header, header_buf);
-
-            if (registry[fd].ssl_handle)
-            {
-                SSL_write(registry[fd].ssl_handle, header_buf, HEADER_SIZE);
-                SSL_write(registry[fd].ssl_handle, resp_payload.data(), resp_payload.size());
-            }
-
-            std::cout << " -> Sent LoginResp (Encrypted)." << std::endl;
-            break;
+            m_worker->AddJob(fd, type, payload);
         }
-        case MessageType::LoginResp:
-            break;
-        case MessageType::LogoutReq:
-            break;
-        case MessageType::LogoutResp:
-            break;
-        case MessageType::SignupReq:
-            break;
-        case MessageType::SignupResp:
-            break;
-
-        case MessageType::HeartbeatReq:
-            break;
-        case MessageType::HeartbeatResp:
-            break;
-
-        case MessageType::DeviceReportReq:
-        {
-            std::cout << " -> Received Device Report. (Not implemented in Phase 1)" << std::endl;
-            break;
-        }
-        case MessageType::DeviceReportResp:
-            break;
-
-        case MessageType::GroupListReq:
-            break;
-        case MessageType::GroupListResp:
-            break;
-        case MessageType::GroupCreateReq:
-            break;
-        case MessageType::GroupCreateResp:
-            break;
-        case MessageType::GroupDeleteReq:
-            break;
-        case MessageType::GroupDeleteResp:
-            break;
-        case MessageType::GroupUpdateReq:
-            break;
-        case MessageType::GroupUpdateResp:
-            break;
-        case MessageType::GroupMembershipSetReq:
-            break;
-        case MessageType::GroupMembershipSetResp:
-            break;
-
-        case MessageType::LogQueryReq:
-            break;
-        case MessageType::LogQueryResp:
-            break;
-        case MessageType::LiveLogSubscribeReq:
-            break;
-        case MessageType::LiveLogSubscribeResp:
-            break;
-        case MessageType::LiveLogEvent:
-            break;
-
-        case MessageType::ErrorResp:
-            break;
-
-        default:
-            std::cout << " -> Unknown or Unhandled Message Type." << std::endl;
-            break;
-        }
-    }
-
-    NetworkCore::NetworkCore(int port)
-    {
-        m_port = port;
-        m_server_fd = -1;
-        m_epoll_fd = -1;
-        m_running = false;
-    }
-
-    NetworkCore::~NetworkCore()
-    {
-
-        for (auto it : registry)
-        {
-            close(it.first);
-        }
-        registry.clear();
-
-        if (m_server_fd != -1)
-            close(m_server_fd);
-        if (m_epoll_fd != -1)
-            close(m_epoll_fd);
-        if (m_ssl_ctx)
-            SSL_CTX_free(m_ssl_ctx);
     }
 
     void NetworkCore::Init()
@@ -373,7 +272,6 @@ namespace net_ops::server
     void NetworkCore::Run()
     {
         m_running = true;
-
         std::cout << "Server started on port 8080..." << std::endl;
 
         struct epoll_event ev[128];

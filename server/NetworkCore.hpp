@@ -5,19 +5,25 @@
 #include <iostream>
 #include <sys/epoll.h>
 #include <vector>
-
+#include <mutex>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
 #include "../common/ByteBuffer.hpp"
 #include "../common/protocol.hpp"
 
+
+namespace net_ops::server
+{
+    class Worker;
+}
+
 namespace net_ops::server
 {
     struct ClientContext
     {
         int socketfd;
-        SSL* ssl_handle;
+        SSL *ssl_handle;
         net_ops::common::ByteBuffer buff;
         bool is_handshake_complete;
     };
@@ -29,9 +35,13 @@ namespace net_ops::server
         int m_epoll_fd;
         int m_port;
         bool m_running;
+        Worker *m_worker;
+
         std::map<int, ClientContext> registry;
 
-        SSL_CTX* m_ssl_ctx;
+        std::mutex m_registry_mutex;
+
+        SSL_CTX *m_ssl_ctx;
 
         void LogOpenSSLErrors();
 
@@ -46,7 +56,7 @@ namespace net_ops::server
         void ProcessMessage(int fd, net_ops::protocol::MessageType type, const std::vector<uint8_t> &payload);
 
     public:
-        explicit NetworkCore(int port);
+        explicit NetworkCore(int port, Worker *worker);
 
         ~NetworkCore();
 

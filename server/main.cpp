@@ -1,9 +1,9 @@
 #include "NetworkCore.hpp"
 #include "DatabaseManager.hpp"
+#include "Worker.hpp"
 #include <iostream>
 
 int main() {
-    net_ops::server::NetworkCore server(8080);
     auto& db = net_ops::server::DatabaseManager::GetInstance();
     
     if (!db.Initialize("test_db.sqlite")) {
@@ -33,8 +33,15 @@ int main() {
 
     try
     {
+        net_ops::server::Worker worker;
+        worker.Start();
+
+        net_ops::server::NetworkCore server(8080, &worker);
+
         server.Init();
         server.Run();
+
+        worker.Stop();
     }
     catch(const std::exception& e)
     {
