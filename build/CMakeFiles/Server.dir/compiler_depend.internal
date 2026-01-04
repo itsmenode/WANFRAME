@@ -635,6 +635,12 @@ CMakeFiles/Server.dir/server/NetworkCore.cpp.o
  /usr/include/c++/11/bits/parse_numbers.h
  /usr/include/c++/11/bits/std_mutex.h
  /usr/include/c++/11/bits/unique_lock.h
+ /usr/include/c++/11/queue
+ /usr/include/c++/11/deque
+ /usr/include/c++/11/bits/stl_deque.h
+ /usr/include/c++/11/bits/deque.tcc
+ /usr/include/c++/11/bits/stl_heap.h
+ /usr/include/c++/11/bits/stl_queue.h
  /usr/include/openssl/ssl.h
  /usr/include/openssl/macros.h
  /usr/include/x86_64-linux-gnu/openssl/opensslconf.h
@@ -724,12 +730,6 @@ CMakeFiles/Server.dir/server/NetworkCore.cpp.o
  /usr/include/c++/11/bits/refwrap.h
  /usr/include/c++/11/bits/unique_ptr.h
  /usr/include/c++/11/bits/this_thread_sleep.h
- /usr/include/c++/11/queue
- /usr/include/c++/11/deque
- /usr/include/c++/11/bits/stl_deque.h
- /usr/include/c++/11/bits/deque.tcc
- /usr/include/c++/11/bits/stl_heap.h
- /usr/include/c++/11/bits/stl_queue.h
  /usr/include/c++/11/condition_variable
  /usr/include/c++/11/bits/shared_ptr.h
  /usr/include/c++/11/bits/shared_ptr_base.h
@@ -921,6 +921,12 @@ CMakeFiles/Server.dir/server/Worker.cpp.o
  /usr/include/c++/11/bits/basic_string.tcc
  /usr/include/c++/11/bits/std_mutex.h
  /usr/include/c++/11/bits/unique_lock.h
+ /usr/include/c++/11/condition_variable
+ /usr/include/c++/11/bits/shared_ptr.h
+ /usr/include/c++/11/bits/shared_ptr_base.h
+ /usr/include/c++/11/bits/allocated_ptr.h
+ /usr/include/c++/11/ext/aligned_buffer.h
+ /usr/include/c++/11/ext/concurrence.h
  /usr/include/c++/11/queue
  /usr/include/c++/11/deque
  /usr/include/c++/11/bits/stl_uninitialized.h
@@ -932,18 +938,18 @@ CMakeFiles/Server.dir/server/Worker.cpp.o
  /usr/include/c++/11/bits/vector.tcc
  /usr/include/c++/11/bits/stl_heap.h
  /usr/include/c++/11/bits/stl_queue.h
- /usr/include/c++/11/condition_variable
- /usr/include/c++/11/bits/shared_ptr.h
- /usr/include/c++/11/bits/shared_ptr_base.h
- /usr/include/c++/11/bits/allocated_ptr.h
- /usr/include/c++/11/ext/aligned_buffer.h
- /usr/include/c++/11/ext/concurrence.h
  /usr/include/c++/11/atomic
  /usr/include/c++/11/bits/atomic_base.h
  /usr/include/c++/11/bits/atomic_lockfree_defines.h
  /home/andrew/Documents/GitHub/WANFRAME/common/protocol.hpp
  /usr/include/c++/11/cstddef
- /home/andrew/Documents/GitHub/WANFRAME/server/DatabaseManager.hpp
+ /home/andrew/Documents/GitHub/WANFRAME/server/NetworkCore.hpp
+ /usr/include/c++/11/map
+ /usr/include/c++/11/bits/stl_tree.h
+ /usr/include/c++/11/bits/node_handle.h
+ /usr/include/c++/11/bits/stl_map.h
+ /usr/include/c++/11/bits/stl_multimap.h
+ /usr/include/c++/11/bits/erase_if.h
  /usr/include/c++/11/iostream
  /usr/include/c++/11/ostream
  /usr/include/c++/11/ios
@@ -965,20 +971,19 @@ CMakeFiles/Server.dir/server/Worker.cpp.o
  /usr/include/c++/11/bits/ostream.tcc
  /usr/include/c++/11/istream
  /usr/include/c++/11/bits/istream.tcc
- /usr/include/c++/11/optional
- /usr/include/c++/11/bits/enable_special_members.h
- /usr/include/sqlite3.h
- /usr/include/c++/11/cstring
- /usr/include/string.h
- /usr/include/strings.h
- /usr/include/openssl/sha.h
+ /usr/include/x86_64-linux-gnu/sys/epoll.h
+ /usr/include/x86_64-linux-gnu/bits/epoll.h
+ /usr/include/openssl/ssl.h
  /usr/include/openssl/macros.h
  /usr/include/x86_64-linux-gnu/openssl/opensslconf.h
  /usr/include/x86_64-linux-gnu/openssl/configuration.h
  /usr/include/openssl/opensslv.h
  /usr/include/openssl/e_os2.h
- /usr/include/openssl/rand.h
+ /usr/include/openssl/comp.h
+ /usr/include/openssl/crypto.h
  /usr/include/c++/11/stdlib.h
+ /usr/include/openssl/safestack.h
+ /usr/include/openssl/stack.h
  /usr/include/openssl/types.h
  /usr/lib/gcc/x86_64-linux-gnu/11/include/limits.h
  /usr/lib/gcc/x86_64-linux-gnu/11/include/syslimits.h
@@ -989,18 +994,18 @@ CMakeFiles/Server.dir/server/Worker.cpp.o
  /usr/include/x86_64-linux-gnu/bits/posix2_lim.h
  /usr/include/x86_64-linux-gnu/bits/xopen_lim.h
  /usr/include/x86_64-linux-gnu/bits/uio_lim.h
- /usr/include/openssl/safestack.h
- /usr/include/openssl/stack.h
- /usr/include/openssl/randerr.h
+ /usr/include/openssl/cryptoerr.h
  /usr/include/openssl/symhacks.h
  /usr/include/openssl/cryptoerr_legacy.h
- /usr/include/openssl/evp.h
  /usr/include/openssl/core.h
- /usr/include/openssl/core_dispatch.h
+ /usr/include/openssl/comperr.h
  /usr/include/openssl/bio.h
- /usr/include/openssl/crypto.h
- /usr/include/openssl/cryptoerr.h
  /usr/include/openssl/bioerr.h
+ /usr/include/openssl/x509.h
+ /usr/include/openssl/buffer.h
+ /usr/include/openssl/buffererr.h
+ /usr/include/openssl/evp.h
+ /usr/include/openssl/core_dispatch.h
  /usr/include/openssl/evperr.h
  /usr/include/openssl/params.h
  /usr/include/openssl/bn.h
@@ -1010,6 +1015,54 @@ CMakeFiles/Server.dir/server/Worker.cpp.o
  /usr/include/openssl/asn1.h
  /usr/include/openssl/asn1err.h
  /usr/include/openssl/objectserr.h
+ /usr/include/openssl/ec.h
+ /usr/include/string.h
+ /usr/include/strings.h
+ /usr/include/openssl/ecerr.h
+ /usr/include/openssl/rsa.h
+ /usr/include/openssl/rsaerr.h
+ /usr/include/openssl/dsa.h
+ /usr/include/openssl/dh.h
+ /usr/include/openssl/dherr.h
+ /usr/include/openssl/dsaerr.h
+ /usr/include/openssl/sha.h
+ /usr/include/openssl/x509err.h
+ /usr/include/openssl/x509_vfy.h
+ /usr/include/openssl/lhash.h
+ /usr/include/openssl/pkcs7.h
+ /usr/include/openssl/pkcs7err.h
+ /usr/include/openssl/ocsp.h
+ /usr/include/openssl/http.h
+ /usr/include/openssl/conf.h
+ /usr/include/openssl/conferr.h
+ /usr/include/openssl/conftypes.h
+ /usr/include/openssl/x509v3.h
+ /usr/include/openssl/x509v3err.h
+ /usr/include/openssl/ocsperr.h
+ /usr/include/openssl/pem.h
+ /usr/include/openssl/pemerr.h
+ /usr/include/openssl/hmac.h
+ /usr/include/openssl/async.h
+ /usr/include/openssl/asyncerr.h
+ /usr/include/openssl/ct.h
+ /usr/include/openssl/cterr.h
+ /usr/include/openssl/sslerr.h
+ /usr/include/openssl/sslerr_legacy.h
+ /usr/include/openssl/prov_ssl.h
+ /usr/include/openssl/ssl2.h
+ /usr/include/openssl/ssl3.h
+ /usr/include/openssl/tls1.h
+ /usr/include/openssl/dtls1.h
+ /usr/include/openssl/srtp.h
+ /usr/include/openssl/err.h
+ /home/andrew/Documents/GitHub/WANFRAME/common/ByteBuffer.hpp
+ /usr/include/c++/11/cstring
+ /home/andrew/Documents/GitHub/WANFRAME/server/DatabaseManager.hpp
+ /usr/include/c++/11/optional
+ /usr/include/c++/11/bits/enable_special_members.h
+ /usr/include/sqlite3.h
+ /usr/include/openssl/rand.h
+ /usr/include/openssl/randerr.h
  /usr/include/c++/11/iomanip
  /usr/include/c++/11/locale
  /usr/include/c++/11/bits/locale_facets_nonio.h
@@ -1233,6 +1286,12 @@ CMakeFiles/Server.dir/server/main.cpp.o
  /usr/include/c++/11/bits/parse_numbers.h
  /usr/include/c++/11/bits/std_mutex.h
  /usr/include/c++/11/bits/unique_lock.h
+ /usr/include/c++/11/queue
+ /usr/include/c++/11/deque
+ /usr/include/c++/11/bits/stl_deque.h
+ /usr/include/c++/11/bits/deque.tcc
+ /usr/include/c++/11/bits/stl_heap.h
+ /usr/include/c++/11/bits/stl_queue.h
  /usr/include/openssl/ssl.h
  /usr/include/openssl/macros.h
  /usr/include/x86_64-linux-gnu/openssl/opensslconf.h
@@ -1329,12 +1388,6 @@ CMakeFiles/Server.dir/server/main.cpp.o
  /usr/include/c++/11/bits/this_thread_sleep.h
  /usr/include/sqlite3.h
  /home/andrew/Documents/GitHub/WANFRAME/server/Worker.hpp
- /usr/include/c++/11/queue
- /usr/include/c++/11/deque
- /usr/include/c++/11/bits/stl_deque.h
- /usr/include/c++/11/bits/deque.tcc
- /usr/include/c++/11/bits/stl_heap.h
- /usr/include/c++/11/bits/stl_queue.h
  /usr/include/c++/11/condition_variable
  /usr/include/c++/11/bits/shared_ptr.h
  /usr/include/c++/11/bits/shared_ptr_base.h
