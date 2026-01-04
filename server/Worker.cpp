@@ -1,5 +1,7 @@
 #include "Worker.hpp"
+#include "NetworkCore.hpp"
 #include "DatabaseManager.hpp"
+
 #include <iostream>
 #include <cstring>
 #include <openssl/sha.h>
@@ -34,7 +36,7 @@ namespace net_ops::server {
         return std::vector<uint8_t>(hash, hash + SHA256_DIGEST_LENGTH);
     }
 
-    Worker::Worker() : running_(false) {}
+    Worker::Worker() : running_(false), network_core_(nullptr) {}
 
     Worker::~Worker() {
         Stop();
@@ -95,7 +97,7 @@ namespace net_ops::server {
                         break;
                 }
             } catch (const std::exception& e) {
-                std::cerr << "[Worker] Error: " << e.what() << "\n";
+                std::cerr << "[Worker] Error processing job: " << e.what() << "\n";
             }
         }
     }
@@ -106,7 +108,9 @@ namespace net_ops::server {
         std::string password = ReadString(payload, offset);
 
         if (username.empty() || password.empty()) {
-            std::cerr << "[Worker] Login Failed: Invalid payload format.\n";
+            if (network_core_) {
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "Invalid payload format");
+            }
             return;
         }
 
@@ -115,16 +119,24 @@ namespace net_ops::server {
 
         if (!user.has_value()) {
             std::cout << "[Worker] Login Failed: User '" << username << "' not found.\n";
+            if (network_core_) {
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_FAILURE: User not found");
+            }
             return;
         }
+
         std::vector<uint8_t> computed_hash = ComputeHash(password, user->salt);
 
         if (computed_hash == user->password_hash) {
             std::cout << "[Worker] Login SUCCESS for user: " << username << "\n";
-
+            if (network_core_) {
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_SUCCESS");
+            }
         } else {
             std::cout << "[Worker] Login Failed: Incorrect password for " << username << "\n";
-
+            if (network_core_) {
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_FAILURE: Incorrect Password");
+            }
         }
     }
 
@@ -134,7 +146,9 @@ namespace net_ops::server {
         std::string password = ReadString(payload, offset);
 
         if (username.empty() || password.empty()) {
-            std::cerr << "[Worker] Register Failed: Invalid payload format.\n";
+            if (network_core_) {
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "Invalid payload format");
+            }
             return;
         }
 
@@ -150,10 +164,14 @@ namespace net_ops::server {
 
         if (db.CreateUser(username, hash, salt)) {
             std::cout << "[Worker] Register SUCCESS: Created user '" << username << "'\n";
-
+            if (network_core_) {
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::SignupResp, "SIGNUP_SUCCESS");
+            }
         } else {
             std::cout << "[Worker] Register Failed: User '" << username << "' probably exists.\n";
-
+            if (network_core_) {
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::SignupResp, "SIGNUP_FAILURE: User exists");
+            }
         }
     }
 }

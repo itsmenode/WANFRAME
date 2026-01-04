@@ -272,13 +272,14 @@ namespace net_ops::server
     void NetworkCore::Run()
     {
         m_running = true;
-        std::cout << "Server started on port 8080..." << std::endl;
+
+        std::cout << "Server started on port " << m_port << "..." << std::endl;
 
         struct epoll_event ev[128];
         int count = 0;
         while (m_running)
         {
-            if ((count = epoll_wait(m_epoll_fd, ev, 128, -1)) == -1)
+            if ((count = epoll_wait(m_epoll_fd, ev, 128, 10)) == -1)
             {
                 if (errno == EINTR)
                     continue;
@@ -294,6 +295,60 @@ namespace net_ops::server
                 else
                     HandleClientData(m_current_fd);
             }
+
+            SendPendingResponses();
+        }
+    }
+
+    void NetworkCore::QueueResponse(int client_fd, net_ops::protocol::MessageType type, const std::string &data)
+    {
+        net_ops::protocol::Header header;
+        header.magic = net_ops::protocol::EXPECTED_MAGIC;
+        header.msg_type = static_cast<uint8_t>(type);
+        header.payload_length = static_cast<uint32_t>(data.size());
+        header.reserved = 0;
+
+        std::vector<uint8_t> payload(data.begin(), data.end());
+
+        {
+            std::lock_guard<std::mutex> lock(m_response_mutex);
+            m_response_queue.push({client_fd, header, payload});
+        }
+    }
+
+    void NetworkCore::SendPendingResponses()
+    {
+        std::lock_guard<std::mutex> lock(m_response_mutex);
+
+        while (!m_response_queue.empty())
+        {
+            OutgoingMessage msg = m_response_queue.front();
+            m_response_queue.pop();
+
+            if (registry.find(msg.client_fd) == registry.end())
+            {
+                continue;
+            }
+
+            SSL *ssl = registry[msg.client_fd].ssl_handle;
+            if (!ssl)
+                continue;
+
+            uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
+            net_ops::protocol::SerializeHeader(msg.header, headerBuf);
+
+            int written = SSL_write(ssl, headerBuf, sizeof(headerBuf));
+            if (written <= 0)
+            {
+                continue;
+            }
+
+            if (msg.header.payload_length > 0)
+            {
+                SSL_write(ssl, msg.payload.data(), msg.payload.size());
+            }
+
+            std::cout << "[Server] Sent response to Client " << msg.client_fd << "\n";
         }
     }
 }

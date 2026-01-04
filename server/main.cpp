@@ -37,6 +37,8 @@ int main() {
         worker.Start();
 
         net_ops::server::NetworkCore server(8080, &worker);
+        
+        worker.SetNetworkCore(&server);
 
         server.Init();
         server.Run();

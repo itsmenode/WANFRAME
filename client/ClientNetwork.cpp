@@ -7,7 +7,7 @@
 
 namespace net_ops::client
 {
-    ClientNetwork::ClientNetwork(std::string host, int port) 
+    ClientNetwork::ClientNetwork(std::string host, int port)
         : m_host(host), m_port(port), m_socket_fd(-1), m_ssl_ctx(nullptr), m_ssl_handle(nullptr)
     {
         InitSSL();
@@ -23,14 +23,14 @@ namespace net_ops::client
     {
         SSL_load_error_strings();
         OpenSSL_add_ssl_algorithms();
-        
+
         m_ssl_ctx = SSL_CTX_new(TLS_client_method());
         if (!m_ssl_ctx)
         {
             ERR_print_errors_fp(stderr);
             exit(EXIT_FAILURE);
         }
-        
+
         SSL_CTX_set_verify(m_ssl_ctx, SSL_VERIFY_NONE, nullptr);
     }
 
@@ -62,7 +62,7 @@ namespace net_ops::client
             return false;
         }
 
-        if (connect(m_socket_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+        if (connect(m_socket_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
         {
             perror("Connection failed");
             return false;
@@ -96,17 +96,17 @@ namespace net_ops::client
         }
     }
 
-    void ClientNetwork::AppendString(std::vector<uint8_t>& buffer, const std::string& str)
+    void ClientNetwork::AppendString(std::vector<uint8_t> &buffer, const std::string &str)
     {
         uint32_t len = static_cast<uint32_t>(str.length());
-        
-        uint8_t* pLen = reinterpret_cast<uint8_t*>(&len);
+
+        uint8_t *pLen = reinterpret_cast<uint8_t *>(&len);
         buffer.insert(buffer.end(), pLen, pLen + 4);
-        
+
         buffer.insert(buffer.end(), str.begin(), str.end());
     }
 
-    bool ClientNetwork::SendLogin(const std::string& username, const std::string& password)
+    bool ClientNetwork::SendLogin(const std::string &username, const std::string &password)
     {
         std::vector<uint8_t> payload;
         AppendString(payload, username);
@@ -121,13 +121,15 @@ namespace net_ops::client
         uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
         net_ops::protocol::SerializeHeader(header, headerBuf);
 
-        if (SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf)) <= 0) return false;
-        if (SSL_write(m_ssl_handle, payload.data(), payload.size()) <= 0) return false;
+        if (SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf)) <= 0)
+            return false;
+        if (SSL_write(m_ssl_handle, payload.data(), payload.size()) <= 0)
+            return false;
 
         return true;
     }
-    
-    bool ClientNetwork::SendRegister(const std::string& username, const std::string& password)
+
+    bool ClientNetwork::SendRegister(const std::string &username, const std::string &password)
     {
         std::vector<uint8_t> payload;
         AppendString(payload, username);
@@ -142,26 +144,63 @@ namespace net_ops::client
         uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
         net_ops::protocol::SerializeHeader(header, headerBuf);
 
-        if (SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf)) <= 0) return false;
-        if (SSL_write(m_ssl_handle, payload.data(), payload.size()) <= 0) return false;
+        if (SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf)) <= 0)
+            return false;
+        if (SSL_write(m_ssl_handle, payload.data(), payload.size()) <= 0)
+            return false;
 
         return true;
     }
 
     void ClientNetwork::ReceiveResponse()
     {
-        if (!m_ssl_handle) return;
+        if (!m_ssl_handle)
+            return;
 
-        uint8_t buf[1024];
-        int bytes = SSL_read(m_ssl_handle, buf, sizeof(buf));
-        
-        if (bytes > 0)
+        net_ops::protocol::Header header;
+        uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
+
+        int bytesRead = SSL_read(m_ssl_handle, headerBuf, sizeof(headerBuf));
+
+        if (bytesRead <= 0)
         {
-            std::cout << "[Client] Received " << bytes << " bytes response." << std::endl;
+            std::cerr << "[Client] Server disconnected.\n";
+            Disconnect();
+            return;
+        }
+        header = net_ops::protocol::DeserializeHeader(headerBuf);
+
+        if (header.magic != net_ops::protocol::EXPECTED_MAGIC)
+        {
+            std::cerr << "[Client] Error: Invalid Protocol Magic Number.\n";
+            return;
+        }
+
+        std::vector<uint8_t> payload;
+        if (header.payload_length > 0)
+        {
+            payload.resize(header.payload_length);
+            int total = 0;
+            while (total < header.payload_length)
+            {
+                int n = SSL_read(m_ssl_handle, payload.data() + total, header.payload_length - total);
+                if (n <= 0)
+                    break;
+                total += n;
+            }
+        }
+
+        std::string msg(payload.begin(), payload.end());
+
+        std::cout << "[Server Reply] " << msg << "\n";
+
+        if (msg.find("SUCCESS") != std::string::npos)
+        {
+            std::cout << "\n>>> ACCESS GRANTED <<<\n\n";
         }
         else
         {
-             std::cerr << "[Client] Read failed or connection closed." << std::endl;
+            std::cout << "\n>>> ACCESS DENIED <<<\n\n";
         }
     }
 }
