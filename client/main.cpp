@@ -69,23 +69,18 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
             client.ReceiveResponse();
         }
         else if (choice == "6") {
-            std::string subnet = GetInput("Enter Subnet to Scan (e.g., 192.168.1): ");
+            // No input needed anymore!
+            std::cout << "Starting Auto-Discovery...\n";
             
-            std::cout << "Scanning... (This may take a moment)\n";
-            auto hosts = net_ops::client::NetworkScanner::ScanSubnet(subnet);
+            auto hosts = net_ops::client::NetworkScanner::ScanLocalNetwork();
             
             if (hosts.empty()) {
-                std::cout << "No active devices found in range.\n";
+                std::cout << "No OTHER devices found on your network.\n";
             } else {
-                std::cout << "Found " << hosts.size() << " devices. Uploading to Server...\n";
+                std::cout << "Uploading " << hosts.size() << " devices to Server...\n";
                 for (const auto& host : hosts) {
-                    std::cout << "Uploading " << host.ip << "... ";
                     client.SendAddDevice(host.name, host.ip, 0);
-                    if (client.ReceiveResponse()) {
-                        std::cout << "OK\n";
-                    } else {
-                        std::cout << "Failed\n";
-                    }
+                    client.ReceiveResponse(); 
                 }
                 std::cout << "Upload Complete.\n";
             }

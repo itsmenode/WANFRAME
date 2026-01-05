@@ -1,5 +1,4 @@
 #pragma once
-
 #include <string>
 #include <vector>
 
@@ -13,7 +12,11 @@ namespace net_ops::client {
 
     class NetworkScanner {
     public:
-        static std::vector<ScannedHost> ScanSubnet(const std::string& base_ip);
+        static std::vector<ScannedHost> ScanLocalNetwork();
+
+        static std::string GetSubnetFromIP(const std::string& ip);
+        
+        static std::string GetLocalIPAddress();
 
         static bool Ping(const std::string& ip);
     };
