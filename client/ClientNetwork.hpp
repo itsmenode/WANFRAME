@@ -14,14 +14,16 @@ namespace net_ops::client
         std::string m_host;
         int m_port;
         int m_socket_fd;
-
-        SSL_CTX *m_ssl_ctx;
-        SSL *m_ssl_handle;
+        
+        std::string m_session_token;
+        
+        SSL_CTX* m_ssl_ctx;
+        SSL* m_ssl_handle;
 
         void InitSSL();
         void CleanupSSL();
-
-        void AppendString(std::vector<uint8_t> &buffer, const std::string &str);
+        
+        void AppendString(std::vector<uint8_t>& buffer, const std::string& str);
 
     public:
         ClientNetwork(std::string host, int port);
@@ -30,12 +32,12 @@ namespace net_ops::client
         bool Connect();
         void Disconnect();
 
-        bool SendLogin(const std::string &username, const std::string &password);
-        bool SendRegister(const std::string &username, const std::string &password);
-
-        bool SendCreateGroup(const std::string &groupName);
+        bool SendLogin(const std::string& username, const std::string& password);
+        bool SendRegister(const std::string& username, const std::string& password);
+        
+        bool SendCreateGroup(const std::string& groupName);
         bool SendListGroups();
 
-        bool ReceiveResponse();
+        bool ReceiveResponse(); 
     };
 }

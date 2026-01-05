@@ -238,6 +238,13 @@ namespace net_ops::client
         std::string msg(payload.begin(), payload.end());
         std::cout << "[Server Reply] " << msg << "\n";
 
+        std::string loginPrefix = "LOGIN_SUCCESS:";
+        if (msg.find(loginPrefix) == 0) {
+            m_session_token = msg.substr(loginPrefix.length());
+            std::cout << "[Client] Session Token Saved: " << m_session_token << "\n";
+            return true;
+        }
+        
         if (msg.find("SUCCESS") != std::string::npos) {
             return true;
         } 

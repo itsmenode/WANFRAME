@@ -1,6 +1,7 @@
 #include "Worker.hpp"
 #include "NetworkCore.hpp"
 #include "DatabaseManager.hpp"
+#include "SessionManager.hpp"
 
 #include <iostream>
 #include <cstring>
@@ -127,29 +128,24 @@ namespace net_ops::server
         }
     }
 
-    void Worker::HandleLogin(int client_fd, const std::vector<uint8_t> &payload)
-    {
+    void Worker::HandleLogin(int client_fd, const std::vector<uint8_t>& payload) {
         size_t offset = 0;
         std::string username = ReadString(payload, offset);
         std::string password = ReadString(payload, offset);
 
-        if (username.empty() || password.empty())
-        {
-            if (network_core_)
-            {
+        if (username.empty() || password.empty()) {
+            if (network_core_) {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "Invalid payload format");
             }
             return;
         }
 
-        auto &db = DatabaseManager::GetInstance();
+        auto& db = DatabaseManager::GetInstance();
         auto user = db.GetUserByName(username);
 
-        if (!user.has_value())
-        {
+        if (!user.has_value()) {
             std::cout << "[Worker] Login Failed: User '" << username << "' not found.\n";
-            if (network_core_)
-            {
+            if (network_core_) {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_FAILURE: User not found");
             }
             return;
@@ -157,19 +153,19 @@ namespace net_ops::server
 
         std::vector<uint8_t> computed_hash = ComputeHash(password, user->salt);
 
-        if (computed_hash == user->password_hash)
-        {
+        if (computed_hash == user->password_hash) {
             std::cout << "[Worker] Login SUCCESS for user: " << username << "\n";
-            if (network_core_)
-            {
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_SUCCESS");
+            
+            std::string token = SessionManager::GetInstance().CreateSession(user->id);
+            
+            std::string response = "LOGIN_SUCCESS:" + token;
+
+            if (network_core_) {
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, response);
             }
-        }
-        else
-        {
+        } else {
             std::cout << "[Worker] Login Failed: Incorrect password for " << username << "\n";
-            if (network_core_)
-            {
+            if (network_core_) {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_FAILURE: Incorrect Password");
             }
         }
