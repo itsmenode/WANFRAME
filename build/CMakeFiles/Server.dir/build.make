@@ -97,24 +97,10 @@ CMakeFiles/Server.dir/server/NetworkCore.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Server.dir/server/NetworkCore.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/andrew/Documents/GitHub/WANFRAME/server/NetworkCore.cpp -o CMakeFiles/Server.dir/server/NetworkCore.cpp.s
 
-CMakeFiles/Server.dir/server/DatabaseManager.cpp.o: CMakeFiles/Server.dir/flags.make
-CMakeFiles/Server.dir/server/DatabaseManager.cpp.o: ../server/DatabaseManager.cpp
-CMakeFiles/Server.dir/server/DatabaseManager.cpp.o: CMakeFiles/Server.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/Server.dir/server/DatabaseManager.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Server.dir/server/DatabaseManager.cpp.o -MF CMakeFiles/Server.dir/server/DatabaseManager.cpp.o.d -o CMakeFiles/Server.dir/server/DatabaseManager.cpp.o -c /home/andrew/Documents/GitHub/WANFRAME/server/DatabaseManager.cpp
-
-CMakeFiles/Server.dir/server/DatabaseManager.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Server.dir/server/DatabaseManager.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/andrew/Documents/GitHub/WANFRAME/server/DatabaseManager.cpp > CMakeFiles/Server.dir/server/DatabaseManager.cpp.i
-
-CMakeFiles/Server.dir/server/DatabaseManager.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Server.dir/server/DatabaseManager.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/andrew/Documents/GitHub/WANFRAME/server/DatabaseManager.cpp -o CMakeFiles/Server.dir/server/DatabaseManager.cpp.s
-
 CMakeFiles/Server.dir/server/Worker.cpp.o: CMakeFiles/Server.dir/flags.make
 CMakeFiles/Server.dir/server/Worker.cpp.o: ../server/Worker.cpp
 CMakeFiles/Server.dir/server/Worker.cpp.o: CMakeFiles/Server.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/Server.dir/server/Worker.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/Server.dir/server/Worker.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Server.dir/server/Worker.cpp.o -MF CMakeFiles/Server.dir/server/Worker.cpp.o.d -o CMakeFiles/Server.dir/server/Worker.cpp.o -c /home/andrew/Documents/GitHub/WANFRAME/server/Worker.cpp
 
 CMakeFiles/Server.dir/server/Worker.cpp.i: cmake_force
@@ -125,10 +111,38 @@ CMakeFiles/Server.dir/server/Worker.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Server.dir/server/Worker.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/andrew/Documents/GitHub/WANFRAME/server/Worker.cpp -o CMakeFiles/Server.dir/server/Worker.cpp.s
 
+CMakeFiles/Server.dir/server/DatabaseManager.cpp.o: CMakeFiles/Server.dir/flags.make
+CMakeFiles/Server.dir/server/DatabaseManager.cpp.o: ../server/DatabaseManager.cpp
+CMakeFiles/Server.dir/server/DatabaseManager.cpp.o: CMakeFiles/Server.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/Server.dir/server/DatabaseManager.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Server.dir/server/DatabaseManager.cpp.o -MF CMakeFiles/Server.dir/server/DatabaseManager.cpp.o.d -o CMakeFiles/Server.dir/server/DatabaseManager.cpp.o -c /home/andrew/Documents/GitHub/WANFRAME/server/DatabaseManager.cpp
+
+CMakeFiles/Server.dir/server/DatabaseManager.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Server.dir/server/DatabaseManager.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/andrew/Documents/GitHub/WANFRAME/server/DatabaseManager.cpp > CMakeFiles/Server.dir/server/DatabaseManager.cpp.i
+
+CMakeFiles/Server.dir/server/DatabaseManager.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Server.dir/server/DatabaseManager.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/andrew/Documents/GitHub/WANFRAME/server/DatabaseManager.cpp -o CMakeFiles/Server.dir/server/DatabaseManager.cpp.s
+
+CMakeFiles/Server.dir/server/SessionManager.cpp.o: CMakeFiles/Server.dir/flags.make
+CMakeFiles/Server.dir/server/SessionManager.cpp.o: ../server/SessionManager.cpp
+CMakeFiles/Server.dir/server/SessionManager.cpp.o: CMakeFiles/Server.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/Server.dir/server/SessionManager.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Server.dir/server/SessionManager.cpp.o -MF CMakeFiles/Server.dir/server/SessionManager.cpp.o.d -o CMakeFiles/Server.dir/server/SessionManager.cpp.o -c /home/andrew/Documents/GitHub/WANFRAME/server/SessionManager.cpp
+
+CMakeFiles/Server.dir/server/SessionManager.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Server.dir/server/SessionManager.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/andrew/Documents/GitHub/WANFRAME/server/SessionManager.cpp > CMakeFiles/Server.dir/server/SessionManager.cpp.i
+
+CMakeFiles/Server.dir/server/SessionManager.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Server.dir/server/SessionManager.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/andrew/Documents/GitHub/WANFRAME/server/SessionManager.cpp -o CMakeFiles/Server.dir/server/SessionManager.cpp.s
+
 CMakeFiles/Server.dir/common/ByteBuffer.cpp.o: CMakeFiles/Server.dir/flags.make
 CMakeFiles/Server.dir/common/ByteBuffer.cpp.o: ../common/ByteBuffer.cpp
 CMakeFiles/Server.dir/common/ByteBuffer.cpp.o: CMakeFiles/Server.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/Server.dir/common/ByteBuffer.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/Server.dir/common/ByteBuffer.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Server.dir/common/ByteBuffer.cpp.o -MF CMakeFiles/Server.dir/common/ByteBuffer.cpp.o.d -o CMakeFiles/Server.dir/common/ByteBuffer.cpp.o -c /home/andrew/Documents/GitHub/WANFRAME/common/ByteBuffer.cpp
 
 CMakeFiles/Server.dir/common/ByteBuffer.cpp.i: cmake_force
@@ -143,8 +157,9 @@ CMakeFiles/Server.dir/common/ByteBuffer.cpp.s: cmake_force
 Server_OBJECTS = \
 "CMakeFiles/Server.dir/server/main.cpp.o" \
 "CMakeFiles/Server.dir/server/NetworkCore.cpp.o" \
-"CMakeFiles/Server.dir/server/DatabaseManager.cpp.o" \
 "CMakeFiles/Server.dir/server/Worker.cpp.o" \
+"CMakeFiles/Server.dir/server/DatabaseManager.cpp.o" \
+"CMakeFiles/Server.dir/server/SessionManager.cpp.o" \
 "CMakeFiles/Server.dir/common/ByteBuffer.cpp.o"
 
 # External object files for target Server
@@ -152,15 +167,16 @@ Server_EXTERNAL_OBJECTS =
 
 Server: CMakeFiles/Server.dir/server/main.cpp.o
 Server: CMakeFiles/Server.dir/server/NetworkCore.cpp.o
-Server: CMakeFiles/Server.dir/server/DatabaseManager.cpp.o
 Server: CMakeFiles/Server.dir/server/Worker.cpp.o
+Server: CMakeFiles/Server.dir/server/DatabaseManager.cpp.o
+Server: CMakeFiles/Server.dir/server/SessionManager.cpp.o
 Server: CMakeFiles/Server.dir/common/ByteBuffer.cpp.o
 Server: CMakeFiles/Server.dir/build.make
-Server: /usr/lib/x86_64-linux-gnu/libsqlite3.so
 Server: /usr/lib/x86_64-linux-gnu/libssl.so
 Server: /usr/lib/x86_64-linux-gnu/libcrypto.so
+Server: /usr/lib/x86_64-linux-gnu/libsqlite3.so
 Server: CMakeFiles/Server.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking CXX executable Server"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Linking CXX executable Server"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/Server.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

@@ -1,46 +1,37 @@
 cmake_minimum_required(VERSION 3.10)
-project(WANFRAME VERSION 1.0)
+project(NetOps)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# --- 1. FIND PACKAGES ---
-find_package(SQLite3 REQUIRED)
-find_package(Threads REQUIRED)
+# OpenSSL
 find_package(OpenSSL REQUIRED)
 
-# --- 2. INCLUDES ---
-include_directories(server client common)
+# SQLite3
+find_package(SQLite3 REQUIRED)
 
-# ==========================================
-#               SERVER BUILD
-# ==========================================
-add_executable(Server
+# Source Files
+set(COMMON_SOURCES
+    common/ByteBuffer.cpp
+)
+
+set(SERVER_SOURCES
     server/main.cpp
     server/NetworkCore.cpp
-    server/DatabaseManager.cpp
     server/Worker.cpp
-    common/ByteBuffer.cpp
+    server/DatabaseManager.cpp
+    server/SessionManager.cpp
+    ${COMMON_SOURCES}
 )
 
-target_link_libraries(Server PRIVATE 
-    SQLite::SQLite3 
-    Threads::Threads
-    OpenSSL::SSL
-    OpenSSL::Crypto
-)
-
-# ==========================================
-#               CLIENT BUILD
-# ==========================================
-add_executable(Client
+set(CLIENT_SOURCES
     client/main.cpp
     client/ClientNetwork.cpp
-    common/ByteBuffer.cpp
+    ${COMMON_SOURCES}
 )
 
-target_link_libraries(Client PRIVATE 
-    Threads::Threads 
-    OpenSSL::SSL 
-    OpenSSL::Crypto
-)
+# Executables
+add_executable(Server ${SERVER_SOURCES})
+target_link_libraries(Server OpenSSL::SSL OpenSSL::Crypto SQLite::SQLite3)
+
+add_executable(Client ${CLIENT_SOURCES})
+target_link_libraries(Client OpenSSL::SSL OpenSSL::Crypto)

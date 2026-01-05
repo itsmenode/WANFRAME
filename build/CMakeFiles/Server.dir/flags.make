@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/andrew/Documents/GitHub/WANFRAME/server -I/home/andrew/Documents/GitHub/WANFRAME/client -I/home/andrew/Documents/GitHub/WANFRAME/common
+CXX_INCLUDES = 
 
-CXX_FLAGS = -std=gnu++17
+CXX_FLAGS = 
 

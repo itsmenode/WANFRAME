@@ -265,6 +265,30 @@ server/NetworkCore.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/server/NetworkCore.cpp.s
 .PHONY : server/NetworkCore.cpp.s
 
+server/SessionManager.o: server/SessionManager.cpp.o
+.PHONY : server/SessionManager.o
+
+# target to build an object file
+server/SessionManager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/server/SessionManager.cpp.o
+.PHONY : server/SessionManager.cpp.o
+
+server/SessionManager.i: server/SessionManager.cpp.i
+.PHONY : server/SessionManager.i
+
+# target to preprocess a source file
+server/SessionManager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/server/SessionManager.cpp.i
+.PHONY : server/SessionManager.cpp.i
+
+server/SessionManager.s: server/SessionManager.cpp.s
+.PHONY : server/SessionManager.s
+
+# target to generate assembly for a file
+server/SessionManager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/server/SessionManager.cpp.s
+.PHONY : server/SessionManager.cpp.s
+
 server/Worker.o: server/Worker.cpp.o
 .PHONY : server/Worker.o
 
@@ -338,6 +362,9 @@ help:
 	@echo "... server/NetworkCore.o"
 	@echo "... server/NetworkCore.i"
 	@echo "... server/NetworkCore.s"
+	@echo "... server/SessionManager.o"
+	@echo "... server/SessionManager.i"
+	@echo "... server/SessionManager.s"
 	@echo "... server/Worker.o"
 	@echo "... server/Worker.i"
 	@echo "... server/Worker.s"
