@@ -33,6 +33,12 @@ namespace net_ops::protocol
         GroupAddMemberReq = 0x09,
         GroupAddMemberResp = 0x0A,
 
+        DeviceAddReq = 0x0B,
+        DeviceAddResp = 0x0C,
+        
+        DeviceListReq = 0x0D,
+        DeviceListResp = 0x0E,
+
         ErrorResp = 0xFF
     };
 

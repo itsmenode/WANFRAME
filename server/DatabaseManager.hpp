@@ -23,6 +23,15 @@ namespace net_ops::server {
         int owner_id;
     };
 
+    struct DeviceRecord {
+        int id;
+        int owner_id;
+        int group_id;
+        std::string name;
+        std::string ip_address;
+        std::string status;
+    };
+
     class DatabaseManager {
         private:
             sqlite3* db_;
@@ -49,6 +58,10 @@ namespace net_ops::server {
             int CreateGroup(const std::string& group_name, int owner_id);
             bool AddMemberToGroup(int user_id, int group_id);
             std::vector<GroupRecord> GetGroupsForUser(int user_id);
+
+            int AddDevice(int owner_id, const std::string& name, const std::string& ip, int group_id = 0);
+            std::vector<DeviceRecord> GetAllDevicesForUser(int user_id);
+            std::vector<DeviceRecord> GetDevicesInGroup(int group_id);
 
             bool IsGroupOwner(int group_id, int user_id);
     };
