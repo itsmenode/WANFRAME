@@ -152,12 +152,19 @@ namespace net_ops::client
         return true;
     }
 
-    bool ClientNetwork::SendCreateGroup(const std::string &groupName)
+    bool ClientNetwork::SendCreateGroup(const std::string& groupName)
     {
-        if (!m_ssl_handle)
+        if (!m_ssl_handle) return false;
+
+        if (m_session_token.empty()) {
+            std::cerr << "[Client] Error: No session token. Please login first.\n";
             return false;
+        }
 
         std::vector<uint8_t> payload;
+        
+        AppendString(payload, m_session_token);
+        
         AppendString(payload, groupName);
 
         net_ops::protocol::Header header;
@@ -169,14 +176,8 @@ namespace net_ops::client
         uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
         net_ops::protocol::SerializeHeader(header, headerBuf);
 
-        if (SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf)) <= 0)
-            return false;
-
-        if (payload.size() > 0)
-        {
-            if (SSL_write(m_ssl_handle, payload.data(), payload.size()) <= 0)
-                return false;
-        }
+        if (SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf)) <= 0) return false;
+        if (SSL_write(m_ssl_handle, payload.data(), payload.size()) <= 0) return false;
 
         return true;
     }

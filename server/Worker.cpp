@@ -215,40 +215,43 @@ namespace net_ops::server
         }
     }
 
-    void Worker::HandleGroupCreate(int client_fd, const std::vector<uint8_t> &payload)
-    {
+    void Worker::HandleGroupCreate(int client_fd, const std::vector<uint8_t>& payload) {
         size_t offset = 0;
+        
+        std::string token = ReadString(payload, offset);
+        
         std::string group_name = ReadString(payload, offset);
 
-        if (group_name.empty())
-        {
-            if (network_core_)
-            {
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "Invalid Group Name");
+        if (token.empty() || group_name.empty()) {
+            if (network_core_) {
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "Invalid payload");
             }
             return;
         }
 
-        // NOTE: In the future, we will extract UserID from a Session Token.
-        // For now, we hardcode Owner ID = 1 (likely the first admin created).
-        int owner_id = 1;
+        auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
+        
+        if (!userIdOpt.has_value()) {
+            std::cout << "[Worker] Group Create Denied: Invalid Session Token.\n";
+            if (network_core_) {
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED: Invalid Token");
+            }
+            return;
+        }
 
-        auto &db = DatabaseManager::GetInstance();
+        int owner_id = userIdOpt.value();
+
+        auto& db = DatabaseManager::GetInstance();
         int group_id = db.CreateGroup(group_name, owner_id);
 
-        if (group_id != -1)
-        {
-            std::cout << "[Worker] Group Created: " << group_name << " (ID: " << group_id << ")\n";
-            if (network_core_)
-            {
+        if (group_id != -1) {
+            std::cout << "[Worker] Group Created: '" << group_name << "' by UserID: " << owner_id << "\n";
+            if (network_core_) {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::GroupCreateResp, "GROUP_CREATED");
             }
-        }
-        else
-        {
+        } else {
             std::cout << "[Worker] Group Creation Failed (Name taken?)\n";
-            if (network_core_)
-            {
+            if (network_core_) {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "GROUP_CREATION_FAILED");
             }
         }
