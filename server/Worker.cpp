@@ -9,23 +9,28 @@
 #include <iomanip>
 #include <sstream>
 
-namespace net_ops::server {
+namespace net_ops::server
+{
 
-    std::string ReadString(const std::vector<uint8_t>& data, size_t& offset) {
-        if (offset + 4 > data.size()) return "";
-        
+    std::string ReadString(const std::vector<uint8_t> &data, size_t &offset)
+    {
+        if (offset + 4 > data.size())
+            return "";
+
         uint32_t len = 0;
         std::memcpy(&len, &data[offset], 4);
         offset += 4;
 
-        if (offset + len > data.size()) return "";
+        if (offset + len > data.size())
+            return "";
 
         std::string str(data.begin() + offset, data.begin() + offset + len);
         offset += len;
         return str;
     }
 
-    std::vector<uint8_t> ComputeHash(const std::string& password, const std::vector<uint8_t>& salt) {
+    std::vector<uint8_t> ComputeHash(const std::string &password, const std::vector<uint8_t> &salt)
+    {
         std::vector<uint8_t> combined;
         combined.insert(combined.end(), password.begin(), password.end());
         combined.insert(combined.end(), salt.begin(), salt.end());
@@ -38,27 +43,33 @@ namespace net_ops::server {
 
     Worker::Worker() : running_(false), network_core_(nullptr) {}
 
-    Worker::~Worker() {
+    Worker::~Worker()
+    {
         Stop();
     }
 
-    void Worker::Start() {
+    void Worker::Start()
+    {
         running_ = true;
         worker_thread_ = std::thread(&Worker::ProcessLoop, this);
     }
 
-    void Worker::Stop() {
-        if (!running_) return;
+    void Worker::Stop()
+    {
+        if (!running_)
+            return;
 
         running_ = false;
         queue_cv_.notify_all();
-        
-        if (worker_thread_.joinable()) {
+
+        if (worker_thread_.joinable())
+        {
             worker_thread_.join();
         }
     }
 
-    void Worker::AddJob(int client_fd, net_ops::protocol::MessageType type, std::vector<uint8_t> payload) {
+    void Worker::AddJob(int client_fd, net_ops::protocol::MessageType type, std::vector<uint8_t> payload)
+    {
         {
             std::lock_guard<std::mutex> lock(queue_mutex_);
             job_queue_.push({client_fd, type, payload});
@@ -66,60 +77,79 @@ namespace net_ops::server {
         queue_cv_.notify_one();
     }
 
-    void Worker::ProcessLoop() {
-        while (running_) {
+    void Worker::ProcessLoop()
+    {
+        while (running_)
+        {
             Job current_job;
 
             {
                 std::unique_lock<std::mutex> lock(queue_mutex_);
-                
-                queue_cv_.wait(lock, [this] {
-                    return !job_queue_.empty() || !running_;
-                });
 
-                if (!running_ && job_queue_.empty()) break;
+                queue_cv_.wait(lock, [this]
+                               { return !job_queue_.empty() || !running_; });
+
+                if (!running_ && job_queue_.empty())
+                    break;
 
                 current_job = job_queue_.front();
                 job_queue_.pop();
             }
 
-            try {
-                switch (current_job.type) {
-                    case net_ops::protocol::MessageType::LoginReq: 
-                        HandleLogin(current_job.client_fd, current_job.payload);
-                        break;
-                    
-                    case net_ops::protocol::MessageType::SignupReq:
-                        HandleRegister(current_job.client_fd, current_job.payload);
-                        break;
+            try
+            {
+                switch (current_job.type)
+                {
+                case net_ops::protocol::MessageType::LoginReq:
+                    HandleLogin(current_job.client_fd, current_job.payload);
+                    break;
 
-                    default:
-                        break;
+                case net_ops::protocol::MessageType::SignupReq:
+                    HandleRegister(current_job.client_fd, current_job.payload);
+                    break;
+
+                case net_ops::protocol::MessageType::GroupCreateReq:
+                    HandleGroupCreate(current_job.client_fd, current_job.payload);
+                    break;
+
+                case net_ops::protocol::MessageType::GroupListReq:
+                    HandleGroupList(current_job.client_fd);
+                    break;
+
+                default:
+                    break;
                 }
-            } catch (const std::exception& e) {
+            }
+            catch (const std::exception &e)
+            {
                 std::cerr << "[Worker] Error processing job: " << e.what() << "\n";
             }
         }
     }
 
-    void Worker::HandleLogin(int client_fd, const std::vector<uint8_t>& payload) {
+    void Worker::HandleLogin(int client_fd, const std::vector<uint8_t> &payload)
+    {
         size_t offset = 0;
         std::string username = ReadString(payload, offset);
         std::string password = ReadString(payload, offset);
 
-        if (username.empty() || password.empty()) {
-            if (network_core_) {
+        if (username.empty() || password.empty())
+        {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "Invalid payload format");
             }
             return;
         }
 
-        auto& db = DatabaseManager::GetInstance();
+        auto &db = DatabaseManager::GetInstance();
         auto user = db.GetUserByName(username);
 
-        if (!user.has_value()) {
+        if (!user.has_value())
+        {
             std::cout << "[Worker] Login Failed: User '" << username << "' not found.\n";
-            if (network_core_) {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_FAILURE: User not found");
             }
             return;
@@ -127,51 +157,128 @@ namespace net_ops::server {
 
         std::vector<uint8_t> computed_hash = ComputeHash(password, user->salt);
 
-        if (computed_hash == user->password_hash) {
+        if (computed_hash == user->password_hash)
+        {
             std::cout << "[Worker] Login SUCCESS for user: " << username << "\n";
-            if (network_core_) {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_SUCCESS");
             }
-        } else {
+        }
+        else
+        {
             std::cout << "[Worker] Login Failed: Incorrect password for " << username << "\n";
-            if (network_core_) {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_FAILURE: Incorrect Password");
             }
         }
     }
 
-    void Worker::HandleRegister(int client_fd, const std::vector<uint8_t>& payload) {
+    void Worker::HandleRegister(int client_fd, const std::vector<uint8_t> &payload)
+    {
         size_t offset = 0;
         std::string username = ReadString(payload, offset);
         std::string password = ReadString(payload, offset);
 
-        if (username.empty() || password.empty()) {
-            if (network_core_) {
+        if (username.empty() || password.empty())
+        {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "Invalid payload format");
             }
             return;
         }
 
-        auto& db = DatabaseManager::GetInstance();
+        auto &db = DatabaseManager::GetInstance();
 
         std::vector<uint8_t> salt(16);
-        if (RAND_bytes(salt.data(), 16) != 1) {
+        if (RAND_bytes(salt.data(), 16) != 1)
+        {
             std::cerr << "[Worker] OpenSSL RNG failed.\n";
             return;
         }
 
         std::vector<uint8_t> hash = ComputeHash(password, salt);
 
-        if (db.CreateUser(username, hash, salt)) {
+        if (db.CreateUser(username, hash, salt))
+        {
             std::cout << "[Worker] Register SUCCESS: Created user '" << username << "'\n";
-            if (network_core_) {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::SignupResp, "SIGNUP_SUCCESS");
             }
-        } else {
+        }
+        else
+        {
             std::cout << "[Worker] Register Failed: User '" << username << "' probably exists.\n";
-            if (network_core_) {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::SignupResp, "SIGNUP_FAILURE: User exists");
             }
+        }
+    }
+
+    void Worker::HandleGroupCreate(int client_fd, const std::vector<uint8_t> &payload)
+    {
+        size_t offset = 0;
+        std::string group_name = ReadString(payload, offset);
+
+        if (group_name.empty())
+        {
+            if (network_core_)
+            {
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "Invalid Group Name");
+            }
+            return;
+        }
+
+        // NOTE: In the future, we will extract UserID from a Session Token.
+        // For now, we hardcode Owner ID = 1 (likely the first admin created).
+        int owner_id = 1;
+
+        auto &db = DatabaseManager::GetInstance();
+        int group_id = db.CreateGroup(group_name, owner_id);
+
+        if (group_id != -1)
+        {
+            std::cout << "[Worker] Group Created: " << group_name << " (ID: " << group_id << ")\n";
+            if (network_core_)
+            {
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::GroupCreateResp, "GROUP_CREATED");
+            }
+        }
+        else
+        {
+            std::cout << "[Worker] Group Creation Failed (Name taken?)\n";
+            if (network_core_)
+            {
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "GROUP_CREATION_FAILED");
+            }
+        }
+    }
+
+    void Worker::HandleGroupList(int client_fd)
+    {
+        auto &db = DatabaseManager::GetInstance();
+        auto groups = db.ListAllGroups();
+
+        std::string response;
+        if (groups.empty())
+        {
+            response = "NO_GROUPS";
+        }
+        else
+        {
+            for (const auto &g : groups)
+            {
+                response += std::to_string(g.id) + ":" + g.name + ",";
+            }
+        }
+
+        if (network_core_)
+        {
+            network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::GroupListResp, response);
         }
     }
 }

@@ -1,74 +1,83 @@
 #include <iostream>
 #include <string>
-#include <limits>
 #include "ClientNetwork.hpp"
 
-void ClearInput() {
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+std::string GetInput(const std::string& prompt) {
+    std::cout << prompt;
+    std::string line;
+    std::getline(std::cin, line);
+    return line;
+}
+
+void DashboardLoop(net_ops::client::ClientNetwork& client) {
+    bool in_dashboard = true;
+    while (in_dashboard) {
+        std::cout << "\n--- DASHBOARD ---\n";
+        std::cout << "1. Create Group\n";
+        std::cout << "2. List Groups\n";
+        std::cout << "3. Logout\n";
+        std::cout << "Select: ";
+
+        std::string choice;
+        std::getline(std::cin, choice);
+
+        if (choice == "1") {
+            std::string name = GetInput("Enter Group Name: ");
+            client.SendCreateGroup(name);
+            client.ReceiveResponse();
+        } 
+        else if (choice == "2") {
+            std::cout << "Requesting Group List...\n";
+            client.SendListGroups();
+            client.ReceiveResponse();
+        } 
+        else if (choice == "3") {
+            in_dashboard = false;
+        } 
+        else {
+            std::cout << "Invalid option.\n";
+        }
+    }
 }
 
 int main() {
-    std::cout << "--- WANFRAME Client ---\n";
-    std::cout << "Connecting to 127.0.0.1:8080...\n";
-
     net_ops::client::ClientNetwork client("127.0.0.1", 8080);
-    
+
     if (!client.Connect()) {
-        std::cerr << "[Fatal] Could not connect to server. Is it running?\n";
+        std::cerr << "Failed to connect to server.\n";
         return -1;
     }
 
     bool running = true;
     while (running) {
-        std::cout << "\n[MENU]\n";
+        std::cout << "\n--- MAIN MENU ---\n";
         std::cout << "1. Login\n";
         std::cout << "2. Register\n";
         std::cout << "3. Exit\n";
-        std::cout << "Select option: ";
+        std::cout << "Select: ";
 
-        int choice;
-        if (!(std::cin >> choice)) {
-            std::cin.clear();
-            ClearInput();
-            continue;
-        }
-        ClearInput();
+        std::string choice;
+        std::getline(std::cin, choice);
 
-        std::string username, password;
-
-        if (choice == 1 || choice == 2) {
-            std::cout << "Username: ";
-            std::getline(std::cin, username);
-            std::cout << "Password: ";
-            std::getline(std::cin, password);
-        }
-
-        switch (choice) {
-            case 1:
-                if (client.SendLogin(username, password)) {
-                    std::cout << "[Client] >> Login Request Sent. Waiting for response...\n";
-                    client.ReceiveResponse(); 
-                } else {
-                    std::cerr << "[Client] Failed to send data.\n";
-                }
-                break;
-
-            case 2:
-                if (client.SendRegister(username, password)) {
-                    std::cout << "[Client] >> Register Request Sent. Waiting for response...\n";
-                    client.ReceiveResponse();
-                } else {
-                    std::cerr << "[Client] Failed to send data.\n";
-                }
-                break;
-
-            case 3:
-                running = false;
-                break;
-
-            default:
-                std::cout << "Invalid option.\n";
-                break;
+        if (choice == "1") {
+            std::string u = GetInput("Username: ");
+            std::string p = GetInput("Password: ");
+            
+            client.SendLogin(u, p);
+            
+            client.ReceiveResponse(); 
+            
+            std::cout << "\n>>> Entering Dashboard... <<<\n";
+            DashboardLoop(client);
+        } 
+        else if (choice == "2") {
+            std::string u = GetInput("New Username: ");
+            std::string p = GetInput("New Password: ");
+            client.SendRegister(u, p);
+            client.ReceiveResponse();
+        } 
+        else if (choice == "3") {
+            running = false;
         }
     }
 
