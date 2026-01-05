@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include "ClientNetwork.hpp"
+#include "Scanner.hpp"
 
 std::string GetInput(const std::string& prompt) {
     std::cout << prompt;
@@ -18,7 +19,8 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
         std::cout << "3. Add Member to Group\n";
         std::cout << "4. Add Device (Manual)\n";
         std::cout << "5. List All Devices\n";
-        std::cout << "6. Logout\n";
+        std::cout << "6. Auto-Scan Network\n";
+        std::cout << "7. Logout\n";
         std::cout << "Select: ";
 
         std::string choice;
@@ -67,6 +69,28 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
             client.ReceiveResponse();
         }
         else if (choice == "6") {
+            std::string subnet = GetInput("Enter Subnet to Scan (e.g., 192.168.1): ");
+            
+            std::cout << "Scanning... (This may take a moment)\n";
+            auto hosts = net_ops::client::NetworkScanner::ScanSubnet(subnet);
+            
+            if (hosts.empty()) {
+                std::cout << "No active devices found in range.\n";
+            } else {
+                std::cout << "Found " << hosts.size() << " devices. Uploading to Server...\n";
+                for (const auto& host : hosts) {
+                    std::cout << "Uploading " << host.ip << "... ";
+                    client.SendAddDevice(host.name, host.ip, 0);
+                    if (client.ReceiveResponse()) {
+                        std::cout << "OK\n";
+                    } else {
+                        std::cout << "Failed\n";
+                    }
+                }
+                std::cout << "Upload Complete.\n";
+            }
+        }
+        else if (choice == "7") {
             in_dashboard = false;
         } 
         else {
@@ -79,7 +103,7 @@ int main() {
     net_ops::client::ClientNetwork client("127.0.0.1", 8080);
 
     if (!client.Connect()) {
-        std::cerr << "Failed to connect to server.\n";
+        std::cerr << "Failed to connect to server. Is it running?\n";
         return -1;
     }
 
