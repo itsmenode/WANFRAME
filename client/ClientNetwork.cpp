@@ -201,28 +201,26 @@ namespace net_ops::client
         return true;
     }
 
-    void ClientNetwork::ReceiveResponse()
+    bool ClientNetwork::ReceiveResponse()
     {
-        if (!m_ssl_handle)
-            return;
+        if (!m_ssl_handle) return false;
 
         net_ops::protocol::Header header;
         uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
 
         int bytesRead = SSL_read(m_ssl_handle, headerBuf, sizeof(headerBuf));
-
-        if (bytesRead <= 0)
-        {
-            std::cerr << "[Client] Server disconnected.\n";
+        
+        if (bytesRead <= 0) {
+            std::cerr << "[Client] Server disconnected or read error.\n";
             Disconnect();
-            return;
+            return false;
         }
+
         header = net_ops::protocol::DeserializeHeader(headerBuf);
 
-        if (header.magic != net_ops::protocol::EXPECTED_MAGIC)
-        {
+        if (header.magic != net_ops::protocol::EXPECTED_MAGIC) {
             std::cerr << "[Client] Error: Invalid Protocol Magic Number.\n";
-            return;
+            return false;
         }
 
         std::vector<uint8_t> payload;
@@ -230,26 +228,20 @@ namespace net_ops::client
         {
             payload.resize(header.payload_length);
             int total = 0;
-            while (total < header.payload_length)
-            {
+            while (total < header.payload_length) {
                 int n = SSL_read(m_ssl_handle, payload.data() + total, header.payload_length - total);
-                if (n <= 0)
-                    break;
+                if (n <= 0) break; 
                 total += n;
             }
         }
 
         std::string msg(payload.begin(), payload.end());
-
         std::cout << "[Server Reply] " << msg << "\n";
 
-        if (msg.find("SUCCESS") != std::string::npos)
-        {
-            std::cout << "\n>>> ACCESS GRANTED <<<\n\n";
-        }
-        else
-        {
-            std::cout << "\n>>> ACCESS DENIED <<<\n\n";
-        }
+        if (msg.find("SUCCESS") != std::string::npos) {
+            return true;
+        } 
+        
+        return false;
     }
 }

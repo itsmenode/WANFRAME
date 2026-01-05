@@ -65,11 +65,13 @@ int main() {
             
             client.SendLogin(u, p);
             
-            client.ReceiveResponse(); 
-            
-            std::cout << "\n>>> Entering Dashboard... <<<\n";
-            DashboardLoop(client);
-        } 
+            if (client.ReceiveResponse()) {
+                std::cout << "\n>>> Entering Dashboard... <<<\n";
+                DashboardLoop(client);
+            } else {
+                std::cout << "\n>>> Login Failed. Access Denied. <<<\n";
+            }
+        }
         else if (choice == "2") {
             std::string u = GetInput("New Username: ");
             std::string p = GetInput("New Password: ");

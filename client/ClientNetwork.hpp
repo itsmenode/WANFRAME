@@ -36,6 +36,6 @@ namespace net_ops::client
         bool SendCreateGroup(const std::string &groupName);
         bool SendListGroups();
 
-        void ReceiveResponse();
+        bool ReceiveResponse();
     };
 }
