@@ -37,6 +37,9 @@ namespace net_ops::server {
         void HandleGroupList(int client_fd, const std::vector<uint8_t>& payload);
         void HandleGroupAddMember(int client_fd, const std::vector<uint8_t>& payload);
 
+        void HandleDeviceAdd(int client_fd, const std::vector<uint8_t>& payload);
+        void HandleDeviceList(int client_fd, const std::vector<uint8_t>& payload);
+
     public:
         Worker();
         ~Worker();
