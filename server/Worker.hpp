@@ -33,7 +33,8 @@ namespace net_ops::server {
         void HandleRegister(int client_fd, const std::vector<uint8_t>& payload);
 
         void HandleGroupCreate(int client_fd, const std::vector<uint8_t>& payload);
-        void HandleGroupList(int client_fd);
+        
+        void HandleGroupList(int client_fd, const std::vector<uint8_t>& payload);
 
     public:
         Worker();

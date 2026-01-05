@@ -189,14 +189,18 @@ namespace net_ops::server {
         return success;
     }
 
-    std::vector<GroupRecord> DatabaseManager::ListAllGroups() {
+    std::vector<GroupRecord> DatabaseManager::GetGroupsForUser(int user_id) {
         std::lock_guard<std::mutex> lock(db_mutex_);
         std::vector<GroupRecord> groups;
 
         sqlite3_stmt* stmt;
-        if (sqlite3_prepare_v2(db_, "SELECT id, name, owner_id FROM groups;", -1, &stmt, nullptr) != SQLITE_OK) {
+        const char* sql = "SELECT id, name, owner_id FROM groups WHERE owner_id = ?;";
+
+        if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK) {
             return groups;
         }
+
+        sqlite3_bind_int(stmt, 1, user_id);
 
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             GroupRecord g;

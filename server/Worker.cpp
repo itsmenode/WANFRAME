@@ -114,7 +114,8 @@ namespace net_ops::server
                     break;
 
                 case net_ops::protocol::MessageType::GroupListReq:
-                    HandleGroupList(current_job.client_fd);
+                    // CHANGED: Now passing payload
+                    HandleGroupList(current_job.client_fd, current_job.payload);
                     break;
 
                 default:
@@ -219,7 +220,6 @@ namespace net_ops::server
         size_t offset = 0;
         
         std::string token = ReadString(payload, offset);
-        
         std::string group_name = ReadString(payload, offset);
 
         if (token.empty() || group_name.empty()) {
@@ -257,10 +257,23 @@ namespace net_ops::server
         }
     }
 
-    void Worker::HandleGroupList(int client_fd)
+    void Worker::HandleGroupList(int client_fd, const std::vector<uint8_t>& payload)
     {
+        size_t offset = 0;
+        std::string token = ReadString(payload, offset);
+
+        auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
+        if (!userIdOpt.has_value()) {
+            if (network_core_) {
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
+            }
+            return;
+        }
+
+        int userId = userIdOpt.value();
+
         auto &db = DatabaseManager::GetInstance();
-        auto groups = db.ListAllGroups();
+        auto groups = db.GetGroupsForUser(userId);
 
         std::string response;
         if (groups.empty())

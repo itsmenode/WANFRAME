@@ -48,6 +48,6 @@ namespace net_ops::server {
 
             int CreateGroup(const std::string& group_name, int owner_id);
             bool AddMemberToGroup(int user_id, int group_id);
-            std::vector<GroupRecord> ListAllGroups();
+            std::vector<GroupRecord> GetGroupsForUser(int user_id);
     };
 }
