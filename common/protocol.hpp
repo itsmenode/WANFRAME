@@ -19,39 +19,16 @@ namespace net_ops::protocol
         uint8_t reserved;
     };
 
-    enum class MessageType : std::uint8_t
-    {
-        Test = 0x00,
-
+    enum class MessageType : uint8_t {
         LoginReq = 0x01,
         LoginResp = 0x02,
-        LogoutReq = 0x03,
-        LogoutResp = 0x04,
-        SignupReq = 0x07,
-        SignupResp = 0x08,
-
-        HeartbeatReq = 0x05,
-        HeartbeatResp = 0x06,
-
-        DeviceReportReq = 0x10,
-        DeviceReportResp = 0x11,
-
-        GroupListReq = 0x20,
-        GroupListResp = 0x21,
-        GroupCreateReq = 0x22,
-        GroupCreateResp = 0x23,
-        GroupDeleteReq = 0x24,
-        GroupDeleteResp = 0x25,
-        GroupUpdateReq = 0x26,
-        GroupUpdateResp = 0x27,
-        GroupMembershipSetReq = 0x28,
-        GroupMembershipSetResp = 0x29,
-
-        LogQueryReq = 0x30,
-        LogQueryResp = 0x31,
-        LiveLogSubscribeReq = 0x32,
-        LiveLogSubscribeResp = 0x33,
-        LiveLogEvent = 0x34,
+        SignupReq = 0x03,
+        SignupResp = 0x04,
+        
+        GroupCreateReq = 0x05, 
+        GroupCreateResp = 0x06,
+        GroupListReq = 0x07,
+        GroupListResp = 0x08,
 
         ErrorResp = 0xFF
     };
