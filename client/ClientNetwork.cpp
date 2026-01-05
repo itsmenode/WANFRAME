@@ -209,6 +209,40 @@ namespace net_ops::client
         return true;
     }
 
+    bool ClientNetwork::SendAddMember(int groupId, const std::string& username)
+    {
+        if (!m_ssl_handle) return false;
+
+        if (m_session_token.empty()) {
+            std::cerr << "[Client] Error: No session token.\n";
+            return false;
+        }
+
+        std::vector<uint8_t> payload;
+        
+        AppendString(payload, m_session_token);
+
+        size_t currentSize = payload.size();
+        payload.resize(currentSize + 4);
+        std::memcpy(payload.data() + currentSize, &groupId, 4);
+
+        AppendString(payload, username);
+
+        net_ops::protocol::Header header;
+        header.magic = net_ops::protocol::EXPECTED_MAGIC;
+        header.msg_type = static_cast<uint8_t>(net_ops::protocol::MessageType::GroupAddMemberReq);
+        header.payload_length = static_cast<uint32_t>(payload.size());
+        header.reserved = 0;
+
+        uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
+        net_ops::protocol::SerializeHeader(header, headerBuf);
+
+        if (SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf)) <= 0) return false;
+        if (SSL_write(m_ssl_handle, payload.data(), payload.size()) <= 0) return false;
+
+        return true;
+    }
+
     bool ClientNetwork::ReceiveResponse()
     {
         if (!m_ssl_handle) return false;

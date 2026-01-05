@@ -38,6 +38,8 @@ namespace net_ops::client
         bool SendCreateGroup(const std::string& groupName);
         bool SendListGroups();
 
+        bool SendAddMember(int groupId, const std::string& username);
+
         bool ReceiveResponse(); 
     };
 }
