@@ -69,7 +69,6 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
             client.ReceiveResponse();
         }
         else if (choice == "6") {
-            // No input needed anymore!
             std::cout << "Starting Auto-Discovery...\n";
             
             auto hosts = net_ops::client::NetworkScanner::ScanLocalNetwork();
