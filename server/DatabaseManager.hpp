@@ -17,10 +17,17 @@ namespace net_ops::server {
         std::vector<uint8_t> salt;
     };
 
+    struct GroupRecord {
+        int id;
+        std::string name;
+        int owner_id;
+    };
+
     class DatabaseManager {
         private:
             sqlite3* db_;
             std::mutex db_mutex_;
+            
             sqlite3_stmt* stmt_insert_user_;
             sqlite3_stmt* stmt_get_user_;
 
@@ -37,5 +44,10 @@ namespace net_ops::server {
 
             bool CreateUser(const std::string& username, const std::vector<uint8_t>& hash, const std::vector<uint8_t>& salt);
             std::optional<UserRecord> GetUserByName(const std::string& username);
+            std::optional<UserRecord> GetUserById(int id);
+
+            int CreateGroup(const std::string& group_name, int owner_id);
+            bool AddMemberToGroup(int user_id, int group_id);
+            std::vector<GroupRecord> ListAllGroups();
     };
 }

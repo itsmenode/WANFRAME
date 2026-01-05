@@ -24,16 +24,32 @@ namespace net_ops::server {
 
         sqlite3_exec(db_, "PRAGMA journal_mode=WAL;", nullptr, nullptr, nullptr);
 
-        const char* sql_table = 
+        const char* sql_tables = 
             "CREATE TABLE IF NOT EXISTS users ("
             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
             "username TEXT UNIQUE NOT NULL, "
             "password_hash BLOB NOT NULL, "
             "salt BLOB NOT NULL"
+            ");"
+            
+            "CREATE TABLE IF NOT EXISTS groups ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "name TEXT UNIQUE NOT NULL, "
+            "owner_id INTEGER, "
+            "FOREIGN KEY(owner_id) REFERENCES users(id)"
+            ");"
+
+            "CREATE TABLE IF NOT EXISTS group_members ("
+            "group_id INTEGER, "
+            "user_id INTEGER, "
+            "joined_at DATETIME DEFAULT CURRENT_TIMESTAMP, "
+            "PRIMARY KEY (group_id, user_id), "
+            "FOREIGN KEY(group_id) REFERENCES groups(id), "
+            "FOREIGN KEY(user_id) REFERENCES users(id)"
             ");";
         
         char* err_msg = nullptr;
-        if (sqlite3_exec(db_, sql_table, nullptr, nullptr, &err_msg) != SQLITE_OK) {
+        if (sqlite3_exec(db_, sql_tables, nullptr, nullptr, &err_msg) != SQLITE_OK) {
             std::cerr << "[DB] Schema error: " << err_msg << std::endl;
             sqlite3_free(err_msg);
             return false;
@@ -47,8 +63,14 @@ namespace net_ops::server {
 
     void DatabaseManager::Shutdown() {
         std::lock_guard<std::mutex> lock(db_mutex_);
-        if (stmt_insert_user_) sqlite3_finalize(stmt_insert_user_);
-        if (stmt_get_user_) sqlite3_finalize(stmt_get_user_);
+        if (stmt_insert_user_) {
+            sqlite3_finalize(stmt_insert_user_);
+            stmt_insert_user_ = nullptr;
+        }
+        if (stmt_get_user_) {
+            sqlite3_finalize(stmt_get_user_);
+            stmt_get_user_ = nullptr;
+        }
         
         if (db_) {
             sqlite3_close(db_);
@@ -93,5 +115,101 @@ namespace net_ops::server {
         }
         
         return std::nullopt;
+    }
+
+    std::optional<UserRecord> DatabaseManager::GetUserById(int id) {
+        std::lock_guard<std::mutex> lock(db_mutex_);
+        
+        sqlite3_stmt* stmt;
+        if (sqlite3_prepare_v2(db_, "SELECT id, username, password_hash, salt FROM users WHERE id = ?;", -1, &stmt, nullptr) != SQLITE_OK) {
+            return std::nullopt;
+        }
+        
+        sqlite3_bind_int(stmt, 1, id);
+
+        std::optional<UserRecord> result = std::nullopt;
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            UserRecord user;
+            user.id = sqlite3_column_int(stmt, 0);
+
+            const char* name_ptr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            if (name_ptr) user.username = name_ptr;
+
+            const void* hash_ptr = sqlite3_column_blob(stmt, 2);
+            int hash_size = sqlite3_column_bytes(stmt, 2);
+            user.password_hash.assign((const uint8_t*)hash_ptr, (const uint8_t*)hash_ptr + hash_size);
+
+            const void* salt_ptr = sqlite3_column_blob(stmt, 3);
+            int salt_size = sqlite3_column_bytes(stmt, 3);
+            user.salt.assign((const uint8_t*)salt_ptr, (const uint8_t*)salt_ptr + salt_size);
+
+            result = user;
+        }
+        sqlite3_finalize(stmt);
+        return result;
+    }
+
+
+    int DatabaseManager::CreateGroup(const std::string& group_name, int owner_id) {
+        std::lock_guard<std::mutex> lock(db_mutex_);
+
+        sqlite3_stmt* stmt;
+        if (sqlite3_prepare_v2(db_, "INSERT INTO groups (name, owner_id) VALUES (?, ?);", -1, &stmt, nullptr) != SQLITE_OK) {
+            return -1;
+        }
+
+        sqlite3_bind_text(stmt, 1, group_name.c_str(), group_name.size(), SQLITE_STATIC);
+        sqlite3_bind_int(stmt, 2, owner_id);
+
+        int new_id = -1;
+        if (sqlite3_step(stmt) == SQLITE_DONE) {
+            new_id = (int)sqlite3_last_insert_rowid(db_);
+            std::cout << "[DB] Created Group '" << group_name << "' with ID: " << new_id << std::endl;
+        } else {
+            std::cerr << "[DB] CreateGroup error: " << sqlite3_errmsg(db_) << std::endl;
+        }
+
+        sqlite3_finalize(stmt);
+        return new_id;
+    }
+
+    bool DatabaseManager::AddMemberToGroup(int user_id, int group_id) {
+        std::lock_guard<std::mutex> lock(db_mutex_);
+
+        sqlite3_stmt* stmt;
+        if (sqlite3_prepare_v2(db_, "INSERT OR IGNORE INTO group_members (group_id, user_id) VALUES (?, ?);", -1, &stmt, nullptr) != SQLITE_OK) {
+            return false;
+        }
+
+        sqlite3_bind_int(stmt, 1, group_id);
+        sqlite3_bind_int(stmt, 2, user_id);
+
+        bool success = (sqlite3_step(stmt) == SQLITE_DONE);
+        sqlite3_finalize(stmt);
+        return success;
+    }
+
+    std::vector<GroupRecord> DatabaseManager::ListAllGroups() {
+        std::lock_guard<std::mutex> lock(db_mutex_);
+        std::vector<GroupRecord> groups;
+
+        sqlite3_stmt* stmt;
+        if (sqlite3_prepare_v2(db_, "SELECT id, name, owner_id FROM groups;", -1, &stmt, nullptr) != SQLITE_OK) {
+            return groups;
+        }
+
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            GroupRecord g;
+            g.id = sqlite3_column_int(stmt, 0);
+            
+            const char* name_ptr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            if (name_ptr) g.name = name_ptr;
+            
+            g.owner_id = sqlite3_column_int(stmt, 2);
+            groups.push_back(g);
+        }
+
+        sqlite3_finalize(stmt);
+        return groups;
     }
 }
