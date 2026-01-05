@@ -194,13 +194,20 @@ namespace net_ops::server {
         std::vector<GroupRecord> groups;
 
         sqlite3_stmt* stmt;
-        const char* sql = "SELECT id, name, owner_id FROM groups WHERE owner_id = ?;";
+        
+        const char* sql = 
+            "SELECT DISTINCT g.id, g.name, g.owner_id "
+            "FROM groups g "
+            "LEFT JOIN group_members gm ON g.id = gm.group_id "
+            "WHERE g.owner_id = ? OR gm.user_id = ?;";
 
         if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+            std::cerr << "[DB] Prepare ListGroups failed: " << sqlite3_errmsg(db_) << "\n";
             return groups;
         }
 
         sqlite3_bind_int(stmt, 1, user_id);
+        sqlite3_bind_int(stmt, 2, user_id);
 
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             GroupRecord g;
@@ -215,5 +222,20 @@ namespace net_ops::server {
 
         sqlite3_finalize(stmt);
         return groups;
+    }
+
+    bool DatabaseManager::IsGroupOwner(int group_id, int user_id) {
+        std::lock_guard<std::mutex> lock(db_mutex_);
+        sqlite3_stmt* stmt;
+        const char* sql = "SELECT 1 FROM groups WHERE id = ? AND owner_id = ?;";
+        
+        if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK) return false;
+        
+        sqlite3_bind_int(stmt, 1, group_id);
+        sqlite3_bind_int(stmt, 2, user_id);
+        
+        bool is_owner = (sqlite3_step(stmt) == SQLITE_ROW);
+        sqlite3_finalize(stmt);
+        return is_owner;
     }
 }

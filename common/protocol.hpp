@@ -30,6 +30,9 @@ namespace net_ops::protocol
         GroupListReq = 0x07,
         GroupListResp = 0x08,
 
+        GroupAddMemberReq = 0x09,
+        GroupAddMemberResp = 0x0A,
+
         ErrorResp = 0xFF
     };
 
