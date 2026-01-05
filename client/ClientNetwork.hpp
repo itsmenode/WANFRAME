@@ -40,6 +40,9 @@ namespace net_ops::client
 
         bool SendAddMember(int groupId, const std::string& username);
 
+        bool SendAddDevice(const std::string& name, const std::string& ip, int groupId = 0);
+        bool SendListDevices();
+
         bool ReceiveResponse(); 
     };
 }

@@ -16,7 +16,9 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
         std::cout << "1. Create Group\n";
         std::cout << "2. List My Groups\n";
         std::cout << "3. Add Member to Group\n";
-        std::cout << "4. Logout\n";
+        std::cout << "4. Add Device (Manual)\n";
+        std::cout << "5. List All Devices\n";
+        std::cout << "6. Logout\n";
         std::cout << "Select: ";
 
         std::string choice;
@@ -41,10 +43,30 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
                 client.SendAddMember(gid, userToAdd);
                 client.ReceiveResponse();
             } catch (...) {
-                std::cout << "Invalid Group ID format. Please enter a number.\n";
+                std::cout << "Invalid Group ID format.\n";
             }
         }
         else if (choice == "4") {
+            std::string name = GetInput("Device Name: ");
+            std::string ip = GetInput("IP Address: ");
+            std::string gidStr = GetInput("Group ID (0 for none): ");
+            
+            try {
+                int gid = std::stoi(gidStr);
+                client.SendAddDevice(name, ip, gid);
+                client.ReceiveResponse();
+            } catch (...) {
+                std::cout << "Invalid Group ID. Using 0.\n";
+                client.SendAddDevice(name, ip, 0);
+                client.ReceiveResponse();
+            }
+        }
+        else if (choice == "5") {
+            std::cout << "Fetching Device Inventory...\n";
+            client.SendListDevices();
+            client.ReceiveResponse();
+        }
+        else if (choice == "6") {
             in_dashboard = false;
         } 
         else {
@@ -57,7 +79,7 @@ int main() {
     net_ops::client::ClientNetwork client("127.0.0.1", 8080);
 
     if (!client.Connect()) {
-        std::cerr << "Failed to connect to server. Is it running?\n";
+        std::cerr << "Failed to connect to server.\n";
         return -1;
     }
 
@@ -82,7 +104,7 @@ int main() {
                 std::cout << "\n>>> Entering Dashboard... <<<\n";
                 DashboardLoop(client);
             } else {
-                std::cout << "\n>>> Login Failed. Access Denied. <<<\n";
+                std::cout << "\n>>> Login Failed. <<<\n";
             }
         } 
         else if (choice == "2") {
