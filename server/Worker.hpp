@@ -35,6 +35,7 @@ namespace net_ops::server {
         void HandleGroupCreate(int client_fd, const std::vector<uint8_t>& payload);
         
         void HandleGroupList(int client_fd, const std::vector<uint8_t>& payload);
+        void HandleGroupAddMember(int client_fd, const std::vector<uint8_t>& payload);
 
     public:
         Worker();

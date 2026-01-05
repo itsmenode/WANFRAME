@@ -114,8 +114,11 @@ namespace net_ops::server
                     break;
 
                 case net_ops::protocol::MessageType::GroupListReq:
-                    // CHANGED: Now passing payload
                     HandleGroupList(current_job.client_fd, current_job.payload);
+                    break;
+
+                case net_ops::protocol::MessageType::GroupAddMemberReq:
+                    HandleGroupAddMember(current_job.client_fd, current_job.payload);
                     break;
 
                 default:
@@ -129,24 +132,29 @@ namespace net_ops::server
         }
     }
 
-    void Worker::HandleLogin(int client_fd, const std::vector<uint8_t>& payload) {
+    void Worker::HandleLogin(int client_fd, const std::vector<uint8_t> &payload)
+    {
         size_t offset = 0;
         std::string username = ReadString(payload, offset);
         std::string password = ReadString(payload, offset);
 
-        if (username.empty() || password.empty()) {
-            if (network_core_) {
+        if (username.empty() || password.empty())
+        {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "Invalid payload format");
             }
             return;
         }
 
-        auto& db = DatabaseManager::GetInstance();
+        auto &db = DatabaseManager::GetInstance();
         auto user = db.GetUserByName(username);
 
-        if (!user.has_value()) {
+        if (!user.has_value())
+        {
             std::cout << "[Worker] Login Failed: User '" << username << "' not found.\n";
-            if (network_core_) {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_FAILURE: User not found");
             }
             return;
@@ -154,19 +162,24 @@ namespace net_ops::server
 
         std::vector<uint8_t> computed_hash = ComputeHash(password, user->salt);
 
-        if (computed_hash == user->password_hash) {
+        if (computed_hash == user->password_hash)
+        {
             std::cout << "[Worker] Login SUCCESS for user: " << username << "\n";
-            
+
             std::string token = SessionManager::GetInstance().CreateSession(user->id);
-            
+
             std::string response = "LOGIN_SUCCESS:" + token;
 
-            if (network_core_) {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, response);
             }
-        } else {
+        }
+        else
+        {
             std::cout << "[Worker] Login Failed: Incorrect password for " << username << "\n";
-            if (network_core_) {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_FAILURE: Incorrect Password");
             }
         }
@@ -216,24 +229,29 @@ namespace net_ops::server
         }
     }
 
-    void Worker::HandleGroupCreate(int client_fd, const std::vector<uint8_t>& payload) {
+    void Worker::HandleGroupCreate(int client_fd, const std::vector<uint8_t> &payload)
+    {
         size_t offset = 0;
-        
+
         std::string token = ReadString(payload, offset);
         std::string group_name = ReadString(payload, offset);
 
-        if (token.empty() || group_name.empty()) {
-            if (network_core_) {
+        if (token.empty() || group_name.empty())
+        {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "Invalid payload");
             }
             return;
         }
 
         auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
-        
-        if (!userIdOpt.has_value()) {
+
+        if (!userIdOpt.has_value())
+        {
             std::cout << "[Worker] Group Create Denied: Invalid Session Token.\n";
-            if (network_core_) {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED: Invalid Token");
             }
             return;
@@ -241,30 +259,37 @@ namespace net_ops::server
 
         int owner_id = userIdOpt.value();
 
-        auto& db = DatabaseManager::GetInstance();
+        auto &db = DatabaseManager::GetInstance();
         int group_id = db.CreateGroup(group_name, owner_id);
 
-        if (group_id != -1) {
+        if (group_id != -1)
+        {
             std::cout << "[Worker] Group Created: '" << group_name << "' by UserID: " << owner_id << "\n";
-            if (network_core_) {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::GroupCreateResp, "GROUP_CREATED");
             }
-        } else {
+        }
+        else
+        {
             std::cout << "[Worker] Group Creation Failed (Name taken?)\n";
-            if (network_core_) {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "GROUP_CREATION_FAILED");
             }
         }
     }
 
-    void Worker::HandleGroupList(int client_fd, const std::vector<uint8_t>& payload)
+    void Worker::HandleGroupList(int client_fd, const std::vector<uint8_t> &payload)
     {
         size_t offset = 0;
         std::string token = ReadString(payload, offset);
 
         auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
-        if (!userIdOpt.has_value()) {
-            if (network_core_) {
+        if (!userIdOpt.has_value())
+        {
+            if (network_core_)
+            {
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
             }
             return;
@@ -291,6 +316,48 @@ namespace net_ops::server
         if (network_core_)
         {
             network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::GroupListResp, response);
+        }
+    }
+
+    void Worker::HandleGroupAddMember(int client_fd, const std::vector<uint8_t>& payload) {
+        size_t offset = 0;
+        
+        std::string token = ReadString(payload, offset);
+
+        if (offset + 4 > payload.size()) return;
+        int group_id = 0;
+        std::memcpy(&group_id, &payload[offset], 4);
+        offset += 4;
+
+        std::string new_member_name = ReadString(payload, offset);
+
+        auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
+        if (!userIdOpt.has_value()) {
+            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
+            return;
+        }
+        int requestor_id = userIdOpt.value();
+
+        auto& db = DatabaseManager::GetInstance();
+
+        if (!db.IsGroupOwner(group_id, requestor_id)) {
+            std::cout << "[Worker] Access Denied: User " << requestor_id << " tried to modify Group " << group_id << "\n";
+            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "ACCESS_DENIED: Not Owner");
+            return;
+        }
+
+        auto targetUser = db.GetUserByName(new_member_name);
+        if (!targetUser.has_value()) {
+            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "USER_NOT_FOUND");
+            return;
+        }
+
+
+        if (db.AddMemberToGroup(targetUser->id, group_id)) {
+            std::cout << "[Worker] User " << new_member_name << " added to Group " << group_id << "\n";
+            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::GroupAddMemberResp, "MEMBER_ADDED");
+        } else {
+            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "ADD_FAILED");
         }
     }
 }
