@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <cstring>
 #include <vector>
+#include <iomanip>
 
 namespace net_ops::client
 {
@@ -354,7 +355,12 @@ namespace net_ops::client
         
         std::vector<uint8_t> payload;
         
-        AppendString(payload, m_session_token);
+        uint32_t tokenLen = htonl(static_cast<uint32_t>(m_session_token.length()));
+        
+        const uint8_t* lenBytes = reinterpret_cast<const uint8_t*>(&tokenLen);
+        payload.insert(payload.end(), lenBytes, lenBytes + 4);
+        
+        payload.insert(payload.end(), m_session_token.begin(), m_session_token.end());
         
         uint32_t netId = htonl(static_cast<uint32_t>(device_id));
         const uint8_t* idBytes = reinterpret_cast<const uint8_t*>(&netId);
@@ -371,6 +377,9 @@ namespace net_ops::client
 
         SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf));
         SSL_write(m_ssl_handle, payload.data(), payload.size());
+        
+        std::cout << "[Client Debug] Sent LogQueryReq. TokenLen: " << m_session_token.length() 
+                  << " DevID: " << device_id << " Total Payload: " << payload.size() << "\n";
     }
 
     bool ClientNetwork::ReceiveResponse()
@@ -402,41 +411,33 @@ namespace net_ops::client
 
         if (header.msg_type == static_cast<uint8_t>(net_ops::protocol::MessageType::LogQueryResp)) {
             size_t offset = 0;
+            if (offset + 4 > body.size()) { std::cout << "[Info] No logs found (Empty Response).\n"; return true; }
             
-            if (offset + 4 > body.size()) return false;
             uint32_t netCount = 0;
             std::memcpy(&netCount, &body[offset], 4);
             int count = static_cast<int>(ntohl(netCount));
             offset += 4;
 
             std::cout << "\n--- DEVICE LOGS (" << count << ") ---\n";
-            std::cout << "TIMESTAMP            | MESSAGE\n";
-            std::cout << "----------------------------------------------------\n";
+            std::cout << std::left << std::setw(22) << "TIMESTAMP" << " | MESSAGE\n";
+            std::cout << "-----------------------+-----------------------------------\n";
 
             for(int i=0; i<count; i++) {
+                // Read Timestamp
                 if (offset + 4 > body.size()) break;
-                uint32_t tsLen = 0;
-                std::memcpy(&tsLen, &body[offset], 4);
-                tsLen = ntohl(tsLen);
-                offset += 4;
-
+                uint32_t tsLen = 0; std::memcpy(&tsLen, &body[offset], 4); tsLen = ntohl(tsLen); offset += 4;
                 if (offset + tsLen > body.size()) break;
-                std::string ts(body.begin() + offset, body.begin() + offset + tsLen);
-                offset += tsLen;
+                std::string ts(body.begin() + offset, body.begin() + offset + tsLen); offset += tsLen;
 
+                // Read Message
                 if (offset + 4 > body.size()) break;
-                uint32_t msgLen = 0;
-                std::memcpy(&msgLen, &body[offset], 4);
-                msgLen = ntohl(msgLen);
-                offset += 4;
-
+                uint32_t msgLen = 0; std::memcpy(&msgLen, &body[offset], 4); msgLen = ntohl(msgLen); offset += 4;
                 if (offset + msgLen > body.size()) break;
-                std::string msg(body.begin() + offset, body.begin() + offset + msgLen);
-                offset += msgLen;
+                std::string msg(body.begin() + offset, body.begin() + offset + msgLen); offset += msgLen;
 
-                std::cout << "[" << ts << "] " << msg << "\n";
+                std::cout << std::left << std::setw(22) << ts << " | " << msg << "\n";
             }
-            std::cout << "----------------------------------------------------\n";
+            std::cout << "\n";
             return true;
         }
 
@@ -448,6 +449,6 @@ namespace net_ops::client
             return true;
         }
         
-        return true;
+        return true; 
     }
 }

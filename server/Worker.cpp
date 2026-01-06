@@ -510,31 +510,52 @@ namespace net_ops::server
     }
 
     void Worker::HandleLogQuery(int client_fd, const std::vector<uint8_t>& payload) {
+        std::cout << "[Worker Debug] Received LogQueryReq. Payload Size: " << payload.size() << "\n";
+
         size_t offset = 0;
 
-        if (offset + 4 > payload.size()) return;
+        if (offset + 4 > payload.size()) {
+            std::cerr << "[Worker Error] Payload too small for Token Length.\n";
+            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "PAYLOAD_TOO_SMALL");
+            return;
+        }
+
         uint32_t tokenLen = 0;
         std::memcpy(&tokenLen, &payload[offset], 4);
         tokenLen = ntohl(tokenLen);
         offset += 4;
 
-        if (offset + tokenLen > payload.size()) return;
+        if (offset + tokenLen > payload.size()) {
+            std::cerr << "[Worker Error] Token Length (" << tokenLen << ") exceeds payload.\n";
+            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "INVALID_TOKEN_LEN");
+            return;
+        }
+
         std::string token(payload.begin() + offset, payload.begin() + offset + tokenLen);
         offset += tokenLen;
 
-        if (offset + 4 > payload.size()) return;
+        if (offset + 4 > payload.size()) {
+            std::cerr << "[Worker Error] Payload too small for Device ID.\n";
+            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "MISSING_DEVICE_ID");
+            return;
+        }
+
         uint32_t netDevId = 0;
         std::memcpy(&netDevId, &payload[offset], 4);
         int device_id = static_cast<int>(ntohl(netDevId));
         offset += 4;
 
+        std::cout << "[Worker Debug] Token: " << token.substr(0, 5) << "... | Device ID: " << device_id << "\n";
+
         auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
         if (!userIdOpt.has_value()) {
+             std::cerr << "[Worker Error] Invalid Token.\n";
              if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
              return;
         }
 
         auto logs = DatabaseManager::GetInstance().GetLogsForDevice(device_id);
+        std::cout << "[Worker Debug] Found " << logs.size() << " logs in DB.\n";
 
         std::vector<uint8_t> response;
 
@@ -557,6 +578,7 @@ namespace net_ops::server
         if (network_core_) {
             std::string binaryPayload(response.begin(), response.end());
             network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LogQueryResp, binaryPayload);
+            std::cout << "[Worker Debug] Response Sent.\n";
         }
     }
 }
