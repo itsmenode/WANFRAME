@@ -63,6 +63,8 @@ namespace net_ops::server {
             std::vector<DeviceRecord> GetAllDevicesForUser(int user_id);
             std::vector<DeviceRecord> GetDevicesInGroup(int group_id);
 
+            void SaveLog(const std::string& ip_address, const std::string& message);
+
             bool IsGroupOwner(int group_id, int user_id);
     };
 }

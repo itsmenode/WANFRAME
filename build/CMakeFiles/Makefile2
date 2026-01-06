@@ -83,7 +83,7 @@ clean: CMakeFiles/Client.dir/clean
 CMakeFiles/Server.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=5,6,7,8,9,10,11 "Built target Server"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=6,7,8,9,10,11,12 "Built target Server"
 .PHONY : CMakeFiles/Server.dir/all
 
 # Build rule for subdir invocation for target.
@@ -109,12 +109,12 @@ CMakeFiles/Server.dir/clean:
 CMakeFiles/Client.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=1,2,3,4 "Built target Client"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=1,2,3,4,5 "Built target Client"
 .PHONY : CMakeFiles/Client.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/Client.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles 4
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles 5
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/Client.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles 0
 .PHONY : CMakeFiles/Client.dir/rule

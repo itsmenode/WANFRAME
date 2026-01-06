@@ -301,6 +301,29 @@ namespace net_ops::client
         return true;
     }
 
+    bool ClientNetwork::SendLogUpload(const std::string& source_ip, const std::string& log_msg) {
+        if (!m_ssl_handle) return false;
+        
+        std::vector<uint8_t> payload;
+        AppendString(payload, m_session_token);
+        AppendString(payload, source_ip);
+        AppendString(payload, log_msg);
+
+        net_ops::protocol::Header header;
+        header.magic = net_ops::protocol::EXPECTED_MAGIC;
+        header.msg_type = static_cast<uint8_t>(net_ops::protocol::MessageType::LogUploadReq);
+        header.payload_length = static_cast<uint32_t>(payload.size());
+        header.reserved = 0;
+
+        uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
+        net_ops::protocol::SerializeHeader(header, headerBuf);
+
+        if (SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf)) <= 0) return false;
+        if (SSL_write(m_ssl_handle, payload.data(), payload.size()) <= 0) return false;
+        
+        return true;
+    }
+
     bool ClientNetwork::ReceiveResponse()
     {
         if (!m_ssl_handle) return false;

@@ -57,6 +57,7 @@ add_executable(Client
     client/main.cpp
     client/ClientNetwork.cpp
     client/Scanner.cpp
+    client/SyslogCollector.cpp
     # common/ByteBuffer.cpp # Add this ONLY if ClientNetwork uses ByteBuffer later
 )
 

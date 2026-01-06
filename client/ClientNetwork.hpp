@@ -43,6 +43,8 @@ namespace net_ops::client
         bool SendAddDevice(const std::string& name, const std::string& ip, int groupId = 0);
         bool SendListDevices();
 
+        bool SendLogUpload(const std::string& source_ip, const std::string& log_msg);
+
         bool ReceiveResponse(); 
     };
 }

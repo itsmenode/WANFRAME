@@ -39,6 +39,9 @@ namespace net_ops::protocol
         DeviceListReq = 0x0D,
         DeviceListResp = 0x0E,
 
+        LogUploadReq = 0x0F,
+        LogUploadResp = 0x10,
+
         ErrorResp = 0xFF
     };
 

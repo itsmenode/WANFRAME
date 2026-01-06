@@ -74,6 +74,22 @@ namespace net_ops::server {
             return false;
         }
 
+        const char* logs_table_sql = 
+            "CREATE TABLE IF NOT EXISTS logs ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "device_id INTEGER, "
+            "received_at DATETIME DEFAULT CURRENT_TIMESTAMP, "
+            "message TEXT, "
+            "FOREIGN KEY(device_id) REFERENCES devices(id) ON DELETE CASCADE"
+            ");";
+
+        char* errMsg3 = nullptr;
+        if (sqlite3_exec(db_, logs_table_sql, nullptr, nullptr, &errMsg3) != SQLITE_OK) {
+            std::cerr << "[DB] Failed to create logs table: " << errMsg3 << "\n";
+            sqlite3_free(errMsg3);
+            return false;
+        }
+
         sqlite3_prepare_v2(db_, "INSERT INTO users (username, password_hash, salt) VALUES (?, ?, ?);", -1, &stmt_insert_user_, nullptr);
         sqlite3_prepare_v2(db_, "SELECT id, username, password_hash, salt FROM users WHERE username = ?;", -1, &stmt_get_user_, nullptr);
 
@@ -339,7 +355,36 @@ namespace net_ops::server {
     std::vector<DeviceRecord> DatabaseManager::GetDevicesInGroup(int group_id) {
         std::lock_guard<std::mutex> lock(db_mutex_);
         std::vector<DeviceRecord> devices;
-        
         return devices;
+    }
+
+
+    void DatabaseManager::SaveLog(const std::string& ip_address, const std::string& message) {
+        std::lock_guard<std::mutex> lock(db_mutex_);
+
+        const char* find_sql = "SELECT id FROM devices WHERE ip_address = ? LIMIT 1;";
+        sqlite3_stmt* stmt;
+        int device_id = -1;
+
+        if (sqlite3_prepare_v2(db_, find_sql, -1, &stmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, ip_address.c_str(), -1, SQLITE_STATIC);
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                device_id = sqlite3_column_int(stmt, 0);
+            }
+            sqlite3_finalize(stmt);
+        }
+
+        if (device_id == -1) {
+            return; 
+        }
+
+        const char* insert_sql = "INSERT INTO logs (device_id, message) VALUES (?, ?);";
+        if (sqlite3_prepare_v2(db_, insert_sql, -1, &stmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_int(stmt, 1, device_id);
+            sqlite3_bind_text(stmt, 2, message.c_str(), -1, SQLITE_STATIC);
+            sqlite3_step(stmt);
+            sqlite3_finalize(stmt);
+            std::cout << "[DB] Log saved for Device " << device_id << "\n";
+        }
     }
 }

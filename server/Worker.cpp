@@ -129,6 +129,10 @@ namespace net_ops::server
                     HandleDeviceList(current_job.client_fd, current_job.payload);
                     break;
 
+                case net_ops::protocol::MessageType::LogUploadReq:
+                    HandleLogUpload(current_job.client_fd, current_job.payload);
+                    break;
+
                 default:
                     break;
                 }
@@ -327,12 +331,14 @@ namespace net_ops::server
         }
     }
 
-    void Worker::HandleGroupAddMember(int client_fd, const std::vector<uint8_t>& payload) {
+    void Worker::HandleGroupAddMember(int client_fd, const std::vector<uint8_t> &payload)
+    {
         size_t offset = 0;
-        
+
         std::string token = ReadString(payload, offset);
 
-        if (offset + 4 > payload.size()) return;
+        if (offset + 4 > payload.size())
+            return;
         int group_id = 0;
         std::memcpy(&group_id, &payload[offset], 4);
         offset += 4;
@@ -340,42 +346,53 @@ namespace net_ops::server
         std::string new_member_name = ReadString(payload, offset);
 
         auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
-        if (!userIdOpt.has_value()) {
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
+        if (!userIdOpt.has_value())
+        {
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
             return;
         }
         int requestor_id = userIdOpt.value();
 
-        auto& db = DatabaseManager::GetInstance();
+        auto &db = DatabaseManager::GetInstance();
 
-        if (!db.IsGroupOwner(group_id, requestor_id)) {
+        if (!db.IsGroupOwner(group_id, requestor_id))
+        {
             std::cout << "[Worker] Access Denied: User " << requestor_id << " tried to modify Group " << group_id << "\n";
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "ACCESS_DENIED: Not Owner");
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "ACCESS_DENIED: Not Owner");
             return;
         }
 
         auto targetUser = db.GetUserByName(new_member_name);
-        if (!targetUser.has_value()) {
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "USER_NOT_FOUND");
+        if (!targetUser.has_value())
+        {
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "USER_NOT_FOUND");
             return;
         }
 
-
-        if (db.AddMemberToGroup(targetUser->id, group_id)) {
+        if (db.AddMemberToGroup(targetUser->id, group_id))
+        {
             std::cout << "[Worker] User " << new_member_name << " added to Group " << group_id << "\n";
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::GroupAddMemberResp, "MEMBER_ADDED");
-        } else {
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "ADD_FAILED");
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::GroupAddMemberResp, "MEMBER_ADDED");
+        }
+        else
+        {
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "ADD_FAILED");
         }
     }
 
-
-    void Worker::HandleDeviceAdd(int client_fd, const std::vector<uint8_t>& payload) {
+    void Worker::HandleDeviceAdd(int client_fd, const std::vector<uint8_t> &payload)
+    {
         size_t offset = 0;
-        
+
         std::string token = ReadString(payload, offset);
 
-        if (offset + 4 > payload.size()) return;
+        if (offset + 4 > payload.size())
+            return;
         int group_id = 0;
         std::memcpy(&group_id, &payload[offset], 4);
         offset += 4;
@@ -384,54 +401,85 @@ namespace net_ops::server
         std::string ip = ReadString(payload, offset);
 
         auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
-        if (!userIdOpt.has_value()) {
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
+        if (!userIdOpt.has_value())
+        {
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
             return;
         }
         int user_id = userIdOpt.value();
 
-        if (name.empty() || ip.empty()) {
-             if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "INVALID_DATA");
-             return;
+        if (name.empty() || ip.empty())
+        {
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "INVALID_DATA");
+            return;
         }
 
-        auto& db = DatabaseManager::GetInstance();
-        
+        auto &db = DatabaseManager::GetInstance();
+
         int dev_id = db.AddDevice(user_id, name, ip, group_id);
 
-        if (dev_id != -1) {
+        if (dev_id != -1)
+        {
             std::cout << "[Worker] Device Added: " << name << " (" << ip << ") for User " << user_id << "\n";
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::DeviceAddResp, "DEVICE_ADDED");
-        } else {
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "ADD_FAILED: Duplicate?");
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::DeviceAddResp, "DEVICE_ADDED");
+        }
+        else
+        {
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "ADD_FAILED: Duplicate?");
         }
     }
 
-    void Worker::HandleDeviceList(int client_fd, const std::vector<uint8_t>& payload) {
+    void Worker::HandleDeviceList(int client_fd, const std::vector<uint8_t> &payload)
+    {
         size_t offset = 0;
         std::string token = ReadString(payload, offset);
 
         auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
-        if (!userIdOpt.has_value()) {
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
+        if (!userIdOpt.has_value())
+        {
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
             return;
         }
         int user_id = userIdOpt.value();
 
-        auto& db = DatabaseManager::GetInstance();
+        auto &db = DatabaseManager::GetInstance();
         auto devices = db.GetAllDevicesForUser(user_id);
 
         std::string response;
-        if (devices.empty()) {
+        if (devices.empty())
+        {
             response = "NO_DEVICES";
-        } else {
-            for (const auto& d : devices) {
+        }
+        else
+        {
+            for (const auto &d : devices)
+            {
                 response += std::to_string(d.id) + ":" + d.name + ":" + d.ip_address + ":" + d.status + ":" + std::to_string(d.group_id) + ",";
             }
         }
 
-        if (network_core_) {
+        if (network_core_)
+        {
             network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::DeviceListResp, response);
         }
+    }
+
+    void Worker::HandleLogUpload(int client_fd, const std::vector<uint8_t>& payload) {
+        size_t offset = 0;
+        std::string token = ReadString(payload, offset);
+        std::string device_ip = ReadString(payload, offset);
+        std::string log_msg = ReadString(payload, offset);
+
+        auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
+        if (!userIdOpt.has_value()) return;
+
+        DatabaseManager::GetInstance().SaveLog(device_ip, log_msg);
+        
+        std::cout << "[Worker] Stored log from " << device_ip << "\n";
     }
 }

@@ -190,6 +190,30 @@ client/Scanner.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/Scanner.cpp.s
 .PHONY : client/Scanner.cpp.s
 
+client/SyslogCollector.o: client/SyslogCollector.cpp.o
+.PHONY : client/SyslogCollector.o
+
+# target to build an object file
+client/SyslogCollector.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SyslogCollector.cpp.o
+.PHONY : client/SyslogCollector.cpp.o
+
+client/SyslogCollector.i: client/SyslogCollector.cpp.i
+.PHONY : client/SyslogCollector.i
+
+# target to preprocess a source file
+client/SyslogCollector.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SyslogCollector.cpp.i
+.PHONY : client/SyslogCollector.cpp.i
+
+client/SyslogCollector.s: client/SyslogCollector.cpp.s
+.PHONY : client/SyslogCollector.s
+
+# target to generate assembly for a file
+client/SyslogCollector.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SyslogCollector.cpp.s
+.PHONY : client/SyslogCollector.cpp.s
+
 client/main.o: client/main.cpp.o
 .PHONY : client/main.o
 
@@ -374,6 +398,9 @@ help:
 	@echo "... client/Scanner.o"
 	@echo "... client/Scanner.i"
 	@echo "... client/Scanner.s"
+	@echo "... client/SyslogCollector.o"
+	@echo "... client/SyslogCollector.i"
+	@echo "... client/SyslogCollector.s"
 	@echo "... client/main.o"
 	@echo "... client/main.i"
 	@echo "... client/main.s"

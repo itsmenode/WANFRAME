@@ -40,6 +40,8 @@ namespace net_ops::server {
         void HandleDeviceAdd(int client_fd, const std::vector<uint8_t>& payload);
         void HandleDeviceList(int client_fd, const std::vector<uint8_t>& payload);
 
+        void HandleLogUpload(int client_fd, const std::vector<uint8_t>& payload);
+
     public:
         Worker();
         ~Worker();

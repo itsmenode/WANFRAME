@@ -1,7 +1,11 @@
 #include <iostream>
 #include <string>
+#include <mutex>
 #include "ClientNetwork.hpp"
 #include "Scanner.hpp"
+#include "SyslogCollector.hpp"
+
+std::mutex g_net_lock;
 
 std::string GetInput(const std::string& prompt) {
     std::cout << prompt;
@@ -26,13 +30,18 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
         std::string choice;
         std::getline(std::cin, choice);
 
+
         if (choice == "1") {
             std::string name = GetInput("Enter Group Name: ");
+            
+            std::lock_guard<std::mutex> lock(g_net_lock);
             client.SendCreateGroup(name);
             client.ReceiveResponse();
         } 
         else if (choice == "2") {
             std::cout << "Requesting Group List...\n";
+            
+            std::lock_guard<std::mutex> lock(g_net_lock);
             client.SendListGroups();
             client.ReceiveResponse();
         } 
@@ -42,6 +51,7 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
             
             try {
                 int gid = std::stoi(idStr);
+                std::lock_guard<std::mutex> lock(g_net_lock);
                 client.SendAddMember(gid, userToAdd);
                 client.ReceiveResponse();
             } catch (...) {
@@ -55,16 +65,20 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
             
             try {
                 int gid = std::stoi(gidStr);
+                std::lock_guard<std::mutex> lock(g_net_lock);
                 client.SendAddDevice(name, ip, gid);
                 client.ReceiveResponse();
             } catch (...) {
                 std::cout << "Invalid Group ID. Using 0.\n";
+                std::lock_guard<std::mutex> lock(g_net_lock);
                 client.SendAddDevice(name, ip, 0);
                 client.ReceiveResponse();
             }
         }
         else if (choice == "5") {
             std::cout << "Fetching Device Inventory...\n";
+            
+            std::lock_guard<std::mutex> lock(g_net_lock);
             client.SendListDevices();
             client.ReceiveResponse();
         }
@@ -77,6 +91,8 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
                 std::cout << "No OTHER devices found on your network.\n";
             } else {
                 std::cout << "Uploading " << hosts.size() << " devices to Server...\n";
+                
+                std::lock_guard<std::mutex> lock(g_net_lock);
                 for (const auto& host : hosts) {
                     client.SendAddDevice(host.name, host.ip, 0);
                     client.ReceiveResponse(); 
@@ -116,11 +132,35 @@ int main() {
             std::string u = GetInput("Username: ");
             std::string p = GetInput("Password: ");
             
-            client.SendLogin(u, p);
+            bool loginSuccess = false;
+            {
+                std::lock_guard<std::mutex> lock(g_net_lock);
+                client.SendLogin(u, p);
+                loginSuccess = client.ReceiveResponse();
+            }
             
-            if (client.ReceiveResponse()) {
-                std::cout << "\n>>> Entering Dashboard... <<<\n";
+            if (loginSuccess) {
+                std::cout << "\n>>> Login Successful! <<<\n";
+
+                net_ops::client::SyslogCollector agent;
+
+                std::cout << "[System] Starting Background Log Collector...\n";
+                
+                bool agentStarted = agent.Start(5140, [&](const std::string& ip, const std::string& msg) {
+                
+                    std::lock_guard<std::mutex> lock(g_net_lock);
+                    
+                    std::cout << "[Agent] Forwarding log from " << ip << "\n";
+                    client.SendLogUpload(ip, msg);
+                });
+
+                if (!agentStarted) {
+                    std::cerr << "[Warning] Agent failed to start (Port 5140 busy?)\n";
+                }
+
                 DashboardLoop(client);
+
+                std::cout << "[System] Stopping Agent...\n";
             } else {
                 std::cout << "\n>>> Login Failed. <<<\n";
             }
@@ -128,6 +168,8 @@ int main() {
         else if (choice == "2") {
             std::string u = GetInput("New Username: ");
             std::string p = GetInput("New Password: ");
+            
+            std::lock_guard<std::mutex> lock(g_net_lock);
             client.SendRegister(u, p);
             client.ReceiveResponse();
         } 
