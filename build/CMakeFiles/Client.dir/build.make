@@ -125,12 +125,42 @@ CMakeFiles/Client.dir/client/SyslogCollector.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Client.dir/client/SyslogCollector.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/andrew/Documents/GitHub/WANFRAME/client/SyslogCollector.cpp -o CMakeFiles/Client.dir/client/SyslogCollector.cpp.s
 
+CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o: CMakeFiles/Client.dir/flags.make
+CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o: ../client/DeviceMonitor.cpp
+CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o: CMakeFiles/Client.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o -MF CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o.d -o CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o -c /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.cpp
+
+CMakeFiles/Client.dir/client/DeviceMonitor.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Client.dir/client/DeviceMonitor.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.cpp > CMakeFiles/Client.dir/client/DeviceMonitor.cpp.i
+
+CMakeFiles/Client.dir/client/DeviceMonitor.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Client.dir/client/DeviceMonitor.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.cpp -o CMakeFiles/Client.dir/client/DeviceMonitor.cpp.s
+
+CMakeFiles/Client.dir/client/SnmpClient.cpp.o: CMakeFiles/Client.dir/flags.make
+CMakeFiles/Client.dir/client/SnmpClient.cpp.o: ../client/SnmpClient.cpp
+CMakeFiles/Client.dir/client/SnmpClient.cpp.o: CMakeFiles/Client.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/Client.dir/client/SnmpClient.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Client.dir/client/SnmpClient.cpp.o -MF CMakeFiles/Client.dir/client/SnmpClient.cpp.o.d -o CMakeFiles/Client.dir/client/SnmpClient.cpp.o -c /home/andrew/Documents/GitHub/WANFRAME/client/SnmpClient.cpp
+
+CMakeFiles/Client.dir/client/SnmpClient.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Client.dir/client/SnmpClient.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/andrew/Documents/GitHub/WANFRAME/client/SnmpClient.cpp > CMakeFiles/Client.dir/client/SnmpClient.cpp.i
+
+CMakeFiles/Client.dir/client/SnmpClient.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Client.dir/client/SnmpClient.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/andrew/Documents/GitHub/WANFRAME/client/SnmpClient.cpp -o CMakeFiles/Client.dir/client/SnmpClient.cpp.s
+
 # Object files for target Client
 Client_OBJECTS = \
 "CMakeFiles/Client.dir/client/main.cpp.o" \
 "CMakeFiles/Client.dir/client/ClientNetwork.cpp.o" \
 "CMakeFiles/Client.dir/client/Scanner.cpp.o" \
-"CMakeFiles/Client.dir/client/SyslogCollector.cpp.o"
+"CMakeFiles/Client.dir/client/SyslogCollector.cpp.o" \
+"CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o" \
+"CMakeFiles/Client.dir/client/SnmpClient.cpp.o"
 
 # External object files for target Client
 Client_EXTERNAL_OBJECTS =
@@ -139,11 +169,13 @@ Client: CMakeFiles/Client.dir/client/main.cpp.o
 Client: CMakeFiles/Client.dir/client/ClientNetwork.cpp.o
 Client: CMakeFiles/Client.dir/client/Scanner.cpp.o
 Client: CMakeFiles/Client.dir/client/SyslogCollector.cpp.o
+Client: CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o
+Client: CMakeFiles/Client.dir/client/SnmpClient.cpp.o
 Client: CMakeFiles/Client.dir/build.make
 Client: /usr/lib/x86_64-linux-gnu/libssl.so
 Client: /usr/lib/x86_64-linux-gnu/libcrypto.so
 Client: CMakeFiles/Client.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable Client"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Linking CXX executable Client"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/Client.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

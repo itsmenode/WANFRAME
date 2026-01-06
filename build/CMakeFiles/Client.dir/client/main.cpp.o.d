@@ -153,13 +153,13 @@ CMakeFiles/Client.dir/client/main.cpp.o: \
  /usr/include/c++/11/ratio /usr/include/c++/11/limits \
  /usr/include/c++/11/ctime /usr/include/c++/11/bits/parse_numbers.h \
  /usr/include/c++/11/bits/std_mutex.h \
- /usr/include/c++/11/bits/unique_lock.h \
- /home/andrew/Documents/GitHub/WANFRAME/client/ClientNetwork.hpp \
- /usr/include/c++/11/vector /usr/include/c++/11/bits/stl_uninitialized.h \
+ /usr/include/c++/11/bits/unique_lock.h /usr/include/c++/11/vector \
+ /usr/include/c++/11/bits/stl_uninitialized.h \
  /usr/include/c++/11/bits/stl_vector.h \
  /usr/include/c++/11/bits/stl_bvector.h \
- /usr/include/c++/11/bits/vector.tcc /usr/include/openssl/ssl.h \
- /usr/include/openssl/macros.h \
+ /usr/include/c++/11/bits/vector.tcc \
+ /home/andrew/Documents/GitHub/WANFRAME/client/ClientNetwork.hpp \
+ /usr/include/openssl/ssl.h /usr/include/openssl/macros.h \
  /usr/include/x86_64-linux-gnu/openssl/opensslconf.h \
  /usr/include/x86_64-linux-gnu/openssl/configuration.h \
  /usr/include/openssl/opensslv.h /usr/include/openssl/e_os2.h \
@@ -243,4 +243,5 @@ CMakeFiles/Client.dir/client/main.cpp.o: \
  /usr/include/x86_64-linux-gnu/asm/sockios.h \
  /usr/include/asm-generic/sockios.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
- /usr/include/x86_64-linux-gnu/bits/in.h
+ /usr/include/x86_64-linux-gnu/bits/in.h \
+ /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.hpp

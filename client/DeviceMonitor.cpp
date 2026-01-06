@@ -31,7 +31,15 @@ namespace net_ops::client {
 
     void DeviceMonitor::Stop() {
         m_running = false;
-        if (m_thread.joinable()) m_thread.join();
+        
+        if (m_thread.joinable()) {
+            m_thread.join();
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_targets.clear();
+        }
     }
 
     void DeviceMonitor::MonitorLoop() {
@@ -69,7 +77,7 @@ namespace net_ops::client {
             }
 
             for(int i=0; i<30; i++) {
-                if(!m_running) break;
+                if(!m_running) return;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         }

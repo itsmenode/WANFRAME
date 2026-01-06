@@ -9,7 +9,9 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/andrew/Documents/GitHub/WANFRAME/client/ClientNetwork.cpp" "CMakeFiles/Client.dir/client/ClientNetwork.cpp.o" "gcc" "CMakeFiles/Client.dir/client/ClientNetwork.cpp.o.d"
+  "/home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.cpp" "CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o" "gcc" "CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o.d"
   "/home/andrew/Documents/GitHub/WANFRAME/client/Scanner.cpp" "CMakeFiles/Client.dir/client/Scanner.cpp.o" "gcc" "CMakeFiles/Client.dir/client/Scanner.cpp.o.d"
+  "/home/andrew/Documents/GitHub/WANFRAME/client/SnmpClient.cpp" "CMakeFiles/Client.dir/client/SnmpClient.cpp.o" "gcc" "CMakeFiles/Client.dir/client/SnmpClient.cpp.o.d"
   "/home/andrew/Documents/GitHub/WANFRAME/client/SyslogCollector.cpp" "CMakeFiles/Client.dir/client/SyslogCollector.cpp.o" "gcc" "CMakeFiles/Client.dir/client/SyslogCollector.cpp.o.d"
   "/home/andrew/Documents/GitHub/WANFRAME/client/main.cpp" "CMakeFiles/Client.dir/client/main.cpp.o" "gcc" "CMakeFiles/Client.dir/client/main.cpp.o.d"
   )

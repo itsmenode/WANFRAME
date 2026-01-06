@@ -65,7 +65,7 @@ namespace net_ops::server {
 
             void SaveLog(const std::string& ip_address, const std::string& message);
 
-            void DatabaseManager::UpdateDeviceStatus(const std::string& ip, const std::string& status, const std::string& info);
+            void UpdateDeviceStatus(const std::string& ip, const std::string& status, const std::string& info);
 
             bool IsGroupOwner(int group_id, int user_id);
     };
