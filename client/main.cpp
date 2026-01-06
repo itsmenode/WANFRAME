@@ -79,13 +79,18 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
             client.ReceiveResponse();
         }
         else if (choice == "6") {
-            std::cout << "Starting Auto-Discovery...\n";
+            std::cout << "\n--- AUTO-SCAN INITIATED ---\n";
+            std::cout << "Scanning local network... (This may take a moment)\n";
+            
             auto hosts = net_ops::client::NetworkScanner::ScanLocalNetwork();
+
             if (hosts.empty()) {
-                std::cout << "No OTHER devices found.\n";
+                std::cout << "No devices found.\n";
             } else {
-                std::cout << "Found " << hosts.size() << " devices. Uploading & Monitoring...\n";
+                std::cout << "Found " << hosts.size() << " devices.\n";
+                
                 std::vector<std::string> monitor_ips;
+                
                 {
                     std::lock_guard<std::mutex> lock(g_net_lock);
                     for (const auto& host : hosts) {
@@ -95,6 +100,8 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
                     }
                 }
                 g_monitor.SetTargets(monitor_ips);
+
+                std::cout << ">>> Active Monitoring Started. Returning to menu. <<<\n";
             }
         }
         else if (choice == "7") {
