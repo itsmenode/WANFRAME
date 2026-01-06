@@ -47,6 +47,8 @@ namespace net_ops::client
 
         bool SendStatusUpdate(const std::string& ip, const std::string& status, const std::string& info);
 
+        void SendFetchLogs(int device_id);
+
         bool ReceiveResponse(); 
     };
 }

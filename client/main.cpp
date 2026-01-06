@@ -28,7 +28,8 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
         std::cout << "4. Add Device (Manual)\n";
         std::cout << "5. List All Devices\n";
         std::cout << "6. Auto-Scan & Monitor\n"; 
-        std::cout << "7. Logout\n";
+        std::cout << "7. View Device Logs\n";
+        std::cout << "8. Logout\n";
         std::cout << "Select: ";
 
         std::string choice;
@@ -109,6 +110,24 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
             }
         }
         else if (choice == "7") {
+            std::cout << "--- Device List ---\n";
+            {
+                std::lock_guard<std::mutex> lock(g_net_lock);
+                client.SendListDevices();
+                client.ReceiveResponse();
+            }
+
+            std::string idStr = GetInput("Enter Device ID to view logs: ");
+            try {
+                int devId = std::stoi(idStr);
+                std::lock_guard<std::mutex> lock(g_net_lock);
+                client.SendFetchLogs(devId);
+                client.ReceiveResponse();
+            } catch (...) {
+                std::cout << "Invalid ID.\n";
+            }
+        }
+        else if (choice == "8") {
             in_dashboard = false;
         } 
         else {

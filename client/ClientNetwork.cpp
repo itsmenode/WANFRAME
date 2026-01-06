@@ -349,6 +349,30 @@ namespace net_ops::client
         return true;
     }
 
+    void ClientNetwork::SendFetchLogs(int device_id) {
+        if (!m_ssl_handle) return;
+        
+        std::vector<uint8_t> payload;
+        
+        AppendString(payload, m_session_token);
+        
+        uint32_t netId = htonl(static_cast<uint32_t>(device_id));
+        const uint8_t* idBytes = reinterpret_cast<const uint8_t*>(&netId);
+        payload.insert(payload.end(), idBytes, idBytes + 4);
+
+        net_ops::protocol::Header header;
+        header.magic = net_ops::protocol::EXPECTED_MAGIC;
+        header.msg_type = static_cast<uint8_t>(net_ops::protocol::MessageType::LogQueryReq);
+        header.payload_length = payload.size();
+        header.reserved = 0;
+
+        uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
+        net_ops::protocol::SerializeHeader(header, headerBuf);
+
+        SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf));
+        SSL_write(m_ssl_handle, payload.data(), payload.size());
+    }
+
     bool ClientNetwork::ReceiveResponse()
     {
         if (!m_ssl_handle) return false;
@@ -357,46 +381,73 @@ namespace net_ops::client
         uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
 
         int bytesRead = SSL_read(m_ssl_handle, headerBuf, sizeof(headerBuf));
-        
         if (bytesRead <= 0) {
-            std::cerr << "[Client] Server disconnected or read error.\n";
+            std::cerr << "[Client] Server disconnected.\n";
             Disconnect();
             return false;
         }
 
         header = net_ops::protocol::DeserializeHeader(headerBuf);
 
-        if (header.magic != net_ops::protocol::EXPECTED_MAGIC) {
-            std::cerr << "[Client] Error: Invalid Protocol Magic Number.\n";
-            return false;
-        }
-
-        std::vector<uint8_t> payload;
-        if (header.payload_length > 0)
-        {
-            payload.resize(header.payload_length);
+        std::vector<uint8_t> body;
+        if (header.payload_length > 0) {
+            body.resize(header.payload_length);
             int total = 0;
             while (total < header.payload_length) {
-                int n = SSL_read(m_ssl_handle, payload.data() + total, header.payload_length - total);
+                int n = SSL_read(m_ssl_handle, body.data() + total, header.payload_length - total);
                 if (n <= 0) break; 
                 total += n;
             }
         }
 
-        std::string msg(payload.begin(), payload.end());
+        if (header.msg_type == static_cast<uint8_t>(net_ops::protocol::MessageType::LogQueryResp)) {
+            size_t offset = 0;
+            
+            if (offset + 4 > body.size()) return false;
+            uint32_t netCount = 0;
+            std::memcpy(&netCount, &body[offset], 4);
+            int count = static_cast<int>(ntohl(netCount));
+            offset += 4;
+
+            std::cout << "\n--- DEVICE LOGS (" << count << ") ---\n";
+            std::cout << "TIMESTAMP            | MESSAGE\n";
+            std::cout << "----------------------------------------------------\n";
+
+            for(int i=0; i<count; i++) {
+                if (offset + 4 > body.size()) break;
+                uint32_t tsLen = 0;
+                std::memcpy(&tsLen, &body[offset], 4);
+                tsLen = ntohl(tsLen);
+                offset += 4;
+
+                if (offset + tsLen > body.size()) break;
+                std::string ts(body.begin() + offset, body.begin() + offset + tsLen);
+                offset += tsLen;
+
+                if (offset + 4 > body.size()) break;
+                uint32_t msgLen = 0;
+                std::memcpy(&msgLen, &body[offset], 4);
+                msgLen = ntohl(msgLen);
+                offset += 4;
+
+                if (offset + msgLen > body.size()) break;
+                std::string msg(body.begin() + offset, body.begin() + offset + msgLen);
+                offset += msgLen;
+
+                std::cout << "[" << ts << "] " << msg << "\n";
+            }
+            std::cout << "----------------------------------------------------\n";
+            return true;
+        }
+
+        std::string msg(body.begin(), body.end());
         std::cout << "[Server Reply] " << msg << "\n";
 
-        std::string loginPrefix = "LOGIN_SUCCESS:";
-        if (msg.find(loginPrefix) == 0) {
-            m_session_token = msg.substr(loginPrefix.length());
-            std::cout << "[Client] Session Token Saved: " << m_session_token << "\n";
+        if (msg.find("LOGIN_SUCCESS:") == 0) {
+            m_session_token = msg.substr(14);
             return true;
         }
         
-        if (msg.find("SUCCESS") != std::string::npos) {
-            return true;
-        } 
-        
-        return false;
+        return true;
     }
 }
