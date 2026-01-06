@@ -6,8 +6,7 @@
 
 namespace net_ops::client {
 
-    DeviceMonitor::DeviceMonitor(ClientNetwork& network) 
-        : m_network(network), m_running(false) {}
+    DeviceMonitor::DeviceMonitor() : m_running(false) {}
 
     DeviceMonitor::~DeviceMonitor() {
         Stop();
@@ -22,8 +21,9 @@ namespace net_ops::client {
         std::cout << "[Monitor] Watching " << ips.size() << " devices.\n";
     }
 
-    void DeviceMonitor::Start() {
+    void DeviceMonitor::Start(StatusCallback callback) {
         if (m_running) return;
+        m_callback = callback;
         m_running = true;
         m_thread = std::thread(&DeviceMonitor::MonitorLoop, this);
         std::cout << "[Monitor] Background thread started.\n";
@@ -62,7 +62,10 @@ namespace net_ops::client {
                         desc = stats.description;
                     }
                 }
-                 m_network.SendStatusUpdate(ip, status, desc);
+
+                if (m_callback) {
+                    m_callback(ip, status, desc);
+                }
             }
 
             for(int i=0; i<30; i++) {

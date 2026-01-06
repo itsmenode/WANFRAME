@@ -1,11 +1,15 @@
 #include <iostream>
 #include <string>
 #include <mutex>
+#include <vector>
 #include "ClientNetwork.hpp"
 #include "Scanner.hpp"
 #include "SyslogCollector.hpp"
+#include "DeviceMonitor.hpp"
 
 std::mutex g_net_lock;
+
+net_ops::client::DeviceMonitor g_monitor;
 
 std::string GetInput(const std::string& prompt) {
     std::cout << prompt;
@@ -23,24 +27,21 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
         std::cout << "3. Add Member to Group\n";
         std::cout << "4. Add Device (Manual)\n";
         std::cout << "5. List All Devices\n";
-        std::cout << "6. Auto-Scan Network\n";
+        std::cout << "6. Auto-Scan & Monitor\n"; 
         std::cout << "7. Logout\n";
         std::cout << "Select: ";
 
         std::string choice;
         std::getline(std::cin, choice);
 
-
         if (choice == "1") {
             std::string name = GetInput("Enter Group Name: ");
-            
             std::lock_guard<std::mutex> lock(g_net_lock);
             client.SendCreateGroup(name);
             client.ReceiveResponse();
         } 
         else if (choice == "2") {
             std::cout << "Requesting Group List...\n";
-            
             std::lock_guard<std::mutex> lock(g_net_lock);
             client.SendListGroups();
             client.ReceiveResponse();
@@ -77,7 +78,6 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
         }
         else if (choice == "5") {
             std::cout << "Fetching Device Inventory...\n";
-            
             std::lock_guard<std::mutex> lock(g_net_lock);
             client.SendListDevices();
             client.ReceiveResponse();
@@ -88,16 +88,24 @@ void DashboardLoop(net_ops::client::ClientNetwork& client) {
             auto hosts = net_ops::client::NetworkScanner::ScanLocalNetwork();
             
             if (hosts.empty()) {
-                std::cout << "No OTHER devices found on your network.\n";
+                std::cout << "No OTHER devices found.\n";
             } else {
-                std::cout << "Uploading " << hosts.size() << " devices to Server...\n";
+                std::cout << "Found " << hosts.size() << " devices. Uploading & Monitoring...\n";
                 
-                std::lock_guard<std::mutex> lock(g_net_lock);
-                for (const auto& host : hosts) {
-                    client.SendAddDevice(host.name, host.ip, 0);
-                    client.ReceiveResponse(); 
+                std::vector<std::string> monitor_ips;
+
+                {
+                    std::lock_guard<std::mutex> lock(g_net_lock);
+                    for (const auto& host : hosts) {
+                        client.SendAddDevice(host.name, host.ip, 0);
+                        client.ReceiveResponse();
+                        
+                        monitor_ips.push_back(host.ip);
+                    }
                 }
-                std::cout << "Upload Complete.\n";
+                
+                g_monitor.SetTargets(monitor_ips);
+                std::cout << "Active Monitoring enabled for these devices.\n";
             }
         }
         else if (choice == "7") {
@@ -142,25 +150,27 @@ int main() {
             if (loginSuccess) {
                 std::cout << "\n>>> Login Successful! <<<\n";
 
-                net_ops::client::SyslogCollector agent;
-
-                std::cout << "[System] Starting Background Log Collector...\n";
-                
-                bool agentStarted = agent.Start(5140, [&](const std::string& ip, const std::string& msg) {
-                
+                net_ops::client::SyslogCollector syslogAgent;
+                bool agentStarted = syslogAgent.Start(5140, [&](const std::string& ip, const std::string& msg) {
                     std::lock_guard<std::mutex> lock(g_net_lock);
-                    
-                    std::cout << "[Agent] Forwarding log from " << ip << "\n";
                     client.SendLogUpload(ip, msg);
                 });
 
                 if (!agentStarted) {
-                    std::cerr << "[Warning] Agent failed to start (Port 5140 busy?)\n";
+                    std::cerr << "[Warning] Syslog Agent failed to start (Port 5140 busy?)\n";
                 }
+
+                g_monitor.Start([&](const std::string& ip, const std::string& status, const std::string& desc) {
+                    std::lock_guard<std::mutex> lock(g_net_lock);
+                    client.SendStatusUpdate(ip, status, desc);
+                });
 
                 DashboardLoop(client);
 
-                std::cout << "[System] Stopping Agent...\n";
+                g_monitor.Stop();
+                syslogAgent.Stop();
+                std::cout << "[System] Services stopped.\n";
+                
             } else {
                 std::cout << "\n>>> Login Failed. <<<\n";
             }
