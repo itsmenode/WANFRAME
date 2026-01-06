@@ -14,7 +14,6 @@
 #include "../common/ByteBuffer.hpp"
 #include "../common/protocol.hpp"
 
-// Forward Declaration
 namespace net_ops::server { class Worker; }
 
 namespace net_ops::server

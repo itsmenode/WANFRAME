@@ -222,11 +222,11 @@ CMakeFiles/Server.dir/server/main.cpp.o: \
  /usr/include/c++/11/cstddef \
  /home/andrew/Documents/GitHub/WANFRAME/server/DatabaseManager.hpp \
  /usr/include/c++/11/optional \
- /usr/include/c++/11/bits/enable_special_members.h \
+ /usr/include/c++/11/bits/enable_special_members.h /usr/include/sqlite3.h \
+ /home/andrew/Documents/GitHub/WANFRAME/server/Worker.hpp \
  /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
  /usr/include/c++/11/bits/refwrap.h /usr/include/c++/11/bits/unique_ptr.h \
- /usr/include/c++/11/bits/this_thread_sleep.h /usr/include/sqlite3.h \
- /home/andrew/Documents/GitHub/WANFRAME/server/Worker.hpp \
+ /usr/include/c++/11/bits/this_thread_sleep.h \
  /usr/include/c++/11/condition_variable \
  /usr/include/c++/11/bits/shared_ptr.h \
  /usr/include/c++/11/bits/shared_ptr_base.h \

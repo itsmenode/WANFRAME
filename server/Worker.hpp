@@ -33,7 +33,6 @@ namespace net_ops::server {
         void HandleRegister(int client_fd, const std::vector<uint8_t>& payload);
 
         void HandleGroupCreate(int client_fd, const std::vector<uint8_t>& payload);
-        
         void HandleGroupList(int client_fd, const std::vector<uint8_t>& payload);
         void HandleGroupAddMember(int client_fd, const std::vector<uint8_t>& payload);
 
@@ -41,8 +40,7 @@ namespace net_ops::server {
         void HandleDeviceList(int client_fd, const std::vector<uint8_t>& payload);
 
         void HandleLogUpload(int client_fd, const std::vector<uint8_t>& payload);
-
-        void HandleStatusUpdate(int fd, const std::vector<uint8_t>& payload);
+        void HandleStatusUpdate(int client_fd, const std::vector<uint8_t>& payload);
 
         void HandleLogQuery(int client_fd, const std::vector<uint8_t>& payload);
 
@@ -53,7 +51,7 @@ namespace net_ops::server {
         void Start();
         void Stop();
         
-        void SetNetworkCore(NetworkCore* core) { network_core_ = core; }
+        void SetNetworkCore(NetworkCore* core);
 
         void AddJob(int client_fd, net_ops::protocol::MessageType type, std::vector<uint8_t> payload);
     };

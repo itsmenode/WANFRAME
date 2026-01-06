@@ -5,11 +5,10 @@
 #include <vector>
 #include <optional>
 #include <mutex>
-#include <thread>
-
 #include <sqlite3.h>
 
 namespace net_ops::server {
+
     struct UserRecord {
         int id;
         std::string username;
@@ -38,42 +37,43 @@ namespace net_ops::server {
     };
 
     class DatabaseManager {
-        private:
-            sqlite3* db_;
-            std::mutex db_mutex_;
-            
-            sqlite3_stmt* stmt_insert_user_;
-            sqlite3_stmt* stmt_get_user_;
+    private:
+        sqlite3* db_;
+        std::mutex db_mutex_;
+        
+        sqlite3_stmt* stmt_insert_user_;
+        sqlite3_stmt* stmt_get_user_;
 
-            DatabaseManager();
-            ~DatabaseManager();
-        public:
-            static DatabaseManager& GetInstance();
+        DatabaseManager();
+        ~DatabaseManager();
 
-            DatabaseManager(const DatabaseManager&) = delete;
-            DatabaseManager& operator=(const DatabaseManager&) = delete;
+    public:
+        static DatabaseManager& GetInstance();
 
-            bool Initialize(const std::string& db_path);
-            void Shutdown();
+        DatabaseManager(const DatabaseManager&) = delete;
+        DatabaseManager& operator=(const DatabaseManager&) = delete;
 
-            bool CreateUser(const std::string& username, const std::vector<uint8_t>& hash, const std::vector<uint8_t>& salt);
-            std::optional<UserRecord> GetUserByName(const std::string& username);
-            std::optional<UserRecord> GetUserById(int id);
+        bool Initialize(const std::string& db_path);
+        void Shutdown();
 
-            int CreateGroup(const std::string& group_name, int owner_id);
-            bool AddMemberToGroup(int user_id, int group_id);
-            std::vector<GroupRecord> GetGroupsForUser(int user_id);
+        bool CreateUser(const std::string& username, const std::vector<uint8_t>& hash, const std::vector<uint8_t>& salt);
+        std::optional<UserRecord> GetUserByName(const std::string& username);
+        std::optional<UserRecord> GetUserById(int id);
+        
+        bool ValidateUser(const std::string& username, const std::string& password);
 
-            int AddDevice(int owner_id, const std::string& name, const std::string& ip, int group_id = 0);
-            std::vector<DeviceRecord> GetAllDevicesForUser(int user_id);
-            std::vector<DeviceRecord> GetDevicesInGroup(int group_id);
+        int CreateGroup(const std::string& group_name, int owner_id);
+        bool AddMemberToGroup(int user_id, int group_id);
+        std::vector<GroupRecord> GetGroupsForUser(int user_id);
+        bool IsGroupOwner(int group_id, int user_id);
 
-            void SaveLog(const std::string& ip_address, const std::string& message);
+        int AddDevice(int owner_id, const std::string& name, const std::string& ip, int group_id = 0);
+        std::vector<DeviceRecord> GetAllDevicesForUser(int user_id);
+        std::vector<DeviceRecord> GetDevicesInGroup(int group_id);
+        void UpdateDeviceStatus(const std::string& ip, const std::string& status, const std::string& info);
 
-            void UpdateDeviceStatus(const std::string& ip, const std::string& status, const std::string& info);
-
-            std::vector<LogEntry> GetLogsForDevice(int device_id, int limit = 50);
-
-            bool IsGroupOwner(int group_id, int user_id);
+        void SaveLog(const std::string& ip_address, const std::string& message);
+        
+        std::vector<LogEntry> GetLogsForDevice(int device_id, int limit = 50);
     };
 }

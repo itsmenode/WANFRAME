@@ -16,18 +16,31 @@ namespace net_ops::server
 
     std::string ReadString(const std::vector<uint8_t> &data, size_t &offset)
     {
-        if (offset + 4 > data.size())
+        if (offset + 4 > data.size()) {
+            std::cout << "[ReadString Error] Not enough bytes for length. Offset: " << offset << " Size: " << data.size() << "\n";
             return "";
+        }
 
         uint32_t len = 0;
         std::memcpy(&len, &data[offset], 4);
+        
+        uint8_t* b = reinterpret_cast<uint8_t*>(&len);
+        
+        uint32_t lenHost = ntohl(len);
+        
+        if (lenHost > 10000 && len < 10000) {
+             lenHost = len;
+        }
+
         offset += 4;
 
-        if (offset + len > data.size())
+        if (offset + lenHost > data.size()) {
+            std::cout << "[ReadString Error] Length " << lenHost << " exceeds payload size " << data.size() << "\n";
             return "";
+        }
 
-        std::string str(data.begin() + offset, data.begin() + offset + len);
-        offset += len;
+        std::string str(data.begin() + offset, data.begin() + offset + lenHost);
+        offset += lenHost;
         return str;
     }
 
@@ -41,6 +54,16 @@ namespace net_ops::server
         SHA256(combined.data(), combined.size(), hash);
 
         return std::vector<uint8_t>(hash, hash + SHA256_DIGEST_LENGTH);
+    }
+
+    std::string ToHex(const std::vector<uint8_t> &data)
+    {
+        std::stringstream ss;
+        for (uint8_t byte : data)
+        {
+            ss << std::hex << std::setw(2) << std::setfill('0') << (int)byte;
+        }
+        return ss.str();
     }
 
     Worker::Worker() : running_(false), network_core_(nullptr) {}
@@ -79,15 +102,18 @@ namespace net_ops::server
         queue_cv_.notify_one();
     }
 
+    void Worker::SetNetworkCore(NetworkCore *core)
+    {
+        network_core_ = core;
+    }
+
     void Worker::ProcessLoop()
     {
         while (running_)
         {
             Job current_job;
-
             {
                 std::unique_lock<std::mutex> lock(queue_mutex_);
-
                 queue_cv_.wait(lock, [this]
                                { return !job_queue_.empty() || !running_; });
 
@@ -105,43 +131,33 @@ namespace net_ops::server
                 case net_ops::protocol::MessageType::LoginReq:
                     HandleLogin(current_job.client_fd, current_job.payload);
                     break;
-
                 case net_ops::protocol::MessageType::SignupReq:
                     HandleRegister(current_job.client_fd, current_job.payload);
                     break;
-
                 case net_ops::protocol::MessageType::GroupCreateReq:
                     HandleGroupCreate(current_job.client_fd, current_job.payload);
                     break;
-
                 case net_ops::protocol::MessageType::GroupListReq:
                     HandleGroupList(current_job.client_fd, current_job.payload);
                     break;
-
                 case net_ops::protocol::MessageType::GroupAddMemberReq:
                     HandleGroupAddMember(current_job.client_fd, current_job.payload);
                     break;
-
                 case net_ops::protocol::MessageType::DeviceAddReq:
                     HandleDeviceAdd(current_job.client_fd, current_job.payload);
                     break;
-
                 case net_ops::protocol::MessageType::DeviceListReq:
                     HandleDeviceList(current_job.client_fd, current_job.payload);
                     break;
-
                 case net_ops::protocol::MessageType::LogUploadReq:
                     HandleLogUpload(current_job.client_fd, current_job.payload);
                     break;
-
                 case net_ops::protocol::MessageType::DeviceStatusReq:
                     HandleStatusUpdate(current_job.client_fd, current_job.payload);
                     break;
-
                 case net_ops::protocol::MessageType::LogQueryReq:
                     HandleLogQuery(current_job.client_fd, current_job.payload);
                     break;
-
                 default:
                     break;
                 }
@@ -159,50 +175,33 @@ namespace net_ops::server
         std::string username = ReadString(payload, offset);
         std::string password = ReadString(payload, offset);
 
-        if (username.empty() || password.empty())
-        {
-            if (network_core_)
-            {
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "Invalid payload format");
-            }
-            return;
-        }
-
         auto &db = DatabaseManager::GetInstance();
         auto user = db.GetUserByName(username);
 
         if (!user.has_value())
         {
             std::cout << "[Worker] Login Failed: User '" << username << "' not found.\n";
-            if (network_core_)
-            {
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_FAILURE: User not found");
-            }
+            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "LOGIN_FAILURE");
             return;
         }
 
+        std::cout << "[Login Debug] User: " << username << "\n";
+        std::cout << "   - DB Salt:       " << ToHex(user->salt) << "\n";
+        std::cout << "   - DB Hash:       " << ToHex(user->password_hash) << "\n";
+
         std::vector<uint8_t> computed_hash = ComputeHash(password, user->salt);
+        std::cout << "   - Computed Hash: " << ToHex(computed_hash) << "\n";
 
         if (computed_hash == user->password_hash)
         {
-            std::cout << "[Worker] Login SUCCESS for user: " << username << "\n";
-
+            std::cout << "[Worker] Login SUCCESS.\n";
             std::string token = SessionManager::GetInstance().CreateSession(user->id);
-
-            std::string response = "LOGIN_SUCCESS:" + token;
-
-            if (network_core_)
-            {
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, response);
-            }
+            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_SUCCESS:" + token);
         }
         else
         {
-            std::cout << "[Worker] Login Failed: Incorrect password for " << username << "\n";
-            if (network_core_)
-            {
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_FAILURE: Incorrect Password");
-            }
+            std::cout << "[Worker] Login Mismatch.\n";
+            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "LOGIN_FAILURE");
         }
     }
 
@@ -212,41 +211,22 @@ namespace net_ops::server
         std::string username = ReadString(payload, offset);
         std::string password = ReadString(payload, offset);
 
-        if (username.empty() || password.empty())
-        {
-            if (network_core_)
-            {
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "Invalid payload format");
-            }
-            return;
-        }
-
-        auto &db = DatabaseManager::GetInstance();
-
         std::vector<uint8_t> salt(16);
-        if (RAND_bytes(salt.data(), 16) != 1)
-        {
-            std::cerr << "[Worker] OpenSSL RNG failed.\n";
-            return;
-        }
+        if (RAND_bytes(salt.data(), 16) != 1) return;
 
         std::vector<uint8_t> hash = ComputeHash(password, salt);
 
-        if (db.CreateUser(username, hash, salt))
+        std::cout << "[Register Debug] User: " << username << "\n";
+        std::cout << "   - Generated Salt: " << ToHex(salt) << "\n";
+        std::cout << "   - Generated Hash: " << ToHex(hash) << "\n";
+
+        if (DatabaseManager::GetInstance().CreateUser(username, hash, salt))
         {
-            std::cout << "[Worker] Register SUCCESS: Created user '" << username << "'\n";
-            if (network_core_)
-            {
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::SignupResp, "SIGNUP_SUCCESS");
-            }
+            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::SignupResp, "SIGNUP_SUCCESS");
         }
         else
         {
-            std::cout << "[Worker] Register Failed: User '" << username << "' probably exists.\n";
-            if (network_core_)
-            {
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::SignupResp, "SIGNUP_FAILURE: User exists");
-            }
+            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "SIGNUP_FAILURE");
         }
     }
 
@@ -485,13 +465,11 @@ namespace net_ops::server
         std::string device_ip = ReadString(payload, offset);
         std::string log_msg = ReadString(payload, offset);
 
-        auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
-        if (!userIdOpt.has_value())
+        if (!SessionManager::GetInstance().GetUserId(token).has_value())
             return;
 
         DatabaseManager::GetInstance().SaveLog(device_ip, log_msg);
-
-        std::cout << "[Worker] Stored log from " << device_ip << "\n";
+        std::cout << "[Worker] Processed log from " << device_ip << "\n";
     }
 
     void Worker::HandleStatusUpdate(int fd, const std::vector<uint8_t> &payload)
@@ -509,76 +487,61 @@ namespace net_ops::server
         DatabaseManager::GetInstance().UpdateDeviceStatus(ip, status, info);
     }
 
-    void Worker::HandleLogQuery(int client_fd, const std::vector<uint8_t>& payload) {
-        std::cout << "[Worker Debug] Received LogQueryReq. Payload Size: " << payload.size() << "\n";
-
+    void Worker::HandleLogQuery(int client_fd, const std::vector<uint8_t> &payload)
+    {
         size_t offset = 0;
 
-        if (offset + 4 > payload.size()) {
-            std::cerr << "[Worker Error] Payload too small for Token Length.\n";
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "PAYLOAD_TOO_SMALL");
+        if (offset + 4 > payload.size())
             return;
-        }
-
-        uint32_t tokenLen = 0;
-        std::memcpy(&tokenLen, &payload[offset], 4);
-        tokenLen = ntohl(tokenLen);
+        uint32_t tLen = 0;
+        std::memcpy(&tLen, &payload[offset], 4);
+        tLen = ntohl(tLen);
         offset += 4;
-
-        if (offset + tokenLen > payload.size()) {
-            std::cerr << "[Worker Error] Token Length (" << tokenLen << ") exceeds payload.\n";
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "INVALID_TOKEN_LEN");
+        if (offset + tLen > payload.size())
             return;
-        }
+        std::string token(payload.begin() + offset, payload.begin() + offset + tLen);
+        offset += tLen;
 
-        std::string token(payload.begin() + offset, payload.begin() + offset + tokenLen);
-        offset += tokenLen;
-
-        if (offset + 4 > payload.size()) {
-            std::cerr << "[Worker Error] Payload too small for Device ID.\n";
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "MISSING_DEVICE_ID");
+        if (offset + 4 > payload.size())
             return;
-        }
-
         uint32_t netDevId = 0;
         std::memcpy(&netDevId, &payload[offset], 4);
         int device_id = static_cast<int>(ntohl(netDevId));
         offset += 4;
 
-        std::cout << "[Worker Debug] Token: " << token.substr(0, 5) << "... | Device ID: " << device_id << "\n";
-
-        auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
-        if (!userIdOpt.has_value()) {
-             std::cerr << "[Worker Error] Invalid Token.\n";
-             if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
-             return;
+        if (!SessionManager::GetInstance().GetUserId(token).has_value())
+        {
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
+            return;
         }
 
         auto logs = DatabaseManager::GetInstance().GetLogsForDevice(device_id);
-        std::cout << "[Worker Debug] Found " << logs.size() << " logs in DB.\n";
+        std::cout << "[Worker] Fetching " << logs.size() << " logs for Device " << device_id << "\n";
 
         std::vector<uint8_t> response;
 
         uint32_t count = htonl(static_cast<uint32_t>(logs.size()));
-        const uint8_t* countBytes = reinterpret_cast<const uint8_t*>(&count);
+        const uint8_t *countBytes = reinterpret_cast<const uint8_t *>(&count);
         response.insert(response.end(), countBytes, countBytes + 4);
-        
-        for (const auto& log : logs) {
+
+        for (const auto &log : logs)
+        {
             uint32_t timeLen = htonl(static_cast<uint32_t>(log.timestamp.size()));
-            const uint8_t* timeLenBytes = reinterpret_cast<const uint8_t*>(&timeLen);
+            const uint8_t *timeLenBytes = reinterpret_cast<const uint8_t *>(&timeLen);
             response.insert(response.end(), timeLenBytes, timeLenBytes + 4);
             response.insert(response.end(), log.timestamp.begin(), log.timestamp.end());
 
             uint32_t msgLen = htonl(static_cast<uint32_t>(log.message.size()));
-            const uint8_t* msgLenBytes = reinterpret_cast<const uint8_t*>(&msgLen);
+            const uint8_t *msgLenBytes = reinterpret_cast<const uint8_t *>(&msgLen);
             response.insert(response.end(), msgLenBytes, msgLenBytes + 4);
             response.insert(response.end(), log.message.begin(), log.message.end());
         }
 
-        if (network_core_) {
+        if (network_core_)
+        {
             std::string binaryPayload(response.begin(), response.end());
             network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LogQueryResp, binaryPayload);
-            std::cout << "[Worker Debug] Response Sent.\n";
         }
     }
 }

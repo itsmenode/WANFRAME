@@ -6,30 +6,12 @@
 int main() {
     auto& db = net_ops::server::DatabaseManager::GetInstance();
     
-    if (!db.Initialize("test_db.sqlite")) {
+    if (!db.Initialize("server_data.db")) {
         std::cerr << "Failed to init DB\n";
         return -1;
     }
 
-    std::cout << "--- Running Database Test ---\n";
-    
-    std::vector<uint8_t> dummy_hash = {0xDE, 0xAD, 0xBE, 0xEF};
-    std::vector<uint8_t> dummy_salt = {0x11, 0x22};
-
-    if (db.CreateUser("test_admin", dummy_hash, dummy_salt)) {
-        std::cout << "[SUCCESS] Created user 'test_admin'\n";
-    } else {
-        std::cout << "[INFO] User 'test_admin' probably already exists\n";
-    }
-
-    auto user = db.GetUserByName("test_admin");
-    if (user.has_value()) {
-        std::cout << "[SUCCESS] Found user: " << user->username 
-                  << " (ID: " << user->id << ")\n";
-    } else {
-        std::cerr << "[FAIL] Could not find 'test_admin'\n";
-    }
-    std::cout << "--- Test Complete ---\n";
+    std::cout << "[System] Database initialized successfully.\n";
 
     try
     {
@@ -40,6 +22,7 @@ int main() {
         
         worker.SetNetworkCore(&server);
 
+        std::cout << "[System] Server listening on port 8080...\n";
         server.Init();
         server.Run();
 

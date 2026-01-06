@@ -409,9 +409,15 @@ namespace net_ops::client
             }
         }
 
+        if (header.msg_type == static_cast<uint8_t>(net_ops::protocol::MessageType::ErrorResp)) {
+            std::string errMsg(body.begin(), body.end());
+            std::cout << "[Server Error] " << errMsg << "\n";
+            return false;
+        }
+
         if (header.msg_type == static_cast<uint8_t>(net_ops::protocol::MessageType::LogQueryResp)) {
             size_t offset = 0;
-            if (offset + 4 > body.size()) { std::cout << "[Info] No logs found (Empty Response).\n"; return true; }
+            if (offset + 4 > body.size()) { std::cout << "[Info] No logs found.\n"; return true; }
             
             uint32_t netCount = 0;
             std::memcpy(&netCount, &body[offset], 4);
@@ -423,13 +429,11 @@ namespace net_ops::client
             std::cout << "-----------------------+-----------------------------------\n";
 
             for(int i=0; i<count; i++) {
-                // Read Timestamp
                 if (offset + 4 > body.size()) break;
                 uint32_t tsLen = 0; std::memcpy(&tsLen, &body[offset], 4); tsLen = ntohl(tsLen); offset += 4;
                 if (offset + tsLen > body.size()) break;
                 std::string ts(body.begin() + offset, body.begin() + offset + tsLen); offset += tsLen;
 
-                // Read Message
                 if (offset + 4 > body.size()) break;
                 uint32_t msgLen = 0; std::memcpy(&msgLen, &body[offset], 4); msgLen = ntohl(msgLen); offset += 4;
                 if (offset + msgLen > body.size()) break;
@@ -447,6 +451,11 @@ namespace net_ops::client
         if (msg.find("LOGIN_SUCCESS:") == 0) {
             m_session_token = msg.substr(14);
             return true;
+        }
+
+        if (msg.find("LOGIN_FAILURE") != std::string::npos || 
+            msg.find("AUTH_FAILED") != std::string::npos) {
+            return false;
         }
         
         return true; 
