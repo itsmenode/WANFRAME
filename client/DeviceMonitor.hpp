@@ -5,12 +5,14 @@
 #include <atomic>
 #include <mutex>
 #include <functional>
+#include <chrono>
 
 namespace net_ops::client {
 
     struct MonitoredDevice {
         std::string ip;
         bool is_online;
+        std::chrono::steady_clock::time_point last_snmp_check; 
     };
 
     using StatusCallback = std::function<void(const std::string&, const std::string&, const std::string&)>;

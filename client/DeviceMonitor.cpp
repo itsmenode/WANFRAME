@@ -2,7 +2,7 @@
 #include "Scanner.hpp" 
 #include "SnmpClient.hpp"
 #include <iostream>
-#include <chrono>
+#include <algorithm>
 
 namespace net_ops::client {
 
@@ -16,7 +16,11 @@ namespace net_ops::client {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_targets.clear();
         for(const auto& ip : ips) {
-            m_targets.push_back({ip, false});
+            MonitoredDevice dev;
+            dev.ip = ip;
+            dev.is_online = false;
+            dev.last_snmp_check = std::chrono::steady_clock::time_point::min();
+            m_targets.push_back(dev);
         }
         std::cout << "[Monitor] Watching " << ips.size() << " devices.\n";
     }
@@ -31,14 +35,8 @@ namespace net_ops::client {
 
     void DeviceMonitor::Stop() {
         m_running = false;
-        
         if (m_thread.joinable()) {
             m_thread.join();
-        }
-
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            m_targets.clear();
         }
     }
 
@@ -46,38 +44,52 @@ namespace net_ops::client {
         SnmpClient snmp;
 
         while (m_running) {
-            std::vector<std::string> ips_to_check;
+            std::vector<MonitoredDevice> local_targets;
             {
                 std::lock_guard<std::mutex> lock(m_mutex);
-                for(const auto& t : m_targets) ips_to_check.push_back(t.ip);
+                local_targets = m_targets;
             }
 
-            if (ips_to_check.empty()) {
+            if (local_targets.empty()) {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 continue;
             }
 
-            for (const auto& ip : ips_to_check) {
+            auto now = std::chrono::steady_clock::now();
+
+            for (auto& dev : local_targets) {
                 if (!m_running) break;
 
-                bool alive = NetworkScanner::Ping(ip);
+                bool alive = NetworkScanner::Ping(dev.ip);
                 std::string status = alive ? "ONLINE" : "OFFLINE";
                 std::string desc = "";
 
-                if (alive) {
-                    DeviceStats stats = snmp.QueryDevice(ip, "public");
+                bool time_for_snmp = (now - dev.last_snmp_check) > std::chrono::seconds(60);
+
+                if (alive && time_for_snmp) {
+                    DeviceStats stats = snmp.QueryDevice(dev.ip, "public");
+                    
                     if (stats.success) {
                         desc = stats.description;
+                    }
+                    
+                    dev.last_snmp_check = now;
+                    
+                    {
+                        std::lock_guard<std::mutex> lock(m_mutex);
+                        for(auto& t : m_targets) {
+                            if(t.ip == dev.ip) t.last_snmp_check = now;
+                        }
                     }
                 }
 
                 if (m_callback) {
-                    m_callback(ip, status, desc);
+                    m_callback(dev.ip, status, desc);
                 }
             }
 
-            for(int i=0; i<30; i++) {
-                if(!m_running) return;
+            for(int i=0; i<5; i++) {
+                if(!m_running) break;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         }
