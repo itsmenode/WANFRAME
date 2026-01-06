@@ -88,6 +88,7 @@ namespace net_ops::server
             "name TEXT NOT NULL, "
             "ip_address TEXT NOT NULL, "
             "status TEXT DEFAULT 'UNKNOWN', "
+            "info TEXT DEFAULT '', "
             "FOREIGN KEY(owner_id) REFERENCES users(id), "
             "FOREIGN KEY(group_id) REFERENCES groups(id) ON DELETE SET NULL"
             ");";
@@ -342,7 +343,8 @@ namespace net_ops::server
         std::lock_guard<std::mutex> lock(db_mutex_);
         std::vector<DeviceRecord> devices;
         
-        const char *sql = "SELECT id, name, ip_address, status FROM devices WHERE owner_id = ? OR owner_id = 0;"; // 0 = System Auto-Add
+        const char *sql = "SELECT d.id, d.name, d.ip_address, d.status, d.group_id, d.info FROM devices d WHERE owner_id = ? OR owner_id = 0;"; 
+        
         sqlite3_stmt *stmt;
         if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK) return devices;
 
@@ -354,6 +356,11 @@ namespace net_ops::server
             d.name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
             d.ip_address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
             d.status = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+            d.group_id = sqlite3_column_int(stmt, 4);
+            
+            const char* i = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+            if (i) d.info = i;
+            
             devices.push_back(d);
         }
         sqlite3_finalize(stmt);
@@ -430,13 +437,16 @@ namespace net_ops::server
     void DatabaseManager::UpdateDeviceStatus(const std::string &ip, const std::string &status, const std::string &info)
     {
         std::lock_guard<std::mutex> lock(db_mutex_);
-        std::string sql = "UPDATE devices SET status = ? WHERE ip_address = ?;";
+        std::string sql = "UPDATE devices SET status = ?, info = ? WHERE ip_address = ?;";
+
         sqlite3_stmt *stmt;
-        if (sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
-            sqlite3_bind_text(stmt, 1, status.c_str(), -1, SQLITE_STATIC);
-            sqlite3_bind_text(stmt, 2, ip.c_str(), -1, SQLITE_STATIC);
-            sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
+        sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt, nullptr);
+        sqlite3_bind_text(stmt, 1, status.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 2, info.c_str(), -1, SQLITE_STATIC); // Bind Info
+        sqlite3_bind_text(stmt, 3, ip.c_str(), -1, SQLITE_STATIC);
+
+        sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+        
         }
-    }
 }

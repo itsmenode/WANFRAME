@@ -29,6 +29,7 @@ namespace net_ops::server {
         std::string name;
         std::string ip_address;
         std::string status;
+        std::string info;
     };
 
     struct LogEntry {

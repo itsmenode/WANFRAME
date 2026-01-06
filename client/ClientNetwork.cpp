@@ -415,6 +415,48 @@ namespace net_ops::client
             return false;
         }
 
+        if (header.msg_type == static_cast<uint8_t>(net_ops::protocol::MessageType::DeviceListResp)) {
+            std::string list(body.begin(), body.end());
+            if (list == "NO_DEVICES") {
+                std::cout << "No devices found.\n";
+                return true;
+            }
+
+            std::cout << "\n--- DEVICE LIST ---\n";
+            std::cout << std::left << std::setw(5) << "ID" 
+                      << std::setw(20) << "NAME" 
+                      << std::setw(16) << "IP" 
+                      << std::setw(10) << "STATUS" 
+                      << std::setw(30) << "INFO" 
+                      << "\n";
+            std::cout << "--------------------------------------------------------------------------------\n";
+
+            size_t pos = 0;
+            while ((pos = list.find(',')) != std::string::npos) {
+                std::string token = list.substr(0, pos);
+                
+                std::vector<std::string> parts;
+                size_t partPos = 0;
+                while ((partPos = token.find(':')) != std::string::npos) {
+                    parts.push_back(token.substr(0, partPos));
+                    token.erase(0, partPos + 1);
+                }
+                parts.push_back(token);
+
+                if (parts.size() >= 6) { 
+                     std::cout << std::left << std::setw(5) << parts[0]
+                               << std::setw(20) << parts[1]
+                               << std::setw(16) << parts[2]
+                               << std::setw(10) << parts[3]
+                               << std::setw(30) << parts[5]
+                               << "\n";
+                }
+                list.erase(0, pos + 1);
+            }
+            std::cout << "\n";
+            return true;
+        }
+
         if (header.msg_type == static_cast<uint8_t>(net_ops::protocol::MessageType::LogQueryResp)) {
             size_t offset = 0;
             if (offset + 4 > body.size()) { std::cout << "[Info] No logs found.\n"; return true; }

@@ -16,25 +16,28 @@ namespace net_ops::server
 
     std::string ReadString(const std::vector<uint8_t> &data, size_t &offset)
     {
-        if (offset + 4 > data.size()) {
+        if (offset + 4 > data.size())
+        {
             std::cout << "[ReadString Error] Not enough bytes for length. Offset: " << offset << " Size: " << data.size() << "\n";
             return "";
         }
 
         uint32_t len = 0;
         std::memcpy(&len, &data[offset], 4);
-        
-        uint8_t* b = reinterpret_cast<uint8_t*>(&len);
-        
+
+        uint8_t *b = reinterpret_cast<uint8_t *>(&len);
+
         uint32_t lenHost = ntohl(len);
-        
-        if (lenHost > 10000 && len < 10000) {
-             lenHost = len;
+
+        if (lenHost > 10000 && len < 10000)
+        {
+            lenHost = len;
         }
 
         offset += 4;
 
-        if (offset + lenHost > data.size()) {
+        if (offset + lenHost > data.size())
+        {
             std::cout << "[ReadString Error] Length " << lenHost << " exceeds payload size " << data.size() << "\n";
             return "";
         }
@@ -181,7 +184,8 @@ namespace net_ops::server
         if (!user.has_value())
         {
             std::cout << "[Worker] Login Failed: User '" << username << "' not found.\n";
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "LOGIN_FAILURE");
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "LOGIN_FAILURE");
             return;
         }
 
@@ -196,12 +200,14 @@ namespace net_ops::server
         {
             std::cout << "[Worker] Login SUCCESS.\n";
             std::string token = SessionManager::GetInstance().CreateSession(user->id);
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_SUCCESS:" + token);
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_SUCCESS:" + token);
         }
         else
         {
             std::cout << "[Worker] Login Mismatch.\n";
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "LOGIN_FAILURE");
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "LOGIN_FAILURE");
         }
     }
 
@@ -212,7 +218,8 @@ namespace net_ops::server
         std::string password = ReadString(payload, offset);
 
         std::vector<uint8_t> salt(16);
-        if (RAND_bytes(salt.data(), 16) != 1) return;
+        if (RAND_bytes(salt.data(), 16) != 1)
+            return;
 
         std::vector<uint8_t> hash = ComputeHash(password, salt);
 
@@ -222,11 +229,13 @@ namespace net_ops::server
 
         if (DatabaseManager::GetInstance().CreateUser(username, hash, salt))
         {
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::SignupResp, "SIGNUP_SUCCESS");
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::SignupResp, "SIGNUP_SUCCESS");
         }
         else
         {
-            if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "SIGNUP_FAILURE");
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "SIGNUP_FAILURE");
         }
     }
 
@@ -448,7 +457,7 @@ namespace net_ops::server
         {
             for (const auto &d : devices)
             {
-                response += std::to_string(d.id) + ":" + d.name + ":" + d.ip_address + ":" + d.status + ":" + std::to_string(d.group_id) + ",";
+                response += std::to_string(d.id) + ":" + d.name + ":" + d.ip_address + ":" + d.status + ":" + std::to_string(d.group_id) + ":" + d.info + ",";
             }
         }
 
