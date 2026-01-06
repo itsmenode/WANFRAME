@@ -32,6 +32,11 @@ namespace net_ops::server {
         std::string status;
     };
 
+    struct LogEntry {
+        std::string timestamp;
+        std::string message;
+    };
+
     class DatabaseManager {
         private:
             sqlite3* db_;
@@ -66,6 +71,8 @@ namespace net_ops::server {
             void SaveLog(const std::string& ip_address, const std::string& message);
 
             void UpdateDeviceStatus(const std::string& ip, const std::string& status, const std::string& info);
+
+            std::vector<LogEntry> GetLogsForDevice(int device_id, int limit = 50);
 
             bool IsGroupOwner(int group_id, int user_id);
     };

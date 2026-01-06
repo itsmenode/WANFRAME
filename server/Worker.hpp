@@ -44,6 +44,8 @@ namespace net_ops::server {
 
         void HandleStatusUpdate(int fd, const std::vector<uint8_t>& payload);
 
+        void HandleLogQuery(int client_fd, const std::vector<uint8_t>& payload);
+
     public:
         Worker();
         ~Worker();

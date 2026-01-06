@@ -388,6 +388,32 @@ namespace net_ops::server {
         }
     }
 
+    std::vector<LogEntry> DatabaseManager::GetLogsForDevice(int device_id, int limit) {
+        std::lock_guard<std::mutex> lock(db_mutex_);
+        std::vector<LogEntry> logs;
+
+        const char* sql = "SELECT received_at, message FROM logs WHERE device_id = ? ORDER BY id DESC LIMIT ?;";
+        
+        sqlite3_stmt* stmt;
+        if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK) return logs;
+
+        sqlite3_bind_int(stmt, 1, device_id);
+        sqlite3_bind_int(stmt, 2, limit);
+
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            LogEntry entry;
+            const char* time = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+            const char* msg = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            
+            if (time) entry.timestamp = time;
+            if (msg) entry.message = msg;
+            
+            logs.push_back(entry);
+        }
+        sqlite3_finalize(stmt);
+        return logs;
+    }
+
     void DatabaseManager::UpdateDeviceStatus(const std::string& ip, const std::string& status, const std::string& info) {
         std::lock_guard<std::mutex> lock(db_mutex_);
         

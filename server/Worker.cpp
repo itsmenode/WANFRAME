@@ -9,6 +9,7 @@
 #include <openssl/rand.h>
 #include <iomanip>
 #include <sstream>
+#include <netinet/in.h>
 
 namespace net_ops::server
 {
@@ -135,6 +136,10 @@ namespace net_ops::server
 
                 case net_ops::protocol::MessageType::DeviceStatusReq:
                     HandleStatusUpdate(current_job.client_fd, current_job.payload);
+                    break;
+
+                case net_ops::protocol::MessageType::LogQueryReq:
+                    HandleLogQuery(current_job.client_fd, current_job.payload);
                     break;
 
                 default:
@@ -489,7 +494,8 @@ namespace net_ops::server
         std::cout << "[Worker] Stored log from " << device_ip << "\n";
     }
 
-    void Worker::HandleStatusUpdate(int fd, const std::vector<uint8_t>& payload) {
+    void Worker::HandleStatusUpdate(int fd, const std::vector<uint8_t> &payload)
+    {
         size_t offset = 0;
         std::string token = ReadString(payload, offset);
         std::string ip = ReadString(payload, offset);
@@ -497,8 +503,60 @@ namespace net_ops::server
         std::string info = ReadString(payload, offset);
 
         auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
-        if (!userIdOpt) return;
+        if (!userIdOpt)
+            return;
 
         DatabaseManager::GetInstance().UpdateDeviceStatus(ip, status, info);
+    }
+
+    void Worker::HandleLogQuery(int client_fd, const std::vector<uint8_t>& payload) {
+        size_t offset = 0;
+
+        if (offset + 4 > payload.size()) return;
+        uint32_t tokenLen = 0;
+        std::memcpy(&tokenLen, &payload[offset], 4);
+        tokenLen = ntohl(tokenLen);
+        offset += 4;
+
+        if (offset + tokenLen > payload.size()) return;
+        std::string token(payload.begin() + offset, payload.begin() + offset + tokenLen);
+        offset += tokenLen;
+
+        if (offset + 4 > payload.size()) return;
+        uint32_t netDevId = 0;
+        std::memcpy(&netDevId, &payload[offset], 4);
+        int device_id = static_cast<int>(ntohl(netDevId));
+        offset += 4;
+
+        auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
+        if (!userIdOpt.has_value()) {
+             if (network_core_) network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
+             return;
+        }
+
+        auto logs = DatabaseManager::GetInstance().GetLogsForDevice(device_id);
+
+        std::vector<uint8_t> response;
+
+        uint32_t count = htonl(static_cast<uint32_t>(logs.size()));
+        const uint8_t* countBytes = reinterpret_cast<const uint8_t*>(&count);
+        response.insert(response.end(), countBytes, countBytes + 4);
+        
+        for (const auto& log : logs) {
+            uint32_t timeLen = htonl(static_cast<uint32_t>(log.timestamp.size()));
+            const uint8_t* timeLenBytes = reinterpret_cast<const uint8_t*>(&timeLen);
+            response.insert(response.end(), timeLenBytes, timeLenBytes + 4);
+            response.insert(response.end(), log.timestamp.begin(), log.timestamp.end());
+
+            uint32_t msgLen = htonl(static_cast<uint32_t>(log.message.size()));
+            const uint8_t* msgLenBytes = reinterpret_cast<const uint8_t*>(&msgLen);
+            response.insert(response.end(), msgLenBytes, msgLenBytes + 4);
+            response.insert(response.end(), log.message.begin(), log.message.end());
+        }
+
+        if (network_core_) {
+            std::string binaryPayload(response.begin(), response.end());
+            network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LogQueryResp, binaryPayload);
+        }
     }
 }

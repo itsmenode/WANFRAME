@@ -45,6 +45,9 @@ namespace net_ops::protocol
         DeviceStatusReq = 0x11,
         DeviceStatusResp = 0x12,
 
+        LogQueryReq = 0x15,  
+        LogQueryResp = 0x16,
+
         ErrorResp = 0xFF
     };
 
