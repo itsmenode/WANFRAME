@@ -324,6 +324,31 @@ namespace net_ops::client
         return true;
     }
 
+    bool ClientNetwork::SendStatusUpdate(const std::string& ip, const std::string& status, const std::string& info) {
+        
+        if (!m_ssl_handle) return false;
+
+        std::vector<uint8_t> payload;
+        AppendString(payload, m_session_token);
+        AppendString(payload, ip);
+        AppendString(payload, status);
+        AppendString(payload, info);
+
+        net_ops::protocol::Header header;
+        header.magic = net_ops::protocol::EXPECTED_MAGIC;
+        header.msg_type = static_cast<uint8_t>(net_ops::protocol::MessageType::DeviceStatusReq);
+        header.payload_length = payload.size();
+        header.reserved = 0;
+
+        uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
+        net_ops::protocol::SerializeHeader(header, headerBuf);
+
+        SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf));
+        SSL_write(m_ssl_handle, payload.data(), payload.size());
+        
+        return true;
+    }
+
     bool ClientNetwork::ReceiveResponse()
     {
         if (!m_ssl_handle) return false;

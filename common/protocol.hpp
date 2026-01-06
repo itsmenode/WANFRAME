@@ -42,6 +42,9 @@ namespace net_ops::protocol
         LogUploadReq = 0x0F,
         LogUploadResp = 0x10,
 
+        DeviceStatusReq = 0x11,
+        DeviceStatusResp = 0x12,
+
         ErrorResp = 0xFF
     };
 

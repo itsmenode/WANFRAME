@@ -58,7 +58,8 @@ add_executable(Client
     client/ClientNetwork.cpp
     client/Scanner.cpp
     client/SyslogCollector.cpp
-    # common/ByteBuffer.cpp # Add this ONLY if ClientNetwork uses ByteBuffer later
+    client/DeviceMonitor.cpp
+    client/SnmpClient.cpp
 )
 
 target_link_libraries(Client

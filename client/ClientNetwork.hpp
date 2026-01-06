@@ -45,6 +45,8 @@ namespace net_ops::client
 
         bool SendLogUpload(const std::string& source_ip, const std::string& log_msg);
 
+        bool SendStatusUpdate(const std::string& ip, const std::string& status, const std::string& info);
+
         bool ReceiveResponse(); 
     };
 }

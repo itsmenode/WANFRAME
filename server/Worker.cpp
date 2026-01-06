@@ -133,6 +133,10 @@ namespace net_ops::server
                     HandleLogUpload(current_job.client_fd, current_job.payload);
                     break;
 
+                case net_ops::protocol::MessageType::DeviceStatusReq:
+                    HandleStatusUpdate(current_job.client_fd, current_job.payload);
+                    break;
+
                 default:
                     break;
                 }
@@ -469,17 +473,32 @@ namespace net_ops::server
         }
     }
 
-    void Worker::HandleLogUpload(int client_fd, const std::vector<uint8_t>& payload) {
+    void Worker::HandleLogUpload(int client_fd, const std::vector<uint8_t> &payload)
+    {
         size_t offset = 0;
         std::string token = ReadString(payload, offset);
         std::string device_ip = ReadString(payload, offset);
         std::string log_msg = ReadString(payload, offset);
 
         auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
-        if (!userIdOpt.has_value()) return;
+        if (!userIdOpt.has_value())
+            return;
 
         DatabaseManager::GetInstance().SaveLog(device_ip, log_msg);
-        
+
         std::cout << "[Worker] Stored log from " << device_ip << "\n";
+    }
+
+    void Worker::HandleStatusUpdate(int fd, const std::vector<uint8_t>& payload) {
+        size_t offset = 0;
+        std::string token = ReadString(payload, offset);
+        std::string ip = ReadString(payload, offset);
+        std::string status = ReadString(payload, offset);
+        std::string info = ReadString(payload, offset);
+
+        auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
+        if (!userIdOpt) return;
+
+        DatabaseManager::GetInstance().UpdateDeviceStatus(ip, status, info);
     }
 }

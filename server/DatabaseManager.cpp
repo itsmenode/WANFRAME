@@ -387,4 +387,21 @@ namespace net_ops::server {
             std::cout << "[DB] Log saved for Device " << device_id << "\n";
         }
     }
+
+    void DatabaseManager::UpdateDeviceStatus(const std::string& ip, const std::string& status, const std::string& info) {
+        std::lock_guard<std::mutex> lock(db_mutex_);
+        
+        std::string sql = "UPDATE devices SET status = ?, name = COALESCE(NULLIF(?, ''), name) WHERE ip_address = ?;";
+        
+        sqlite3_stmt* stmt;
+        sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt, nullptr);
+        sqlite3_bind_text(stmt, 1, status.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 2, info.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 3, ip.c_str(), -1, SQLITE_STATIC);
+        
+        sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+        
+        std::cout << "[DB] Updated " << ip << " -> " << status << "\n";
+    }
 }
