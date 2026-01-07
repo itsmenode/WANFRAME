@@ -371,51 +371,43 @@ namespace net_ops::server
     }
 
     void Worker::HandleDeviceAdd(int client_fd, const std::vector<uint8_t> &payload)
+{
+    size_t offset = 0;
+    
+    std::string token = ReadString(payload, offset);
+    
+    auto userId = SessionManager::GetInstance().GetUserId(token);
+    if (!userId.has_value())
     {
-        size_t offset = 0;
-        std::string token = ReadString(payload, offset);
-
-        uint32_t netGroupId = 0;
-        std::memcpy(&netGroupId, &payload[offset], 4);
-        int group_id = static_cast<int>(ntohl(netGroupId));
-        offset += 4;
-
-        std::string name = ReadString(payload, offset);
-        std::string ip = ReadString(payload, offset);
-        std::string mac = ReadString(payload, offset);
-
-        auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
-        if (!userIdOpt.has_value())
-        {
-            if (network_core_)
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
-            return;
-        }
-        int user_id = userIdOpt.value();
-
-        if (name.empty() || ip.empty())
-        {
-            if (network_core_)
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "INVALID_DATA");
-            return;
-        }
-
-        auto &db = DatabaseManager::GetInstance();
-
-        int dev_id = db.AddDevice(user_id, name, ip, group_id);
-
-        if (dev_id != -1)
-        {
-            std::cout << "[Worker] Device Added: " << name << " (" << ip << ") for User " << user_id << "\n";
-            if (network_core_)
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::DeviceAddResp, "DEVICE_ADDED");
-        }
-        else
-        {
-            if (network_core_)
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "ADD_FAILED: Duplicate?");
-        }
+        if (network_core_)
+            network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
+        return;
     }
+
+    uint32_t netGroupId = 0;
+    if (offset + 4 <= payload.size()) {
+        std::memcpy(&netGroupId, &payload[offset], 4);
+        offset += 4;
+    }
+    int group_id = static_cast<int>(ntohl(netGroupId));
+
+    std::string name = ReadString(payload, offset);
+    std::string ip = ReadString(payload, offset);
+    std::string mac = ReadString(payload, offset);
+
+    auto &db = DatabaseManager::GetInstance();
+    
+    if (db.AddDevice(userId.value(), group_id, name, ip, mac))
+    {
+        if (network_core_)
+            network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::SuccessResp, "DEVICE_ADDED");
+    }
+    else
+    {
+        if (network_core_)
+            network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "ADD_FAILED");
+    }
+}
 
     void Worker::HandleDeviceList(int client_fd, const std::vector<uint8_t> &payload)
     {

@@ -412,7 +412,9 @@ namespace net_ops::server
             sqlite3_finalize(check_stmt);
         }
 
-        const char *sql = "INSERT INTO devices (owner_id, group_id, name, ip_address, status) VALUES (?, ?, ?, ?, 'UNKNOWN');";
+        const char *sql = "INSERT INTO devices (owner_id, group_id, name, ip_address, mac_address, status) "
+                  "VALUES (?, ?, ?, ?, ?, 'ACTIVE') "
+                  "ON CONFLICT(mac_address) DO UPDATE SET ip_address=excluded.ip_address, status='ACTIVE';";
         sqlite3_stmt *stmt;
         if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK)
             return -1;
