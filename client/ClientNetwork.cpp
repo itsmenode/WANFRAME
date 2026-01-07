@@ -254,42 +254,16 @@ namespace net_ops::client
         return true;
     }
 
-    bool ClientNetwork::SendAddDevice(const std::string &name, const std::string &ip, int groupId)
+    void ClientNetwork::SendAddDevice(const std::string &name, const std::string &ip, const std::string &mac, int groupId)
     {
-        if (!m_ssl_handle)
-            return false;
-
-        if (m_session_token.empty())
-        {
-            std::cerr << "[Client] Error: No session token.\n";
-            return false;
-        }
-
         std::vector<uint8_t> payload;
-
-        AppendString(payload, m_session_token);
-
+        net_ops::protocol::PackString(payload, m_session_token);
         net_ops::protocol::PackUint32(payload, static_cast<uint32_t>(groupId));
+        net_ops::protocol::PackString(payload, name);
+        net_ops::protocol::PackString(payload, ip);
+        net_ops::protocol::PackString(payload, mac);
 
-        AppendString(payload, name);
-
-        AppendString(payload, ip);
-
-        net_ops::protocol::Header header;
-        header.magic = net_ops::protocol::EXPECTED_MAGIC;
-        header.msg_type = static_cast<uint8_t>(net_ops::protocol::MessageType::DeviceAddReq);
-        header.payload_length = static_cast<uint32_t>(payload.size());
-        header.reserved = 0;
-
-        uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
-        net_ops::protocol::SerializeHeader(header, headerBuf);
-
-        if (SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf)) <= 0)
-            return false;
-        if (SSL_write(m_ssl_handle, payload.data(), payload.size()) <= 0)
-            return false;
-
-        return true;
+        SendRequest(net_ops::protocol::MessageType::DeviceAddReq, payload);
     }
 
     bool ClientNetwork::SendListDevices()

@@ -6,29 +6,36 @@
 #include <array>
 #include <algorithm>
 #include <vector>
-
+#include <fstream>
+#include <sstream>
 #include <future>
 #include <mutex>
 #include <chrono>
-
 #include <ifaddrs.h>
-#include <netinet/in.h> 
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <net/if.h>
 
-namespace net_ops::client {
+namespace net_ops::client
+{
 
-    std::string NetworkScanner::GetLocalIPAddress() {
+    std::string NetworkScanner::GetLocalIPAddress()
+    {
         struct ifaddrs *ifap, *ifa;
         std::string local_ip = "";
 
-        if (getifaddrs(&ifap) == -1) return "";
+        if (getifaddrs(&ifap) == -1)
+            return "";
 
-        for (ifa = ifap; ifa != nullptr; ifa = ifa->ifa_next) {
-            if (ifa->ifa_addr == nullptr) continue;
-            if (ifa->ifa_addr->sa_family == AF_INET) {
-                if (std::string(ifa->ifa_name) == "lo") continue;
-                void* addr_ptr = &((struct sockaddr_in*)ifa->ifa_addr)->sin_addr;
+        for (ifa = ifap; ifa != nullptr; ifa = ifa->ifa_next)
+        {
+            if (ifa->ifa_addr == nullptr)
+                continue;
+            if (ifa->ifa_addr->sa_family == AF_INET)
+            {
+                if (std::string(ifa->ifa_name) == "lo")
+                    continue;
+                void *addr_ptr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
                 char buf[INET_ADDRSTRLEN];
                 inet_ntop(AF_INET, addr_ptr, buf, INET_ADDRSTRLEN);
                 local_ip = buf;
@@ -39,25 +46,53 @@ namespace net_ops::client {
         return local_ip;
     }
 
-    std::string NetworkScanner::GetSubnetFromIP(const std::string& ip) {
+    std::string NetworkScanner::GetSubnetFromIP(const std::string &ip)
+    {
         size_t last_dot = ip.find_last_of('.');
-        if (last_dot == std::string::npos) return "";
+        if (last_dot == std::string::npos)
+            return "";
         return ip.substr(0, last_dot);
     }
 
-    bool NetworkScanner::Ping(const std::string& ip) {
-        if (ip.empty()) return false;
+    bool NetworkScanner::Ping(const std::string &ip)
+    {
+        if (ip.empty())
+            return false;
         std::string command = "ping -c 1 -W 1 " + ip + " | grep 'bytes from' > /dev/null 2>&1";
         int result = std::system(command.c_str());
         return (result == 0);
     }
 
-    std::vector<ScannedHost> NetworkScanner::ScanLocalNetwork() {
+    std::string GetMacFromArp(const std::string &target_ip)
+    {
+        std::ifstream arpFile("/proc/net/arp");
+        if (!arpFile.is_open())
+            return "";
+
+        std::string line;
+        std::getline(arpFile, line);
+
+        while (std::getline(arpFile, line))
+        {
+            std::stringstream ss(line);
+            std::string ip, hwType, flags, mac, mask, device;
+            if (ss >> ip >> hwType >> flags >> mac >> mask >> device)
+            {
+                if (ip == target_ip)
+                    return mac;
+            }
+        }
+        return "";
+    }
+
+    std::vector<ScannedHost> NetworkScanner::ScanLocalNetwork()
+    {
         std::vector<ScannedHost> found_hosts;
         std::mutex results_mutex;
 
         std::string my_ip = GetLocalIPAddress();
-        if (my_ip.empty()) {
+        if (my_ip.empty())
+        {
             std::cerr << "[Scanner] Could not detect local IP.\n";
             return found_hosts;
         }
@@ -68,28 +103,30 @@ namespace net_ops::client {
 
         std::vector<std::future<void>> tasks;
 
-        for (int i = 1; i < 255; ++i) {
+        for (int i = 1; i < 255; ++i)
+        {
             std::string target = subnet + "." + std::to_string(i);
 
-            if (target == my_ip) continue;
+            if (target == my_ip)
+                continue;
 
             tasks.push_back(std::async(std::launch::async, [target, &found_hosts, &results_mutex]() {
-                
                 if (Ping(target)) {
-                    std::lock_guard<std::mutex> lock(results_mutex);
-                    
-                    std::cout << "[Scanner] FOUND: " << target << "\n";
-                    
-                    ScannedHost host;
-                    host.ip = target;
-                    host.name = "Discovered Device";
-                    host.is_alive = true;
-                    found_hosts.push_back(host);
+                std::string mac = GetMacFromArp(target);
+        
+                std::lock_guard<std::mutex> lock(results_mutex);
+                ScannedHost host;
+                host.ip = target;
+                host.mac = mac.empty() ? "00:00:00:00:00:00" : mac;
+                host.name = "Discovered Device";
+                host.is_alive = true;
+                found_hosts.push_back(host);
                 }
             }));
         }
 
-        for (auto& task : tasks) {
+        for (auto &task : tasks)
+        {
             task.get();
         }
 

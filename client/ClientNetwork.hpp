@@ -39,8 +39,9 @@ namespace net_ops::client
         bool SendListGroups();
 
         bool SendAddMember(int groupId, const std::string& username);
-
-        bool SendAddDevice(const std::string& name, const std::string& ip, int groupId = 0);
+        
+        void SendAddDevice(const std::string &name, const std::string &ip, const std::string &mac, int groupId);
+        
         bool SendListDevices();
 
         bool SendLogUpload(const std::string& source_ip, const std::string& log_msg);
