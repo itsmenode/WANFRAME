@@ -5,19 +5,23 @@
 #include <cstddef>
 #include <arpa/inet.h>
 #include <string>
+#include <optional>
+#include <cstring>
 
 namespace net_ops::protocol
 {
     inline constexpr uint16_t EXPECTED_MAGIC = 0xBBBB;
+    inline constexpr uint8_t PROTOCOL_VERSION = 0x01;
     inline constexpr uint32_t MAX_PAYLOAD_LENGTH = 10 * 1024 * 1024; // 10MB
-    inline constexpr size_t HEADER_SIZE = 8;
+    inline constexpr size_t HEADER_SIZE = 12; // 2(magic) + 1(ver) + 1(type) + 4(len) + 4(res)
 
     struct Header
     {
         uint16_t magic;
+        uint8_t version;
         uint8_t msg_type;
         uint32_t payload_length;
-        uint8_t reserved;
+        uint32_t reserved;
     };
 
     enum class MessageType : uint8_t
@@ -53,26 +57,34 @@ namespace net_ops::protocol
     {
         buffer[0] = static_cast<uint8_t>((hdr.magic >> 8) & 0xFF);
         buffer[1] = static_cast<uint8_t>(hdr.magic & 0xFF);
-        buffer[2] = hdr.msg_type;
-        buffer[3] = static_cast<uint8_t>((hdr.payload_length >> 24) & 0xFF);
-        buffer[4] = static_cast<uint8_t>((hdr.payload_length >> 16) & 0xFF);
-        buffer[5] = static_cast<uint8_t>((hdr.payload_length >> 8) & 0xFF);
-        buffer[6] = static_cast<uint8_t>(hdr.payload_length & 0xFF);
-        buffer[7] = hdr.reserved;
+        buffer[2] = hdr.version;
+        buffer[3] = hdr.msg_type;
+        
+        uint32_t netLen = htonl(hdr.payload_length);
+        std::memcpy(buffer + 4, &netLen, 4);
+        
+        uint32_t netRes = htonl(hdr.reserved);
+        std::memcpy(buffer + 8, &netRes, 4);
     }
 
     inline Header DeserializeHeader(const std::uint8_t *buffer)
     {
         Header hdr;
         hdr.magic = (static_cast<uint16_t>(buffer[0]) << 8) | static_cast<uint16_t>(buffer[1]);
-        hdr.msg_type = buffer[2];
-        hdr.payload_length = (static_cast<uint32_t>(buffer[3]) << 24) |
-                             (static_cast<uint32_t>(buffer[4]) << 16) |
-                             (static_cast<uint32_t>(buffer[5]) << 8) |
-                             static_cast<uint32_t>(buffer[6]);
-        hdr.reserved = buffer[7];
+        hdr.version = buffer[2];
+        hdr.msg_type = buffer[3];
+        
+        uint32_t netLen;
+        std::memcpy(&netLen, buffer + 4, 4);
+        hdr.payload_length = ntohl(netLen);
+        
+        uint32_t netRes;
+        std::memcpy(&netRes, buffer + 8, 4);
+        hdr.reserved = ntohl(netRes);
+        
         return hdr;
     }
+
 
     inline void PackUint32(std::vector<uint8_t> &buf, uint32_t val)
     {
@@ -85,5 +97,25 @@ namespace net_ops::protocol
     {
         PackUint32(buf, static_cast<uint32_t>(s.length()));
         buf.insert(buf.end(), s.begin(), s.end());
+    }
+
+
+    inline std::optional<uint32_t> UnpackUint32(const std::vector<uint8_t> &buf, size_t &offset)
+    {
+        if (offset + 4 > buf.size()) return std::nullopt;
+        uint32_t netVal;
+        std::memcpy(&netVal, buf.data() + offset, 4);
+        offset += 4;
+        return ntohl(netVal);
+    }
+
+    inline std::optional<std::string> UnpackString(const std::vector<uint8_t> &buf, size_t &offset)
+    {
+        auto len = UnpackUint32(buf, offset);
+        if (!len || offset + *len > buf.size()) return std::nullopt;
+        
+        std::string s(reinterpret_cast<const char*>(buf.data() + offset), *len);
+        offset += *len;
+        return s;
     }
 }

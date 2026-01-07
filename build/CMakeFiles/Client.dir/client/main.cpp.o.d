@@ -223,7 +223,9 @@ CMakeFiles/Client.dir/client/main.cpp.o: \
  /usr/include/x86_64-linux-gnu/asm/sockios.h \
  /usr/include/asm-generic/sockios.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
- /usr/include/x86_64-linux-gnu/bits/in.h \
+ /usr/include/x86_64-linux-gnu/bits/in.h /usr/include/c++/11/optional \
+ /usr/include/c++/11/bits/enable_special_members.h \
+ /usr/include/c++/11/cstring \
  /home/andrew/Documents/GitHub/WANFRAME/client/Scanner.hpp \
  /home/andrew/Documents/GitHub/WANFRAME/client/SyslogCollector.hpp \
  /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
@@ -236,7 +238,6 @@ CMakeFiles/Client.dir/client/main.cpp.o: \
  /usr/include/c++/11/ext/aligned_buffer.h \
  /usr/include/c++/11/bits/hashtable.h \
  /usr/include/c++/11/bits/hashtable_policy.h \
- /usr/include/c++/11/bits/enable_special_members.h \
  /usr/include/c++/11/bits/node_handle.h \
  /usr/include/c++/11/bits/unordered_map.h \
  /usr/include/c++/11/bits/erase_if.h /usr/include/c++/11/bits/stl_algo.h \

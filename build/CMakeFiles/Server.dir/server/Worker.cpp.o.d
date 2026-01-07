@@ -176,7 +176,9 @@ CMakeFiles/Server.dir/server/Worker.cpp.o: \
  /usr/include/x86_64-linux-gnu/asm/sockios.h \
  /usr/include/asm-generic/sockios.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
- /usr/include/x86_64-linux-gnu/bits/in.h \
+ /usr/include/x86_64-linux-gnu/bits/in.h /usr/include/c++/11/optional \
+ /usr/include/c++/11/bits/enable_special_members.h \
+ /usr/include/c++/11/cstring /usr/include/string.h /usr/include/strings.h \
  /home/andrew/Documents/GitHub/WANFRAME/server/NetworkCore.hpp \
  /usr/include/c++/11/map /usr/include/c++/11/bits/stl_tree.h \
  /usr/include/c++/11/bits/node_handle.h \
@@ -226,7 +228,6 @@ CMakeFiles/Server.dir/server/Worker.cpp.o: \
  /usr/include/openssl/objects.h /usr/include/openssl/obj_mac.h \
  /usr/include/openssl/asn1.h /usr/include/openssl/asn1err.h \
  /usr/include/openssl/objectserr.h /usr/include/openssl/ec.h \
- /usr/include/string.h /usr/include/strings.h \
  /usr/include/openssl/ecerr.h /usr/include/openssl/rsa.h \
  /usr/include/openssl/rsaerr.h /usr/include/openssl/dsa.h \
  /usr/include/openssl/dh.h /usr/include/openssl/dherr.h \
@@ -247,10 +248,8 @@ CMakeFiles/Server.dir/server/Worker.cpp.o: \
  /usr/include/openssl/dtls1.h /usr/include/openssl/srtp.h \
  /usr/include/openssl/err.h \
  /home/andrew/Documents/GitHub/WANFRAME/server/../common/ByteBuffer.hpp \
- /usr/include/c++/11/cstring \
  /home/andrew/Documents/GitHub/WANFRAME/server/DatabaseManager.hpp \
- /usr/include/c++/11/optional \
- /usr/include/c++/11/bits/enable_special_members.h /usr/include/sqlite3.h \
+ /usr/include/sqlite3.h \
  /home/andrew/Documents/GitHub/WANFRAME/server/SessionManager.hpp \
  /usr/include/c++/11/unordered_map /usr/include/c++/11/bits/hashtable.h \
  /usr/include/c++/11/bits/hashtable_policy.h \

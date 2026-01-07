@@ -147,11 +147,12 @@ namespace net_ops::client
     bool ClientNetwork::SendLogin(const std::string &username, const std::string &password)
     {
         std::vector<uint8_t> payload;
-        AppendString(payload, username);
-        AppendString(payload, password);
+        net_ops::protocol::PackString(payload, username);
+        net_ops::protocol::PackString(payload, password);
 
         net_ops::protocol::Header header;
         header.magic = net_ops::protocol::EXPECTED_MAGIC;
+        header.version = net_ops::protocol::PROTOCOL_VERSION;
         header.msg_type = static_cast<uint8_t>(net_ops::protocol::MessageType::LoginReq);
         header.payload_length = static_cast<uint32_t>(payload.size());
         header.reserved = 0;

@@ -106,10 +106,18 @@ namespace net_ops::server
     void Worker::HandleLogin(int fd, const std::vector<uint8_t> &p)
     {
         size_t off = 0;
-        std::string u = ReadString(p, off), pw = ReadString(p, off);
-        if (DatabaseManager::GetInstance().ValidateUser(u, pw))
+        auto u = net_ops::protocol::UnpackString(p, off);
+        auto pw = net_ops::protocol::UnpackString(p, off);
+
+        if (!u || !pw)
         {
-            auto user = DatabaseManager::GetInstance().GetUserByName(u);
+            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "MALFORMED_REQUEST");
+            return;
+        }
+
+        if (DatabaseManager::GetInstance().ValidateUser(*u, *pw))
+        {
+            auto user = DatabaseManager::GetInstance().GetUserByName(*u);
             if (user && network_core_)
             {
                 std::string token = SessionManager::GetInstance().CreateSession(user->id);
@@ -117,6 +125,7 @@ namespace net_ops::server
                 return;
             }
         }
+
         if (network_core_)
             network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "LOGIN_FAILURE");
     }

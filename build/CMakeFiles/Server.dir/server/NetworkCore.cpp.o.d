@@ -249,6 +249,8 @@ CMakeFiles/Server.dir/server/NetworkCore.cpp.o: \
  /home/andrew/Documents/GitHub/WANFRAME/server/../common/protocol.hpp \
  /usr/include/c++/11/cstddef /usr/include/arpa/inet.h \
  /usr/include/netinet/in.h /usr/include/x86_64-linux-gnu/bits/in.h \
+ /usr/include/c++/11/optional \
+ /usr/include/c++/11/bits/enable_special_members.h \
  /home/andrew/Documents/GitHub/WANFRAME/server/Worker.hpp \
  /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
  /usr/include/c++/11/bits/refwrap.h /usr/include/c++/11/bits/unique_ptr.h \
