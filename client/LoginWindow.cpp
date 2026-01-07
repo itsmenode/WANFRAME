@@ -72,7 +72,10 @@ namespace net_ops::client
         if (resp->type == net_ops::protocol::MessageType::LoginResp)
         {
             if (msg && msg->find("LOGIN_SUCCESS") != std::string::npos)
+            {
+                m_responseTimer->stop();
                 emit loginSuccessful();
+            }
             else
                 m_statusLabel->setText("Login failed.");
         }

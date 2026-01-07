@@ -26,19 +26,19 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 40,
+				"line" : 38,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 49,
+				"line" : 47,
 				"parent" : 0
 			},
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 29,
+				"line" : 27,
 				"parent" : 0
 			}
 		]
@@ -48,6 +48,9 @@
 		{
 			"compileCommandFragments" : 
 			[
+				{
+					"fragment" : "-g"
+				},
 				{
 					"fragment" : "-std=gnu++17"
 				}
@@ -104,6 +107,10 @@
 	{
 		"commandFragments" : 
 		[
+			{
+				"fragment" : "-g",
+				"role" : "flags"
+			},
 			{
 				"fragment" : "",
 				"role" : "flags"

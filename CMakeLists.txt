@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16) # Qt 6 generally requires a higher CMake version
+cmake_minimum_required(VERSION 3.16)
 project(WANFRAME)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # --- 1. Dependencies ---
 find_package(OpenSSL REQUIRED)
 
-# Updated for Qt 6
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
@@ -17,7 +16,6 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
-# Manual SQLite3 Find
 find_path(SQLITE3_INCLUDE_DIR sqlite3.h)
 find_library(SQLITE3_LIBRARY sqlite3)
 
@@ -57,7 +55,6 @@ target_link_libraries(Server
 # ==========================
 #        CLIENT BUILD
 # ==========================
-# Note: Added LoginWindow and MainWindow files here
 add_executable(Client
     client/main.cpp
     client/NetworkController.cpp
@@ -66,6 +63,8 @@ add_executable(Client
     client/SyslogCollector.cpp
     client/LoginWindow.cpp
     client/MainWindow.cpp
+    client/DeviceMonitor.cpp
+    client/SnmpClient.cpp
     common/ByteBuffer.cpp
 )
 
@@ -79,6 +78,5 @@ target_link_libraries(Client
 # ==========================
 #      RESOURCE HANDLING
 # ==========================
-# Copy the certs directory to the build folder for runtime access
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/certs" 
      DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

@@ -6,7 +6,7 @@
 			[
 				{
 					"build" : ".",
-					"jsonFile" : "directory-.-f5ebdc15457944623624.json",
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.16"
@@ -22,7 +22,7 @@
 					]
 				}
 			],
-			"name" : "",
+			"name" : "Debug",
 			"projects" : 
 			[
 				{
@@ -45,28 +45,28 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "Client::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-Client-17ce7460ede35e743199.json",
+					"jsonFile" : "target-Client-Debug-634c0345cecf72ffdbbc.json",
 					"name" : "Client",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 0,
 					"id" : "Client_autogen::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-Client_autogen-c38b9121baea913dabf8.json",
+					"jsonFile" : "target-Client_autogen-Debug-c38b9121baea913dabf8.json",
 					"name" : "Client_autogen",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 0,
 					"id" : "Server::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-Server-015dec7b8237adf56493.json",
+					"jsonFile" : "target-Server-Debug-54c21b0e926978b47c1e.json",
 					"name" : "Server",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 0,
 					"id" : "Server_autogen::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-Server_autogen-e4ab53c9d2e6fd6d717d.json",
+					"jsonFile" : "target-Server_autogen-Debug-e4ab53c9d2e6fd6d717d.json",
 					"name" : "Server_autogen",
 					"projectIndex" : 0
 				}

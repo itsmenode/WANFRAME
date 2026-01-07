@@ -1,19 +1,29 @@
 #include "MainWindow.hpp"
 #include "Scanner.hpp"
+#include "DeviceMonitor.hpp"
 #include <QHeaderView>
 
 namespace net_ops::client
 {
 
-    MainWindow::MainWindow(std::shared_ptr<NetworkController> controller, QWidget *parent)
-        : QMainWindow(parent), m_controller(controller)
+    MainWindow::MainWindow(std::shared_ptr<NetworkController> controller,
+                           std::shared_ptr<DeviceMonitor> monitor,
+                           QWidget *parent)
+        : QMainWindow(parent), m_controller(controller), m_monitor(monitor)
     {
         setupUi();
         m_dataTimer = new QTimer(this);
         connect(m_dataTimer, &QTimer::timeout, this, &MainWindow::pollData);
-        m_dataTimer->start(200);
+    }
 
-        m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, {});
+    void MainWindow::showEvent(QShowEvent *event)
+    {
+        QMainWindow::showEvent(event);
+        if (!m_dataTimer->isActive())
+        {
+            m_dataTimer->start(200);
+            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, {});
+        }
     }
 
     void MainWindow::setupUi()
@@ -51,7 +61,9 @@ namespace net_ops::client
                 net_ops::protocol::PackString(p, h.ip);
                 net_ops::protocol::PackString(p, h.mac);
                 m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
-            } })
+            } 
+            
+            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, {}); })
             .detach();
     }
 
@@ -99,6 +111,9 @@ namespace net_ops::client
             return;
 
         m_deviceTable->setRowCount(0);
+
+        std::vector<std::string> monitorIPs;
+
         for (uint32_t i = 0; i < *count; ++i)
         {
             auto id = net_ops::protocol::UnpackUint32(data, offset);
@@ -111,8 +126,16 @@ namespace net_ops::client
             m_deviceTable->insertRow(row);
             m_deviceTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(*name)));
             m_deviceTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(*ip)));
-            m_deviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString("00:00:00:00:00:00"))); // Placeholder
-            m_deviceTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(*status)));
+            m_deviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString("00:00:00:00:00:00")));
+            m_deviceTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(*status + " " + *info)));
+
+            if (ip)
+                monitorIPs.push_back(*ip);
+        }
+
+        if (m_monitor)
+        {
+            m_monitor->SetTargets(monitorIPs);
         }
     }
 }
