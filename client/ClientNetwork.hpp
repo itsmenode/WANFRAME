@@ -6,6 +6,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include "../common/protocol.hpp"
+#include "../common/ByteBuffer.hpp"
 
 namespace net_ops::client
 {
@@ -23,8 +24,12 @@ namespace net_ops::client
         int m_port;
         int m_socket_fd;
         std::string m_session_token;
+
         SSL_CTX *m_ssl_ctx;
         SSL *m_ssl_handle;
+
+        net_ops::common::ByteBuffer m_in_buffer;
+
         void InitSSL();
         void CleanupSSL();
 
@@ -34,6 +39,7 @@ namespace net_ops::client
 
         bool Connect();
         void Disconnect();
+        bool IsConnected() const { return m_socket_fd != -1 && m_ssl_handle != nullptr; }
         SSL *GetSSLHandle() const { return m_ssl_handle; }
 
         bool SendLogout();

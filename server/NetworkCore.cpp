@@ -6,29 +6,30 @@
 #include <sys/socket.h>
 #include <stdio.h>
 #include <iostream>
+#include <netinet/in.h>
 
 #include "NetworkCore.hpp"
 #include "Worker.hpp"
 #include "../common/ByteBuffer.hpp"
 #include "../common/protocol.hpp"
-#include <netinet/in.h>
 
 namespace net_ops::server
 {
     NetworkCore::NetworkCore(int port, Worker *worker)
+        : m_port(port), m_worker(worker), m_server_fd(-1), m_epoll_fd(-1), m_running(false), m_ssl_ctx(nullptr)
     {
-        m_port = port;
-        m_worker = worker;
-        m_server_fd = -1;
-        m_epoll_fd = -1;
-        m_running = false;
     }
 
     NetworkCore::~NetworkCore()
     {
-        for (auto it : registry)
+        for (auto const &[fd, ctx] : registry)
         {
-            close(it.first);
+            if (ctx.ssl_handle)
+            {
+                SSL_shutdown(ctx.ssl_handle);
+                SSL_free(ctx.ssl_handle);
+            }
+            close(fd);
         }
         registry.clear();
 
@@ -42,32 +43,30 @@ namespace net_ops::server
 
     void NetworkCore::NonBlockingMode(int fd)
     {
-        fcntl(fd, F_SETFL, O_NONBLOCK);
+        int flags = fcntl(fd, F_GETFL, 0);
+        fcntl(fd, F_SETFL, flags | O_NONBLOCK);
     }
 
     void NetworkCore::EpollControlAdd(int fd)
     {
         struct epoll_event event;
         std::memset(&event, 0, sizeof(event));
-        event.events = EPOLLIN;
+        event.events = EPOLLIN | EPOLLET;
         event.data.fd = fd;
-
         if (epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)
-        {
             throw std::runtime_error("Failed to add FD to epoll");
-        }
     }
 
     void NetworkCore::EpollControlRemove(int fd)
     {
-        if (epoll_ctl(m_epoll_fd, EPOLL_CTL_DEL, fd, nullptr) == -1)
-        {
-            std::cerr << "Warning: Failed to remove FD from epoll" << std::endl;
-        }
+        epoll_ctl(m_epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
     }
 
     void NetworkCore::DisconnectClient(int fd)
     {
+        if (registry.find(fd) == registry.end())
+            return;
+
         EpollControlRemove(fd);
         if (registry[fd].ssl_handle)
         {
@@ -76,46 +75,43 @@ namespace net_ops::server
         }
         close(fd);
         registry.erase(fd);
+        std::cout << "[Server] Client " << fd << " disconnected." << std::endl;
     }
 
     void NetworkCore::HandleNewConnection()
     {
-        struct sockaddr clientAddress;
-        socklen_t clientAddressLength = sizeof(clientAddress);
-        int m_client_fd = accept(m_server_fd, &clientAddress, &clientAddressLength);
+        struct sockaddr_in clientAddr;
+        socklen_t clientLen = sizeof(clientAddr);
+        int client_fd = accept(m_server_fd, (struct sockaddr *)&clientAddr, &clientLen);
 
-        if (m_client_fd == -1)
+        if (client_fd == -1)
             return;
 
-        NonBlockingMode(m_client_fd);
-        ClientContext &ctx = registry[m_client_fd];
-        ctx.socketfd = m_client_fd;
+        NonBlockingMode(client_fd);
+
+        ClientContext &ctx = registry[client_fd];
+        ctx.socketfd = client_fd;
         ctx.is_handshake_complete = false;
+        ctx.ssl_handle = SSL_new(m_ssl_ctx);
+        SSL_set_fd(ctx.ssl_handle, client_fd);
 
-        SSL *ssl_handle = SSL_new(m_ssl_ctx);
-        SSL_set_fd(ssl_handle, m_client_fd);
-        ctx.ssl_handle = ssl_handle;
-
-        int ret = SSL_accept(ssl_handle);
+        int ret = SSL_accept(ctx.ssl_handle);
         if (ret == 1)
         {
             ctx.is_handshake_complete = true;
-            EpollControlAdd(m_client_fd);
+            EpollControlAdd(client_fd);
         }
         else
         {
-            int err = SSL_get_error(ssl_handle, ret);
+            int err = SSL_get_error(ctx.ssl_handle, ret);
             if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
             {
-                struct epoll_event event;
-                event.data.fd = m_client_fd;
-                event.events = EPOLLIN | EPOLLET;
-                if (err == SSL_ERROR_WANT_WRITE)
-                    event.events |= EPOLLOUT;
-                epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, m_client_fd, &event);
+                EpollControlAdd(client_fd);
             }
             else
-                DisconnectClient(m_client_fd);
+            {
+                DisconnectClient(client_fd);
+            }
         }
     }
 
@@ -132,57 +128,39 @@ namespace net_ops::server
             {
                 ctx.is_handshake_complete = true;
                 std::cout << "[Server] TLS Handshake complete for client " << fd << std::endl;
-
-                struct epoll_event event;
-                std::memset(&event, 0, sizeof(event));
-                event.data.fd = fd;
-                event.events = EPOLLIN | EPOLLET;
-                epoll_ctl(m_epoll_fd, EPOLL_CTL_MOD, fd, &event);
             }
             else
             {
                 int err = SSL_get_error(ctx.ssl_handle, ret);
-                if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
-                {
-                    struct epoll_event event;
-                    std::memset(&event, 0, sizeof(event));
-                    event.data.fd = fd;
-                    event.events = EPOLLIN | EPOLLET;
-                    if (err == SSL_ERROR_WANT_WRITE)
-                        event.events |= EPOLLOUT;
-                    epoll_ctl(m_epoll_fd, EPOLL_CTL_MOD, fd, &event);
-                    return;
-                }
-                else
-                {
-                    std::cerr << "[Server] SSL Handshake Failed for client " << fd << ". Error: " << err << std::endl;
+                if (err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE)
                     DisconnectClient(fd);
-                    return;
-                }
+                return;
             }
         }
 
-        uint8_t temp_buffer[4096];
+        uint8_t temp[4096];
+        bool connection_closed = false;
         while (true)
         {
-            int count = SSL_read(ctx.ssl_handle, temp_buffer, sizeof(temp_buffer));
-            if (count > 0)
+            int bytes = SSL_read(ctx.ssl_handle, temp, sizeof(temp));
+            if (bytes > 0)
             {
-                ctx.buff.Append(temp_buffer, static_cast<size_t>(count));
+                ctx.buff.Append(temp, static_cast<size_t>(bytes));
             }
             else
             {
-                int err = SSL_get_error(ctx.ssl_handle, count);
-                if (err == SSL_ERROR_WANT_READ)
+                int err = SSL_get_error(ctx.ssl_handle, bytes);
+                if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
                     break;
-
-                if (err == SSL_ERROR_ZERO_RETURN || err == SSL_ERROR_SYSCALL || err == SSL_ERROR_SSL)
-                {
-                    DisconnectClient(fd);
-                    return;
-                }
+                connection_closed = true;
                 break;
             }
+        }
+
+        if (connection_closed)
+        {
+            DisconnectClient(fd);
+            return;
         }
 
         while (ctx.buff.HasHeader())
@@ -194,127 +172,8 @@ namespace net_ops::server
             std::vector<uint8_t> payload = ctx.buff.ExtractPayload(header.payload_length);
             ctx.buff.Consume(net_ops::protocol::HEADER_SIZE + header.payload_length);
 
-            ProcessMessage(fd, static_cast<net_ops::protocol::MessageType>(header.msg_type), payload);
-        }
-    }
-
-    void NetworkCore::ProcessMessage(int fd, net_ops::protocol::MessageType type, const std::vector<uint8_t> &payload)
-    {
-        std::cout << "[Client " << fd << "] Dispatched Message Type: "
-                  << static_cast<int>(type)
-                  << " | Size: " << payload.size() << " bytes." << std::endl;
-
-        if (m_worker)
-        {
-            m_worker->AddJob(fd, type, payload);
-        }
-    }
-
-    void NetworkCore::Init()
-    {
-        m_ssl_ctx = SSL_CTX_new(TLS_server_method());
-        if (m_ssl_ctx == nullptr)
-        {
-            throw std::runtime_error("Failed to create SSL Context. Is OpenSSL installed?");
-        }
-
-        if (SSL_CTX_use_certificate_file(m_ssl_ctx, "certs/server.crt", SSL_FILETYPE_PEM) <= 0)
-        {
-            throw std::runtime_error("Failed to load 'certs/server.crt'. Check your paths!");
-        }
-
-        if (SSL_CTX_use_PrivateKey_file(m_ssl_ctx, "certs/server.key", SSL_FILETYPE_PEM) <= 0)
-        {
-            throw std::runtime_error("Failed to load 'certs/server.key'.");
-        }
-
-        if (!SSL_CTX_check_private_key(m_ssl_ctx))
-        {
-            throw std::runtime_error("Private Key does not match the Certificate!");
-        }
-
-        m_server_fd = socket(AF_INET, SOCK_STREAM, 0);
-        if (m_server_fd == -1)
-        {
-            throw std::runtime_error("Failed to create socket.");
-        }
-
-        int opt = 1;
-        if (setsockopt(m_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-        {
-            throw std::runtime_error("Failed to set SO_REUSEADDR.");
-        }
-
-        NonBlockingMode(m_server_fd);
-
-        struct sockaddr_in serverAddress;
-        serverAddress.sin_family = AF_INET;
-        serverAddress.sin_port = htons(m_port);
-        serverAddress.sin_addr.s_addr = INADDR_ANY;
-
-        if (bind(m_server_fd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) != 0)
-        {
-            throw std::runtime_error("Failed to bind server socket. Is the port taken?");
-        }
-
-        if ((listen(m_server_fd, SOMAXCONN)) != 0)
-        {
-            throw std::runtime_error("Failed to listen server socket.");
-        }
-
-        m_epoll_fd = epoll_create1(0);
-        if (m_epoll_fd == -1)
-        {
-            throw std::runtime_error("Failed to create epoll file descriptor.");
-        }
-
-        EpollControlAdd(m_server_fd);
-    }
-
-    void NetworkCore::Run()
-    {
-        m_running = true;
-        struct epoll_event ev[128];
-
-        while (m_running)
-        {
-            int count = epoll_wait(m_epoll_fd, ev, 128, 1000);
-
-            if (count == -1)
-            {
-                if (errno == EINTR)
-                    continue;
-                break;
-            }
-
-            for (int i = 0; i < count; i++)
-            {
-                int current_fd = ev[i].data.fd;
-                if (current_fd == m_server_fd)
-                    HandleNewConnection();
-                else
-                    HandleClientData(current_fd);
-            }
-
-            SendPendingResponses();
-        }
-
-        std::cout << "[Network] Stopping event loop...\n";
-    }
-
-    void NetworkCore::QueueResponse(int client_fd, net_ops::protocol::MessageType type, const std::string &data)
-    {
-        net_ops::protocol::Header header;
-        header.magic = net_ops::protocol::EXPECTED_MAGIC;
-        header.msg_type = static_cast<uint8_t>(type);
-        header.payload_length = static_cast<uint32_t>(data.size());
-        header.reserved = 0;
-
-        std::vector<uint8_t> payload(data.begin(), data.end());
-
-        {
-            std::lock_guard<std::mutex> lock(m_response_mutex);
-            m_response_queue.push({client_fd, header, payload});
+            if (m_worker)
+                m_worker->AddJob(fd, static_cast<net_ops::protocol::MessageType>(header.msg_type), payload);
         }
     }
 
@@ -325,11 +184,10 @@ namespace net_ops::server
         while (!m_response_queue.empty())
         {
             OutgoingMessage msg = m_response_queue.front();
+            m_response_queue.pop();
+
             if (registry.find(msg.client_fd) == registry.end())
-            {
-                m_response_queue.pop();
                 continue;
-            }
 
             ClientContext &ctx = registry[msg.client_fd];
             std::vector<uint8_t> fullPacket(net_ops::protocol::HEADER_SIZE + msg.payload.size());
@@ -337,7 +195,6 @@ namespace net_ops::server
             std::memcpy(fullPacket.data() + net_ops::protocol::HEADER_SIZE, msg.payload.data(), msg.payload.size());
 
             ctx.out_buffer.insert(ctx.out_buffer.end(), fullPacket.begin(), fullPacket.end());
-            m_response_queue.pop();
         }
 
         for (auto &[fd, ctx] : registry)
@@ -354,10 +211,68 @@ namespace net_ops::server
             {
                 int err = SSL_get_error(ctx.ssl_handle, written);
                 if (err != SSL_ERROR_WANT_WRITE && err != SSL_ERROR_WANT_READ)
-                {
                     DisconnectClient(fd);
-                }
             }
         }
+    }
+
+    void NetworkCore::Init()
+    {
+        SSL_library_init();
+        m_ssl_ctx = SSL_CTX_new(TLS_server_method());
+        if (!m_ssl_ctx)
+            throw std::runtime_error("SSL Context creation failed");
+
+        if (SSL_CTX_use_certificate_file(m_ssl_ctx, "certs/server.crt", SSL_FILETYPE_PEM) <= 0 ||
+            SSL_CTX_use_PrivateKey_file(m_ssl_ctx, "certs/server.key", SSL_FILETYPE_PEM) <= 0)
+            throw std::runtime_error("Failed to load server certs/keys");
+
+        m_server_fd = socket(AF_INET, SOCK_STREAM, 0);
+        int opt = 1;
+        setsockopt(m_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(m_port);
+        addr.sin_addr.s_addr = INADDR_ANY;
+
+        if (bind(m_server_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+            throw std::runtime_error("Bind failed");
+
+        listen(m_server_fd, SOMAXCONN);
+        NonBlockingMode(m_server_fd);
+
+        m_epoll_fd = epoll_create1(0);
+        EpollControlAdd(m_server_fd);
+    }
+
+    void NetworkCore::Run()
+    {
+        m_running = true;
+        struct epoll_event ev[128];
+        while (m_running)
+        {
+            int count = epoll_wait(m_epoll_fd, ev, 128, 100);
+            for (int i = 0; i < count; i++)
+            {
+                if (ev[i].data.fd == m_server_fd)
+                    HandleNewConnection();
+                else
+                    HandleClientData(ev[i].data.fd);
+            }
+            SendPendingResponses();
+        }
+    }
+
+    void NetworkCore::QueueResponse(int client_fd, net_ops::protocol::MessageType type, const std::string &data)
+    {
+        net_ops::protocol::Header header;
+        header.magic = net_ops::protocol::EXPECTED_MAGIC;
+        header.msg_type = static_cast<uint8_t>(type);
+        header.payload_length = static_cast<uint32_t>(data.size());
+        header.reserved = 0;
+
+        std::lock_guard<std::mutex> lock(m_response_mutex);
+        m_response_queue.push({client_fd, header, std::vector<uint8_t>(data.begin(), data.end())});
     }
 }

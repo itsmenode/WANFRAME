@@ -35,28 +35,34 @@ void DashboardLoop(net_ops::client::ClientNetwork &client)
         std::cin >> choice;
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-        if (choice == "5") {
+        if (choice == "5")
+        {
             std::lock_guard<std::mutex> lock(g_net_lock);
             client.SendLogout();
             in_dashboard = false;
         }
-        else if (choice == "1") {
+        else if (choice == "1")
+        {
             std::string name = GetInput("Device Name: ");
             std::string ip = GetInput("IP Address: ");
             std::lock_guard<std::mutex> lock(g_net_lock);
             client.SendAddDevice(name, ip, "00:00:00:00:00:00");
         }
-        else if (choice == "2") {
+        else if (choice == "2")
+        {
             std::lock_guard<std::mutex> lock(g_net_lock);
             client.SendListDevices();
             client.ReceiveResponse();
         }
-        else if (choice == "3") {
+        else if (choice == "3")
+        {
             auto hosts = net_ops::client::NetworkScanner::ScanLocalNetwork();
             std::lock_guard<std::mutex> lock(g_net_lock);
-            for (const auto &host : hosts) client.SendAddDevice(host.name, host.ip, host.mac);
+            for (const auto &host : hosts)
+                client.SendAddDevice(host.name, host.ip, host.mac);
         }
-        else if (choice == "4") {
+        else if (choice == "4")
+        {
             int devId = std::stoi(GetInput("Enter Device ID: "));
             std::lock_guard<std::mutex> lock(g_net_lock);
             client.SendFetchLogs(devId);
@@ -68,7 +74,8 @@ void DashboardLoop(net_ops::client::ClientNetwork &client)
 int main()
 {
     net_ops::client::ClientNetwork client("127.0.0.1", 8080);
-    if (!client.Connect()) return -1;
+    if (!client.Connect())
+        return -1;
 
     bool running = true;
     while (running)
@@ -78,20 +85,24 @@ int main()
         std::cin >> choice;
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-        if (choice == "1") {
+        if (choice == "1")
+        {
             std::string u = GetInput("Username: ");
             std::string p = GetInput("Password: ");
             std::lock_guard<std::mutex> lock(g_net_lock);
-            if (client.SendLogin(u, p) && client.ReceiveResponse()) DashboardLoop(client);
+            if (client.SendLogin(u, p) && client.ReceiveResponse())
+                DashboardLoop(client);
         }
-        else if (choice == "2") {
+        else if (choice == "2")
+        {
             std::string u = GetInput("New Username: ");
             std::string p = GetInput("New Password: ");
             std::lock_guard<std::mutex> lock(g_net_lock);
             client.SendRegister(u, p);
             client.ReceiveResponse();
         }
-        else if (choice == "3") running = false;
+        else if (choice == "3")
+            running = false;
     }
     client.Disconnect();
     return 0;
