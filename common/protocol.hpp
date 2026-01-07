@@ -19,13 +19,14 @@ namespace net_ops::protocol
         uint8_t reserved;
     };
 
-    enum class MessageType : uint8_t {
+    enum class MessageType : uint8_t
+    {
         LoginReq = 0x01,
         LoginResp = 0x02,
         SignupReq = 0x03,
         SignupResp = 0x04,
-        
-        GroupCreateReq = 0x05, 
+
+        GroupCreateReq = 0x05,
         GroupCreateResp = 0x06,
         GroupListReq = 0x07,
         GroupListResp = 0x08,
@@ -35,7 +36,7 @@ namespace net_ops::protocol
 
         DeviceAddReq = 0x0B,
         DeviceAddResp = 0x0C,
-        
+
         DeviceListReq = 0x0D,
         DeviceListResp = 0x0E,
 
@@ -45,13 +46,13 @@ namespace net_ops::protocol
         DeviceStatusReq = 0x11,
         DeviceStatusResp = 0x12,
 
-        LogQueryReq = 0x15,  
+        LogQueryReq = 0x15,
         LogQueryResp = 0x16,
 
         ErrorResp = 0xFF
     };
 
-    inline void SerializeHeader(const Header& hdr, std::uint8_t* buffer) 
+    inline void SerializeHeader(const Header &hdr, std::uint8_t *buffer)
     {
         buffer[0] = static_cast<uint8_t>((hdr.magic >> 8) & 0xFF);
         buffer[1] = static_cast<uint8_t>(hdr.magic & 0xFF);
@@ -66,23 +67,36 @@ namespace net_ops::protocol
         buffer[7] = hdr.reserved;
     }
 
-    inline Header DeserializeHeader(const std::uint8_t* buffer) 
+    inline Header DeserializeHeader(const std::uint8_t *buffer)
     {
         Header hdr;
-        
-        hdr.magic = (static_cast<uint16_t>(buffer[0]) << 8) | 
-                     static_cast<uint16_t>(buffer[1]);
+
+        hdr.magic = (static_cast<uint16_t>(buffer[0]) << 8) |
+                    static_cast<uint16_t>(buffer[1]);
 
         hdr.msg_type = buffer[2];
 
         hdr.payload_length = (static_cast<uint32_t>(buffer[3]) << 24) |
                              (static_cast<uint32_t>(buffer[4]) << 16) |
-                             (static_cast<uint32_t>(buffer[5]) << 8)  |
+                             (static_cast<uint32_t>(buffer[5]) << 8) |
                              static_cast<uint32_t>(buffer[6]);
 
         hdr.reserved = buffer[7];
 
         return hdr;
+    }
+
+    inline void PackUint32(std::vector<uint8_t> &buf, uint32_t val)
+    {
+        uint32_t netVal = htonl(val);
+        const uint8_t *p = reinterpret_cast<const uint8_t *>(&netVal);
+        buf.insert(buf.end(), p, p + 4);
+    }
+
+    inline void PackString(std::vector<uint8_t> &buf, const std::string &s)
+    {
+        PackUint32(buf, static_cast<uint32_t>(s.length()));
+        buf.insert(buf.end(), s.begin(), s.end());
     }
 
 }

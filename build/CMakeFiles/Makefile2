@@ -63,7 +63,6 @@ CMAKE_BINARY_DIR = /home/andrew/Documents/GitHub/WANFRAME/build
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/WANCommon.dir/all
 all: CMakeFiles/Server.dir/all
 all: CMakeFiles/Client.dir/all
 .PHONY : all
@@ -73,50 +72,23 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/WANCommon.dir/clean
 clean: CMakeFiles/Server.dir/clean
 clean: CMakeFiles/Client.dir/clean
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/WANCommon.dir
-
-# All Build rule for target.
-CMakeFiles/WANCommon.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/WANCommon.dir/build.make CMakeFiles/WANCommon.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/WANCommon.dir/build.make CMakeFiles/WANCommon.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=14,15 "Built target WANCommon"
-.PHONY : CMakeFiles/WANCommon.dir/all
-
-# Build rule for subdir invocation for target.
-CMakeFiles/WANCommon.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/WANCommon.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles 0
-.PHONY : CMakeFiles/WANCommon.dir/rule
-
-# Convenience name for target.
-WANCommon: CMakeFiles/WANCommon.dir/rule
-.PHONY : WANCommon
-
-# clean rule for target.
-CMakeFiles/WANCommon.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/WANCommon.dir/build.make CMakeFiles/WANCommon.dir/clean
-.PHONY : CMakeFiles/WANCommon.dir/clean
-
-#=============================================================================
 # Target rules for target CMakeFiles/Server.dir
 
 # All Build rule for target.
-CMakeFiles/Server.dir/all: CMakeFiles/WANCommon.dir/all
+CMakeFiles/Server.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=8,9,10,11,12,13 "Built target Server"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=8,9,10,11,12,13,14 "Built target Server"
 .PHONY : CMakeFiles/Server.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/Server.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles 8
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles 7
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/Server.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles 0
 .PHONY : CMakeFiles/Server.dir/rule
@@ -134,7 +106,7 @@ CMakeFiles/Server.dir/clean:
 # Target rules for target CMakeFiles/Client.dir
 
 # All Build rule for target.
-CMakeFiles/Client.dir/all: CMakeFiles/WANCommon.dir/all
+CMakeFiles/Client.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=1,2,3,4,5,6,7 "Built target Client"
@@ -142,7 +114,7 @@ CMakeFiles/Client.dir/all: CMakeFiles/WANCommon.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/Client.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles 9
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles 7
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/Client.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles 0
 .PHONY : CMakeFiles/Client.dir/rule

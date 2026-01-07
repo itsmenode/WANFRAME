@@ -207,8 +207,6 @@ CMakeFiles/Client.dir/client/main.cpp.o: \
  /usr/include/openssl/err.h \
  /home/andrew/Documents/GitHub/WANFRAME/client/../common/protocol.hpp \
  /usr/include/c++/11/cstddef \
- /home/andrew/Documents/GitHub/WANFRAME/client/../common/ByteBuffer.hpp \
- /usr/include/c++/11/cstring \
  /home/andrew/Documents/GitHub/WANFRAME/client/Scanner.hpp \
  /home/andrew/Documents/GitHub/WANFRAME/client/SyslogCollector.hpp \
  /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \

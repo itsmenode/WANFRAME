@@ -323,31 +323,35 @@ namespace net_ops::server
         while (!m_response_queue.empty())
         {
             OutgoingMessage msg = m_response_queue.front();
-            m_response_queue.pop();
 
             if (registry.find(msg.client_fd) == registry.end())
             {
+                m_response_queue.pop();
                 continue;
             }
 
             SSL *ssl = registry[msg.client_fd].ssl_handle;
-            if (!ssl)
-                continue;
 
-            uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
-            net_ops::protocol::SerializeHeader(msg.header, headerBuf);
+            std::vector<uint8_t> fullPacket(net_ops::protocol::HEADER_SIZE + msg.payload.size());
+            net_ops::protocol::SerializeHeader(msg.header, fullPacket.data());
+            std::memcpy(fullPacket.data() + net_ops::protocol::HEADER_SIZE, msg.payload.data(), msg.payload.size());
 
-            int written = SSL_write(ssl, headerBuf, sizeof(headerBuf));
+            int written = SSL_write(ssl, fullPacket.data(), fullPacket.size());
+
             if (written <= 0)
             {
-                continue;
+                int err = SSL_get_error(ssl, written);
+                if (err == SSL_ERROR_WANT_WRITE || err == SSL_ERROR_WANT_READ)
+                {
+                    break;
+                }
+                else
+                {
+                    DisconnectClient(msg.client_fd);
+                }
             }
 
-            if (msg.header.payload_length > 0)
-            {
-                SSL_write(ssl, msg.payload.data(), msg.payload.size());
-            }
-
+            m_response_queue.pop();
             std::cout << "[Server] Sent response to Client " << msg.client_fd << "\n";
         }
     }

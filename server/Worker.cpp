@@ -17,33 +17,18 @@ namespace net_ops::server
     std::string ReadString(const std::vector<uint8_t> &data, size_t &offset)
     {
         if (offset + 4 > data.size())
-        {
-            std::cout << "[ReadString Error] Not enough bytes for length. Offset: " << offset << " Size: " << data.size() << "\n";
             return "";
-        }
 
-        uint32_t len = 0;
-        std::memcpy(&len, &data[offset], 4);
-
-        uint8_t *b = reinterpret_cast<uint8_t *>(&len);
-
-        uint32_t lenHost = ntohl(len);
-
-        if (lenHost > 10000 && len < 10000)
-        {
-            lenHost = len;
-        }
-
+        uint32_t netLen = 0;
+        std::memcpy(&netLen, &data[offset], 4);
+        uint32_t len = ntohl(netLen);
         offset += 4;
 
-        if (offset + lenHost > data.size())
-        {
-            std::cout << "[ReadString Error] Length " << lenHost << " exceeds payload size " << data.size() << "\n";
+        if (offset + len > data.size())
             return "";
-        }
 
-        std::string str(data.begin() + offset, data.begin() + offset + lenHost);
-        offset += lenHost;
+        std::string str(data.begin() + offset, data.begin() + offset + len);
+        offset += len;
         return str;
     }
 
@@ -337,8 +322,10 @@ namespace net_ops::server
 
         if (offset + 4 > payload.size())
             return;
-        int group_id = 0;
-        std::memcpy(&group_id, &payload[offset], 4);
+
+        uint32_t net_group_id = 0;
+        std::memcpy(&net_group_id, &payload[offset], 4);
+        int group_id = static_cast<int>(ntohl(net_group_id));
         offset += 4;
 
         std::string new_member_name = ReadString(payload, offset);
@@ -391,8 +378,10 @@ namespace net_ops::server
 
         if (offset + 4 > payload.size())
             return;
-        int group_id = 0;
-        std::memcpy(&group_id, &payload[offset], 4);
+
+        uint32_t net_group_id = 0;
+        std::memcpy(&net_group_id, &payload[offset], 4);
+        int group_id = static_cast<int>(ntohl(net_group_id));
         offset += 4;
 
         std::string name = ReadString(payload, offset);
@@ -500,19 +489,11 @@ namespace net_ops::server
     {
         size_t offset = 0;
 
-        if (offset + 4 > payload.size())
-            return;
-        uint32_t tLen = 0;
-        std::memcpy(&tLen, &payload[offset], 4);
-        tLen = ntohl(tLen);
-        offset += 4;
-        if (offset + tLen > payload.size())
-            return;
-        std::string token(payload.begin() + offset, payload.begin() + offset + tLen);
-        offset += tLen;
+        std::string token = ReadString(payload, offset);
 
         if (offset + 4 > payload.size())
             return;
+
         uint32_t netDevId = 0;
         std::memcpy(&netDevId, &payload[offset], 4);
         int device_id = static_cast<int>(ntohl(netDevId));

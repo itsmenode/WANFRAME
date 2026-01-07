@@ -172,7 +172,6 @@ Client: CMakeFiles/Client.dir/client/SyslogCollector.cpp.o
 Client: CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o
 Client: CMakeFiles/Client.dir/client/SnmpClient.cpp.o
 Client: CMakeFiles/Client.dir/build.make
-Client: libWANCommon.a
 Client: /usr/lib/x86_64-linux-gnu/libssl.so
 Client: /usr/lib/x86_64-linux-gnu/libcrypto.so
 Client: CMakeFiles/Client.dir/link.txt

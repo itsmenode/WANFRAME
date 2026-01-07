@@ -1,4 +1,3 @@
-/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles/WANCommon.dir
 /home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles/Server.dir
 /home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles/Client.dir
 /home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles/edit_cache.dir

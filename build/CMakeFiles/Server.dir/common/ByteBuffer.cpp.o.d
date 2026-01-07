@@ -1,4 +1,4 @@
-CMakeFiles/WANCommon.dir/common/ByteBuffer.cpp.o: \
+CMakeFiles/Server.dir/common/ByteBuffer.cpp.o: \
  /home/andrew/Documents/GitHub/WANFRAME/common/ByteBuffer.cpp \
  /usr/include/stdc-predef.h \
  /home/andrew/Documents/GitHub/WANFRAME/common/ByteBuffer.hpp \
