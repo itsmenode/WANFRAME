@@ -371,43 +371,35 @@ namespace net_ops::server
     }
 
     void Worker::HandleDeviceAdd(int client_fd, const std::vector<uint8_t> &payload)
-{
-    size_t offset = 0;
-    
-    std::string token = ReadString(payload, offset);
-    
-    auto userId = SessionManager::GetInstance().GetUserId(token);
-    if (!userId.has_value())
     {
-        if (network_core_)
+        size_t offset = 0;
+        std::string token = ReadString(payload, offset);
+
+        auto userId = SessionManager::GetInstance().GetUserId(token);
+        if (!userId.has_value())
+        {
             network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
-        return;
-    }
+            return;
+        }
 
-    uint32_t netGroupId = 0;
-    if (offset + 4 <= payload.size()) {
+        uint32_t netGroupId = 0;
         std::memcpy(&netGroupId, &payload[offset], 4);
+        int group_id = static_cast<int>(ntohl(netGroupId));
         offset += 4;
-    }
-    int group_id = static_cast<int>(ntohl(netGroupId));
 
-    std::string name = ReadString(payload, offset);
-    std::string ip = ReadString(payload, offset);
-    std::string mac = ReadString(payload, offset);
+        std::string name = ReadString(payload, offset);
+        std::string ip = ReadString(payload, offset);
+        std::string mac = ReadString(payload, offset);
 
-    auto &db = DatabaseManager::GetInstance();
-    
-    if (db.AddDevice(userId.value(), group_id, name, ip, mac))
-    {
-        if (network_core_)
-            network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::SuccessResp, "DEVICE_ADDED");
-    }
-    else
-    {
-        if (network_core_)
+        if (DatabaseManager::GetInstance().AddDevice(userId.value(), group_id, name, ip, mac))
+        {
+            network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::DeviceAddResp, "DEVICE_ADDED");
+        }
+        else
+        {
             network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "ADD_FAILED");
+        }
     }
-}
 
     void Worker::HandleDeviceList(int client_fd, const std::vector<uint8_t> &payload)
     {

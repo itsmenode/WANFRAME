@@ -399,36 +399,23 @@ namespace net_ops::server
     {
         std::lock_guard<std::mutex> lock(db_mutex_);
 
-        const char *check_sql = "SELECT id FROM devices WHERE ip_address = ?;";
-        sqlite3_stmt *check_stmt;
-        if (sqlite3_prepare_v2(db_, check_sql, -1, &check_stmt, nullptr) == SQLITE_OK)
-        {
-            sqlite3_bind_text(check_stmt, 1, ip.c_str(), -1, SQLITE_STATIC);
-            if (sqlite3_step(check_stmt) == SQLITE_ROW)
-            {
-                sqlite3_finalize(check_stmt);
-                return -1;
-            }
-            sqlite3_finalize(check_stmt);
-        }
-
         const char *sql = "INSERT INTO devices (owner_id, group_id, name, ip_address, mac_address, status) "
-                  "VALUES (?, ?, ?, ?, ?, 'ACTIVE') "
-                  "ON CONFLICT(mac_address) DO UPDATE SET ip_address=excluded.ip_address, status='ACTIVE';";
+                          "VALUES (?, ?, ?, ?, ?, 'ACTIVE') "
+                          "ON CONFLICT(mac_address) DO UPDATE SET ip_address=excluded.ip_address, status='ACTIVE';";
+
         sqlite3_stmt *stmt;
         if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK)
-            return -1;
+            return false;
 
         sqlite3_bind_int(stmt, 1, owner_id);
         sqlite3_bind_int(stmt, 2, group_id);
-        sqlite3_bind_text(stmt, 3, name.c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_text(stmt, 4, ip.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 3, name.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 4, ip.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 5, mac.c_str(), -1, SQLITE_TRANSIENT);
 
-        int new_id = -1;
-        if (sqlite3_step(stmt) == SQLITE_DONE)
-            new_id = (int)sqlite3_last_insert_rowid(db_);
+        bool success = (sqlite3_step(stmt) == SQLITE_DONE);
         sqlite3_finalize(stmt);
-        return new_id;
+        return success;
     }
 
     std::vector<DeviceRecord> DatabaseManager::GetAllDevicesForUser(int user_id)

@@ -63,12 +63,9 @@ namespace net_ops::client
         return (result == 0);
     }
 
-    std::string GetMacFromArp(const std::string &target_ip)
+    std::string NetworkScanner::GetMacFromArp(const std::string &target_ip)
     {
         std::ifstream arpFile("/proc/net/arp");
-        if (!arpFile.is_open())
-            return "";
-
         std::string line;
         std::getline(arpFile, line);
 
@@ -82,7 +79,7 @@ namespace net_ops::client
                     return mac;
             }
         }
-        return "";
+        return "00:00:00:00:00:00";
     }
 
     std::vector<ScannedHost> NetworkScanner::ScanLocalNetwork()
@@ -110,7 +107,8 @@ namespace net_ops::client
             if (target == my_ip)
                 continue;
 
-            tasks.push_back(std::async(std::launch::async, [target, &found_hosts, &results_mutex]() {
+            tasks.push_back(std::async(std::launch::async, [target, &found_hosts, &results_mutex]()
+                                       {
                 if (Ping(target)) {
                 std::string mac = GetMacFromArp(target);
         
@@ -121,8 +119,7 @@ namespace net_ops::client
                 host.name = "Discovered Device";
                 host.is_alive = true;
                 found_hosts.push_back(host);
-                }
-            }));
+                } }));
         }
 
         for (auto &task : tasks)
