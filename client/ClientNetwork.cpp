@@ -97,6 +97,43 @@ namespace net_ops::client
         }
     }
 
+    bool ClientNetwork::SendLogout()
+    {
+        if (!m_ssl_handle || m_session_token.empty())
+        {
+            m_session_token.clear();
+            return true;
+        }
+
+        std::vector<uint8_t> payload;
+        AppendString(payload, m_session_token);
+
+        net_ops::protocol::Header header;
+        header.magic = net_ops::protocol::EXPECTED_MAGIC;
+        header.msg_type = static_cast<uint8_t>(net_ops::protocol::MessageType::LogoutReq);
+        header.payload_length = static_cast<uint32_t>(payload.size());
+        header.reserved = 0;
+
+        uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
+        net_ops::protocol::SerializeHeader(header, headerBuf);
+
+        if (SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf)) <= 0)
+        {
+            m_session_token.clear();
+            return false;
+        }
+
+        if (SSL_write(m_ssl_handle, payload.data(), payload.size()) <= 0)
+        {
+            m_session_token.clear();
+            return false;
+        }
+
+        m_session_token.clear();
+        std::cout << "[Client] Session cleared locally." << std::endl;
+        return true;
+    }
+
     void ClientNetwork::AppendString(std::vector<uint8_t> &buffer, const std::string &str)
     {
         uint32_t len = htonl(static_cast<uint32_t>(str.length()));

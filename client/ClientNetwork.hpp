@@ -32,6 +32,8 @@ namespace net_ops::client
         bool Connect();
         void Disconnect();
 
+        bool SendLogout();
+
         bool SendLogin(const std::string& username, const std::string& password);
         bool SendRegister(const std::string& username, const std::string& password);
         

@@ -51,6 +51,9 @@ namespace net_ops::protocol
         LogQueryReq = 0x15,
         LogQueryResp = 0x16,
 
+        LogoutReq = 0x17,
+        LogoutResp = 0x18,
+
         ErrorResp = 0xFF
     };
 

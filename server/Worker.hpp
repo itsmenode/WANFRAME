@@ -44,6 +44,8 @@ namespace net_ops::server {
 
         void HandleLogQuery(int client_fd, const std::vector<uint8_t>& payload);
 
+        void HandleLogout(int client_fd, const std::vector<uint8_t>& payload);
+
     public:
         Worker();
         ~Worker();

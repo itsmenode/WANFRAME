@@ -146,6 +146,9 @@ namespace net_ops::server
                 case net_ops::protocol::MessageType::LogQueryReq:
                     HandleLogQuery(current_job.client_fd, current_job.payload);
                     break;
+                case net_ops::protocol::MessageType::LogoutReq:
+                    HandleLogout(current_job.client_fd, current_job.payload);
+                    break;
                 default:
                     break;
                 }
@@ -504,6 +507,23 @@ namespace net_ops::server
         {
             std::string binaryPayload(response.begin(), response.end());
             network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LogQueryResp, binaryPayload);
+        }
+    }
+
+    void Worker::HandleLogout(int client_fd, const std::vector<uint8_t> &payload)
+    {
+        size_t offset = 0;
+        std::string token = ReadString(payload, offset);
+
+        if (!token.empty())
+        {
+            SessionManager::GetInstance().RemoveSession(token);
+            std::cout << "[Worker] Session invalidated for Client " << client_fd << "\n";
+        }
+
+        if (network_core_)
+        {
+            network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LogoutResp, "LOGOUT_SUCCESS");
         }
     }
 }

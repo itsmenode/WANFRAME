@@ -151,6 +151,11 @@ void DashboardLoop(net_ops::client::ClientNetwork &client)
         }
         else if (choice == "8")
         {
+            std::cout << "[System] Logging out...\n";
+            {
+                std::lock_guard<std::mutex> lock(g_net_lock);
+                client.SendLogout();
+            }
             in_dashboard = false;
         }
         else
