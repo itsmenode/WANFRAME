@@ -373,19 +373,16 @@ namespace net_ops::server
     void Worker::HandleDeviceAdd(int client_fd, const std::vector<uint8_t> &payload)
     {
         size_t offset = 0;
-
         std::string token = ReadString(payload, offset);
 
-        if (offset + 4 > payload.size())
-            return;
-
-        uint32_t net_group_id = 0;
-        std::memcpy(&net_group_id, &payload[offset], 4);
-        int group_id = static_cast<int>(ntohl(net_group_id));
+        uint32_t netGroupId = 0;
+        std::memcpy(&netGroupId, &payload[offset], 4);
+        int group_id = static_cast<int>(ntohl(netGroupId));
         offset += 4;
 
         std::string name = ReadString(payload, offset);
         std::string ip = ReadString(payload, offset);
+        std::string mac = ReadString(payload, offset);
 
         auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
         if (!userIdOpt.has_value())

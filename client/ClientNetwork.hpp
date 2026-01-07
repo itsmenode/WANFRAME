@@ -40,6 +40,8 @@ namespace net_ops::client
 
         bool SendAddMember(int groupId, const std::string& username);
         
+        void SendRequest(net_ops::protocol::MessageType type, const std::vector<uint8_t> &payload);
+
         void SendAddDevice(const std::string &name, const std::string &ip, const std::string &mac, int groupId);
         
         bool SendListDevices();

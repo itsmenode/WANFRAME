@@ -88,6 +88,7 @@ namespace net_ops::server
             "group_id INTEGER DEFAULT 0, "
             "name TEXT NOT NULL, "
             "ip_address TEXT NOT NULL, "
+            "mac_address TEXT UNIQUE, "
             "status TEXT DEFAULT 'UNKNOWN', "
             "info TEXT DEFAULT '', "
             "FOREIGN KEY(owner_id) REFERENCES users(id), "

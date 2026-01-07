@@ -13,6 +13,9 @@ namespace net_ops::client {
 
     class NetworkScanner {
     public:
+
+        static std::string GetMacFromArp(const std::string& target_ip);
+
         static std::vector<ScannedHost> ScanLocalNetwork();
 
         static std::string GetSubnetFromIP(const std::string& ip);
