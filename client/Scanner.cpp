@@ -58,9 +58,8 @@ namespace net_ops::client
     {
         if (ip.empty())
             return false;
-        std::string command = "ping -c 1 -W 1 " + ip + " | grep 'bytes from' > /dev/null 2>&1";
-        int result = std::system(command.c_str());
-        return (result == 0);
+        std::string command = "ping -c 1 -W 0.2 " + ip + " > /dev/null 2>&1";
+        return (std::system(command.c_str()) == 0);
     }
 
     std::string NetworkScanner::GetMacFromArp(const std::string &target_ip)
@@ -103,9 +102,6 @@ namespace net_ops::client
         for (int i = 1; i < 255; ++i)
         {
             std::string target = subnet + "." + std::to_string(i);
-
-            if (target == my_ip)
-                continue;
 
             tasks.push_back(std::async(std::launch::async, [target, &found_hosts, &results_mutex]()
                                        {

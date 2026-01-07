@@ -75,7 +75,7 @@ namespace net_ops::server
         std::vector<GroupRecord> GetGroupsForUser(int user_id);
         bool IsGroupOwner(int group_id, int user_id);
 
-        bool AddDevice(int owner_id, int group_id, const std::string &name, const std::string &ip, const std::string &mac);
+        bool AddDevice(int user_id, int group_id, const std::string &name, const std::string &ip, std::string mac);
         std::vector<DeviceRecord> GetAllDevicesForUser(int user_id);
         std::vector<DeviceRecord> GetDevicesInGroup(int group_id);
         void UpdateDeviceStatus(const std::string &ip, const std::string &status, const std::string &info);
