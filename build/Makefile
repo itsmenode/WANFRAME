@@ -216,12 +216,181 @@ Server_autogen/mocs_compilation.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/Server_autogen/mocs_compilation.cpp.s
 .PHONY : Server_autogen/mocs_compilation.cpp.s
 
+client/ClientNetwork.o: client/ClientNetwork.cpp.o
+.PHONY : client/ClientNetwork.o
+
+# target to build an object file
+client/ClientNetwork.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/ClientNetwork.cpp.o
+.PHONY : client/ClientNetwork.cpp.o
+
+client/ClientNetwork.i: client/ClientNetwork.cpp.i
+.PHONY : client/ClientNetwork.i
+
+# target to preprocess a source file
+client/ClientNetwork.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/ClientNetwork.cpp.i
+.PHONY : client/ClientNetwork.cpp.i
+
+client/ClientNetwork.s: client/ClientNetwork.cpp.s
+.PHONY : client/ClientNetwork.s
+
+# target to generate assembly for a file
+client/ClientNetwork.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/ClientNetwork.cpp.s
+.PHONY : client/ClientNetwork.cpp.s
+
+client/LoginWindow.o: client/LoginWindow.cpp.o
+.PHONY : client/LoginWindow.o
+
+# target to build an object file
+client/LoginWindow.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/LoginWindow.cpp.o
+.PHONY : client/LoginWindow.cpp.o
+
+client/LoginWindow.i: client/LoginWindow.cpp.i
+.PHONY : client/LoginWindow.i
+
+# target to preprocess a source file
+client/LoginWindow.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/LoginWindow.cpp.i
+.PHONY : client/LoginWindow.cpp.i
+
+client/LoginWindow.s: client/LoginWindow.cpp.s
+.PHONY : client/LoginWindow.s
+
+# target to generate assembly for a file
+client/LoginWindow.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/LoginWindow.cpp.s
+.PHONY : client/LoginWindow.cpp.s
+
+client/MainWindow.o: client/MainWindow.cpp.o
+.PHONY : client/MainWindow.o
+
+# target to build an object file
+client/MainWindow.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/MainWindow.cpp.o
+.PHONY : client/MainWindow.cpp.o
+
+client/MainWindow.i: client/MainWindow.cpp.i
+.PHONY : client/MainWindow.i
+
+# target to preprocess a source file
+client/MainWindow.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/MainWindow.cpp.i
+.PHONY : client/MainWindow.cpp.i
+
+client/MainWindow.s: client/MainWindow.cpp.s
+.PHONY : client/MainWindow.s
+
+# target to generate assembly for a file
+client/MainWindow.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/MainWindow.cpp.s
+.PHONY : client/MainWindow.cpp.s
+
+client/NetworkController.o: client/NetworkController.cpp.o
+.PHONY : client/NetworkController.o
+
+# target to build an object file
+client/NetworkController.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/NetworkController.cpp.o
+.PHONY : client/NetworkController.cpp.o
+
+client/NetworkController.i: client/NetworkController.cpp.i
+.PHONY : client/NetworkController.i
+
+# target to preprocess a source file
+client/NetworkController.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/NetworkController.cpp.i
+.PHONY : client/NetworkController.cpp.i
+
+client/NetworkController.s: client/NetworkController.cpp.s
+.PHONY : client/NetworkController.s
+
+# target to generate assembly for a file
+client/NetworkController.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/NetworkController.cpp.s
+.PHONY : client/NetworkController.cpp.s
+
+client/Scanner.o: client/Scanner.cpp.o
+.PHONY : client/Scanner.o
+
+# target to build an object file
+client/Scanner.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/Scanner.cpp.o
+.PHONY : client/Scanner.cpp.o
+
+client/Scanner.i: client/Scanner.cpp.i
+.PHONY : client/Scanner.i
+
+# target to preprocess a source file
+client/Scanner.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/Scanner.cpp.i
+.PHONY : client/Scanner.cpp.i
+
+client/Scanner.s: client/Scanner.cpp.s
+.PHONY : client/Scanner.s
+
+# target to generate assembly for a file
+client/Scanner.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/Scanner.cpp.s
+.PHONY : client/Scanner.cpp.s
+
+client/SyslogCollector.o: client/SyslogCollector.cpp.o
+.PHONY : client/SyslogCollector.o
+
+# target to build an object file
+client/SyslogCollector.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SyslogCollector.cpp.o
+.PHONY : client/SyslogCollector.cpp.o
+
+client/SyslogCollector.i: client/SyslogCollector.cpp.i
+.PHONY : client/SyslogCollector.i
+
+# target to preprocess a source file
+client/SyslogCollector.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SyslogCollector.cpp.i
+.PHONY : client/SyslogCollector.cpp.i
+
+client/SyslogCollector.s: client/SyslogCollector.cpp.s
+.PHONY : client/SyslogCollector.s
+
+# target to generate assembly for a file
+client/SyslogCollector.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SyslogCollector.cpp.s
+.PHONY : client/SyslogCollector.cpp.s
+
+client/main.o: client/main.cpp.o
+.PHONY : client/main.o
+
+# target to build an object file
+client/main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/main.cpp.o
+.PHONY : client/main.cpp.o
+
+client/main.i: client/main.cpp.i
+.PHONY : client/main.i
+
+# target to preprocess a source file
+client/main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/main.cpp.i
+.PHONY : client/main.cpp.i
+
+client/main.s: client/main.cpp.s
+.PHONY : client/main.s
+
+# target to generate assembly for a file
+client/main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/main.cpp.s
+.PHONY : client/main.cpp.s
+
 common/ByteBuffer.o: common/ByteBuffer.cpp.o
 .PHONY : common/ByteBuffer.o
 
 # target to build an object file
 common/ByteBuffer.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/common/ByteBuffer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/common/ByteBuffer.cpp.o
 .PHONY : common/ByteBuffer.cpp.o
 
 common/ByteBuffer.i: common/ByteBuffer.cpp.i
@@ -230,6 +399,7 @@ common/ByteBuffer.i: common/ByteBuffer.cpp.i
 # target to preprocess a source file
 common/ByteBuffer.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/common/ByteBuffer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/common/ByteBuffer.cpp.i
 .PHONY : common/ByteBuffer.cpp.i
 
 common/ByteBuffer.s: common/ByteBuffer.cpp.s
@@ -238,6 +408,7 @@ common/ByteBuffer.s: common/ByteBuffer.cpp.s
 # target to generate assembly for a file
 common/ByteBuffer.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/common/ByteBuffer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/common/ByteBuffer.cpp.s
 .PHONY : common/ByteBuffer.cpp.s
 
 server/DatabaseManager.o: server/DatabaseManager.cpp.o
@@ -378,6 +549,27 @@ help:
 	@echo "... Server_autogen/mocs_compilation.o"
 	@echo "... Server_autogen/mocs_compilation.i"
 	@echo "... Server_autogen/mocs_compilation.s"
+	@echo "... client/ClientNetwork.o"
+	@echo "... client/ClientNetwork.i"
+	@echo "... client/ClientNetwork.s"
+	@echo "... client/LoginWindow.o"
+	@echo "... client/LoginWindow.i"
+	@echo "... client/LoginWindow.s"
+	@echo "... client/MainWindow.o"
+	@echo "... client/MainWindow.i"
+	@echo "... client/MainWindow.s"
+	@echo "... client/NetworkController.o"
+	@echo "... client/NetworkController.i"
+	@echo "... client/NetworkController.s"
+	@echo "... client/Scanner.o"
+	@echo "... client/Scanner.i"
+	@echo "... client/Scanner.s"
+	@echo "... client/SyslogCollector.o"
+	@echo "... client/SyslogCollector.i"
+	@echo "... client/SyslogCollector.s"
+	@echo "... client/main.o"
+	@echo "... client/main.i"
+	@echo "... client/main.s"
 	@echo "... common/ByteBuffer.o"
 	@echo "... common/ByteBuffer.i"
 	@echo "... common/ByteBuffer.s"

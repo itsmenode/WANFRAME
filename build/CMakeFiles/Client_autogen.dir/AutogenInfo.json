@@ -66,7 +66,6 @@
 		"/usr/share/cmake-3.22/Modules/CheckIncludeFile.cmake",
 		"/usr/share/cmake-3.22/Modules/CheckCSourceCompiles.cmake",
 		"/usr/share/cmake-3.22/Modules/Internal/CheckSourceCompiles.cmake",
-		"/usr/share/cmake-3.22/Modules/CheckIncludeFile.c.in",
 		"/usr/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake",
 		"/usr/share/cmake-3.22/Modules/FindPackageMessage.cmake",
 		"/usr/lib/x86_64-linux-gnu/cmake/Qt6Widgets/Qt6WidgetsConfigVersion.cmake",
@@ -298,11 +297,55 @@
 	"CMAKE_SOURCE_DIR" : "/home/andrew/Documents/GitHub/WANFRAME",
 	"DEP_FILE" : "",
 	"DEP_FILE_RULE_NAME" : "",
-	"HEADERS" : [],
+	"HEADERS" : 
+	[
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/client/ClientNetwork.hpp",
+			"MU",
+			"7EM65HM6UG/moc_ClientNetwork.cpp",
+			null
+		],
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/client/LoginWindow.hpp",
+			"MU",
+			"7EM65HM6UG/moc_LoginWindow.cpp",
+			null
+		],
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/client/MainWindow.hpp",
+			"MU",
+			"7EM65HM6UG/moc_MainWindow.cpp",
+			null
+		],
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/client/NetworkController.hpp",
+			"MU",
+			"7EM65HM6UG/moc_NetworkController.cpp",
+			null
+		],
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/client/Scanner.hpp",
+			"MU",
+			"7EM65HM6UG/moc_Scanner.cpp",
+			null
+		],
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/client/SyslogCollector.hpp",
+			"MU",
+			"7EM65HM6UG/moc_SyslogCollector.cpp",
+			null
+		],
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/common/ByteBuffer.hpp",
+			"MU",
+			"P66WHCG54J/moc_ByteBuffer.cpp",
+			null
+		]
+	],
 	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
 	"INCLUDE_DIR" : "/home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/include",
 	"MOC_COMPILATION_FILE" : "/home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/mocs_compilation.cpp",
-	"MOC_DEFINITIONS" : [ "QT_CORE_LIB", "QT_GUI_LIB", "QT_NO_DEBUG", "QT_WIDGETS_LIB" ],
+	"MOC_DEFINITIONS" : [ "QT_CORE_LIB", "QT_GUI_LIB", "QT_WIDGETS_LIB" ],
 	"MOC_DEPEND_FILTERS" : 
 	[
 		[
@@ -353,7 +396,45 @@
 	"QT_VERSION_MAJOR" : 6,
 	"QT_VERSION_MINOR" : 2,
 	"SETTINGS_FILE" : "/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles/Client_autogen.dir/AutogenUsed.txt",
-	"SOURCES" : [],
+	"SOURCES" : 
+	[
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/client/ClientNetwork.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/client/LoginWindow.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/client/MainWindow.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/client/NetworkController.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/client/Scanner.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/client/SyslogCollector.cpp",
+			"MU",
+			null
+		],
+		[ "/home/andrew/Documents/GitHub/WANFRAME/client/main.cpp", "MU", null ],
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/common/ByteBuffer.cpp",
+			"MU",
+			null
+		]
+	],
 	"UIC_OPTIONS" : [],
 	"UIC_SEARCH_PATHS" : [],
 	"UIC_SKIP" : 

@@ -66,6 +66,7 @@ add_executable(Client
     client/SyslogCollector.cpp
     client/LoginWindow.cpp
     common/ByteBuffer.cpp
+    client/MainWindow.cpp
 )
 
 target_link_libraries(Client

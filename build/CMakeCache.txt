@@ -20,9 +20,8 @@ CMAKE_ADDR2LINE:FILEPATH=/usr/bin/addr2line
 //Path to a program.
 CMAKE_AR:FILEPATH=/usr/bin/ar
 
-//Choose the type of build, options are: None Debug Release RelWithDebInfo
-// MinSizeRel ...
-CMAKE_BUILD_TYPE:STRING=
+//No help, variable specified on the command line.
+CMAKE_BUILD_TYPE:STRING=Debug
 
 //Enable/Disable color output during build.
 CMAKE_COLOR_MAKEFILE:BOOL=ON
@@ -53,16 +52,16 @@ CMAKE_CXX_FLAGS_RELEASE:STRING=-O3 -DNDEBUG
 //Flags used by the CXX compiler during RELWITHDEBINFO builds.
 CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG
 
-//C compiler
-CMAKE_C_COMPILER:FILEPATH=/usr/bin/cc
+//No help, variable specified on the command line.
+CMAKE_C_COMPILER:FILEPATH=/usr/bin/gcc-12
 
 //A wrapper around 'ar' adding the appropriate '--plugin' option
 // for the GCC compiler
-CMAKE_C_COMPILER_AR:FILEPATH=/usr/bin/gcc-ar-11
+CMAKE_C_COMPILER_AR:FILEPATH=/usr/bin/gcc-ar-12
 
 //A wrapper around 'ranlib' adding the appropriate '--plugin' option
 // for the GCC compiler
-CMAKE_C_COMPILER_RANLIB:FILEPATH=/usr/bin/gcc-ranlib-11
+CMAKE_C_COMPILER_RANLIB:FILEPATH=/usr/bin/gcc-ranlib-12
 
 //Flags used by the C compiler during all build types.
 CMAKE_C_FLAGS:STRING=
@@ -97,8 +96,8 @@ CMAKE_EXE_LINKER_FLAGS_RELEASE:STRING=
 //Flags used by the linker during RELWITHDEBINFO builds.
 CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 
-//Enable/Disable output of compile commands during generation.
-CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=
+//No help, variable specified on the command line.
+CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE
 
 //Install path prefix, prepended onto install directories.
 CMAKE_INSTALL_PREFIX:PATH=/usr/local
@@ -310,10 +309,13 @@ WANFRAME_IS_TOP_LEVEL:STATIC=ON
 WANFRAME_SOURCE_DIR:STATIC=/home/andrew/Documents/GitHub/WANFRAME
 
 //Path to a file.
-XKB_INCLUDE_DIR:PATH=XKB_INCLUDE_DIR-NOTFOUND
+XKB_INCLUDE_DIR:PATH=/usr/include
 
 //Path to a library.
-XKB_LIBRARY:FILEPATH=XKB_LIBRARY-NOTFOUND
+XKB_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libxkbcommon.so
+
+//Path to a library.
+pkgcfg_lib_PKG_XKB_xkbcommon:FILEPATH=/usr/lib/x86_64-linux-gnu/libxkbcommon.so
 
 //Path to a library.
 pkgcfg_lib__OPENSSL_crypto:FILEPATH=/usr/lib/x86_64-linux-gnu/libcrypto.so
@@ -483,6 +485,8 @@ FIND_PACKAGE_MESSAGE_DETAILS_Threads:INTERNAL=[TRUE][v()]
 FIND_PACKAGE_MESSAGE_DETAILS_WrapAtomic:INTERNAL=[1][v()]
 //Details about finding WrapOpenGL
 FIND_PACKAGE_MESSAGE_DETAILS_WrapOpenGL:INTERNAL=[ON][v()]
+//Details about finding XKB
+FIND_PACKAGE_MESSAGE_DETAILS_XKB:INTERNAL=[/usr/lib/x86_64-linux-gnu/libxkbcommon.so][/usr/include][v1.4.0(0.5.0)]
 //Test HAVE_STDATOMIC
 HAVE_STDATOMIC:INTERNAL=1
 //ADVANCED property for variable: OPENGL_EGL_INCLUDE_DIR
@@ -514,24 +518,34 @@ PKG_CONFIG_EXECUTABLE-ADVANCED:INTERNAL=1
 PKG_XKB_CFLAGS:INTERNAL=
 PKG_XKB_CFLAGS_I:INTERNAL=
 PKG_XKB_CFLAGS_OTHER:INTERNAL=
-PKG_XKB_FOUND:INTERNAL=
-PKG_XKB_INCLUDEDIR:INTERNAL=
-PKG_XKB_LIBDIR:INTERNAL=
+PKG_XKB_FOUND:INTERNAL=1
+PKG_XKB_INCLUDEDIR:INTERNAL=/usr/include
+PKG_XKB_INCLUDE_DIRS:INTERNAL=
+PKG_XKB_LDFLAGS:INTERNAL=-L/usr/lib/x86_64-linux-gnu;-lxkbcommon
+PKG_XKB_LDFLAGS_OTHER:INTERNAL=
+PKG_XKB_LIBDIR:INTERNAL=/usr/lib/x86_64-linux-gnu
+PKG_XKB_LIBRARIES:INTERNAL=xkbcommon
+PKG_XKB_LIBRARY_DIRS:INTERNAL=/usr/lib/x86_64-linux-gnu
 PKG_XKB_LIBS:INTERNAL=
 PKG_XKB_LIBS_L:INTERNAL=
 PKG_XKB_LIBS_OTHER:INTERNAL=
 PKG_XKB_LIBS_PATHS:INTERNAL=
-PKG_XKB_MODULE_NAME:INTERNAL=
-PKG_XKB_PREFIX:INTERNAL=
+PKG_XKB_MODULE_NAME:INTERNAL=xkbcommon
+PKG_XKB_PREFIX:INTERNAL=/usr
 PKG_XKB_STATIC_CFLAGS:INTERNAL=
 PKG_XKB_STATIC_CFLAGS_I:INTERNAL=
 PKG_XKB_STATIC_CFLAGS_OTHER:INTERNAL=
+PKG_XKB_STATIC_INCLUDE_DIRS:INTERNAL=
+PKG_XKB_STATIC_LDFLAGS:INTERNAL=-L/usr/lib/x86_64-linux-gnu;-lxkbcommon
+PKG_XKB_STATIC_LDFLAGS_OTHER:INTERNAL=
 PKG_XKB_STATIC_LIBDIR:INTERNAL=
+PKG_XKB_STATIC_LIBRARIES:INTERNAL=xkbcommon
+PKG_XKB_STATIC_LIBRARY_DIRS:INTERNAL=/usr/lib/x86_64-linux-gnu
 PKG_XKB_STATIC_LIBS:INTERNAL=
 PKG_XKB_STATIC_LIBS_L:INTERNAL=
 PKG_XKB_STATIC_LIBS_OTHER:INTERNAL=
 PKG_XKB_STATIC_LIBS_PATHS:INTERNAL=
-PKG_XKB_VERSION:INTERNAL=
+PKG_XKB_VERSION:INTERNAL=1.4.0
 PKG_XKB_xkbcommon_INCLUDEDIR:INTERNAL=
 PKG_XKB_xkbcommon_LIBDIR:INTERNAL=
 PKG_XKB_xkbcommon_PREFIX:INTERNAL=
@@ -1275,9 +1289,12 @@ _OPENSSL_openssl_INCLUDEDIR:INTERNAL=
 _OPENSSL_openssl_LIBDIR:INTERNAL=
 _OPENSSL_openssl_PREFIX:INTERNAL=
 _OPENSSL_openssl_VERSION:INTERNAL=
+__pkg_config_arguments_PKG_XKB:INTERNAL=QUIET;xkbcommon
 __pkg_config_arguments__OPENSSL:INTERNAL=QUIET;openssl
 __pkg_config_checked_PKG_XKB:INTERNAL=1
 __pkg_config_checked__OPENSSL:INTERNAL=1
+//ADVANCED property for variable: pkgcfg_lib_PKG_XKB_xkbcommon
+pkgcfg_lib_PKG_XKB_xkbcommon-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: pkgcfg_lib__OPENSSL_crypto
 pkgcfg_lib__OPENSSL_crypto-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: pkgcfg_lib__OPENSSL_ssl
