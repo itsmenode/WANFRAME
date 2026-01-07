@@ -167,33 +167,21 @@ namespace net_ops::server
         std::string password = ReadString(payload, offset);
 
         auto &db = DatabaseManager::GetInstance();
-        auto user = db.GetUserByName(username);
 
-        if (!user.has_value())
+        if (db.ValidateUser(username, password))
         {
-            std::cout << "[Worker] Login Failed: User '" << username << "' not found.\n";
-            if (network_core_)
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "LOGIN_FAILURE");
-            return;
-        }
-
-        std::cout << "[Login Debug] User: " << username << "\n";
-        std::cout << "   - DB Salt:       " << ToHex(user->salt) << "\n";
-        std::cout << "   - DB Hash:       " << ToHex(user->password_hash) << "\n";
-
-        std::vector<uint8_t> computed_hash = ComputeHash(password, user->salt);
-        std::cout << "   - Computed Hash: " << ToHex(computed_hash) << "\n";
-
-        if (computed_hash == user->password_hash)
-        {
-            std::cout << "[Worker] Login SUCCESS.\n";
-            std::string token = SessionManager::GetInstance().CreateSession(user->id);
-            if (network_core_)
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_SUCCESS:" + token);
+            auto user = db.GetUserByName(username);
+            if (user.has_value())
+            {
+                std::cout << "[Worker] Login SUCCESS for user: " << username << "\n";
+                std::string token = SessionManager::GetInstance().CreateSession(user->id);
+                if (network_core_)
+                    network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LoginResp, "LOGIN_SUCCESS:" + token);
+            }
         }
         else
         {
-            std::cout << "[Worker] Login Mismatch.\n";
+            std::cout << "[Worker] Login FAILURE for user: " << username << "\n";
             if (network_core_)
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "LOGIN_FAILURE");
         }
