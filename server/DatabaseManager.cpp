@@ -8,11 +8,12 @@
 #include <iomanip>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
+#include <openssl/rand.h>
 
 namespace net_ops::server
 {
 
-    static std::vector<uint8_t> PBKDF2_Hash(const std::string &password, const std::vector<uint8_t> &salt)
+    static std::vector<uint8_t> InternalPBKDF2(const std::string &password, const std::vector<uint8_t> &salt)
     {
         std::vector<uint8_t> hash(32);
         PKCS5_PBKDF2_HMAC(password.c_str(), password.length(),
@@ -159,34 +160,26 @@ namespace net_ops::server
         }
     }
 
-    bool DatabaseManager::CreateUser(const std::string &username, const std::vector<uint8_t> &hash, const std::vector<uint8_t> &salt)
+    bool DatabaseManager::CreateUser(const std::string &username, const std::string &password)
     {
         std::lock_guard<std::mutex> lock(db_mutex_);
 
+        std::vector<uint8_t> salt(16);
+        if (RAND_bytes(salt.data(), 16) != 1)
+            return false;
+
+        std::vector<uint8_t> hash = InternalPBKDF2(password, salt);
+
         const char *sql = "INSERT INTO users (username, password_hash, salt) VALUES (?, ?, ?);";
         sqlite3_stmt *stmt;
-
         if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK)
-        {
-            std::cerr << "[DB Error] Prepare failed: " << sqlite3_errmsg(db_) << "\n";
             return false;
-        }
 
         sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_blob(stmt, 2, hash.data(), static_cast<int>(hash.size()), SQLITE_TRANSIENT);
         sqlite3_bind_blob(stmt, 3, salt.data(), static_cast<int>(salt.size()), SQLITE_TRANSIENT);
 
-        bool success = false;
-        if (sqlite3_step(stmt) == SQLITE_DONE)
-        {
-            success = true;
-            std::cout << "[DB Debug] Inserted User: " << username << " | PBKDF2 Hash Size: " << hash.size() << "\n";
-        }
-        else
-        {
-            std::cerr << "[DB Error] Insert failed: " << sqlite3_errmsg(db_) << "\n";
-        }
-
+        bool success = (sqlite3_step(stmt) == SQLITE_DONE);
         sqlite3_finalize(stmt);
         return success;
     }
@@ -194,19 +187,15 @@ namespace net_ops::server
     bool DatabaseManager::ValidateUser(const std::string &username, const std::string &password)
     {
         std::lock_guard<std::mutex> lock(db_mutex_);
-
         const char *sql = "SELECT password_hash, salt FROM users WHERE username = ?;";
         sqlite3_stmt *stmt;
-
         if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK)
             return false;
 
         sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_STATIC);
 
+        std::vector<uint8_t> storedHash, salt;
         bool userFound = false;
-        std::vector<uint8_t> storedHash;
-        std::vector<uint8_t> salt;
-
         if (sqlite3_step(stmt) == SQLITE_ROW)
         {
             userFound = true;
@@ -224,15 +213,7 @@ namespace net_ops::server
 
         if (!userFound || salt.empty() || storedHash.empty())
             return false;
-
-        std::vector<uint8_t> computedHash(storedHash.size());
-        if (PKCS5_PBKDF2_HMAC(password.c_str(), password.length(), salt.data(), salt.size(),
-                              10000, EVP_sha256(), computedHash.size(), computedHash.data()) != 1)
-        {
-            return false;
-        }
-
-        return (computedHash == storedHash);
+        return (InternalPBKDF2(password, salt) == storedHash);
     }
 
     std::optional<UserRecord> DatabaseManager::GetUserByName(const std::string &username)

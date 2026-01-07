@@ -205,17 +205,7 @@ namespace net_ops::server
         std::string username = ReadString(payload, offset);
         std::string password = ReadString(payload, offset);
 
-        std::vector<uint8_t> salt(16);
-        if (RAND_bytes(salt.data(), 16) != 1)
-            return;
-
-        std::vector<uint8_t> hash = ComputeHash(password, salt);
-
-        std::cout << "[Register Debug] User: " << username << "\n";
-        std::cout << "   - Generated Salt: " << ToHex(salt) << "\n";
-        std::cout << "   - Generated Hash: " << ToHex(hash) << "\n";
-
-        if (DatabaseManager::GetInstance().CreateUser(username, hash, salt))
+        if (DatabaseManager::GetInstance().CreateUser(username, password))
         {
             if (network_core_)
                 network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::SignupResp, "SIGNUP_SUCCESS");

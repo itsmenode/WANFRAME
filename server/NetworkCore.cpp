@@ -325,36 +325,39 @@ namespace net_ops::server
         while (!m_response_queue.empty())
         {
             OutgoingMessage msg = m_response_queue.front();
-
             if (registry.find(msg.client_fd) == registry.end())
             {
                 m_response_queue.pop();
                 continue;
             }
 
-            SSL *ssl = registry[msg.client_fd].ssl_handle;
-
+            ClientContext &ctx = registry[msg.client_fd];
             std::vector<uint8_t> fullPacket(net_ops::protocol::HEADER_SIZE + msg.payload.size());
             net_ops::protocol::SerializeHeader(msg.header, fullPacket.data());
             std::memcpy(fullPacket.data() + net_ops::protocol::HEADER_SIZE, msg.payload.data(), msg.payload.size());
 
-            int written = SSL_write(ssl, fullPacket.data(), fullPacket.size());
+            ctx.out_buffer.insert(ctx.out_buffer.end(), fullPacket.begin(), fullPacket.end());
+            m_response_queue.pop();
+        }
 
-            if (written <= 0)
+        for (auto &[fd, ctx] : registry)
+        {
+            if (ctx.out_buffer.empty() || !ctx.is_handshake_complete)
+                continue;
+
+            int written = SSL_write(ctx.ssl_handle, ctx.out_buffer.data(), ctx.out_buffer.size());
+            if (written > 0)
             {
-                int err = SSL_get_error(ssl, written);
-                if (err == SSL_ERROR_WANT_WRITE || err == SSL_ERROR_WANT_READ)
+                ctx.out_buffer.erase(ctx.out_buffer.begin(), ctx.out_buffer.begin() + written);
+            }
+            else
+            {
+                int err = SSL_get_error(ctx.ssl_handle, written);
+                if (err != SSL_ERROR_WANT_WRITE && err != SSL_ERROR_WANT_READ)
                 {
-                    break;
-                }
-                else
-                {
-                    DisconnectClient(msg.client_fd);
+                    DisconnectClient(fd);
                 }
             }
-
-            m_response_queue.pop();
-            std::cout << "[Server] Sent response to Client " << msg.client_fd << "\n";
         }
     }
 }
