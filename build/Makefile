@@ -305,8 +305,6 @@ common/ByteBuffer.o: common/ByteBuffer.cpp.o
 # target to build an object file
 common/ByteBuffer.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/WANCommon.dir/build.make CMakeFiles/WANCommon.dir/common/ByteBuffer.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/common/ByteBuffer.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/common/ByteBuffer.cpp.o
 .PHONY : common/ByteBuffer.cpp.o
 
 common/ByteBuffer.i: common/ByteBuffer.cpp.i
@@ -315,8 +313,6 @@ common/ByteBuffer.i: common/ByteBuffer.cpp.i
 # target to preprocess a source file
 common/ByteBuffer.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/WANCommon.dir/build.make CMakeFiles/WANCommon.dir/common/ByteBuffer.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/common/ByteBuffer.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/common/ByteBuffer.cpp.i
 .PHONY : common/ByteBuffer.cpp.i
 
 common/ByteBuffer.s: common/ByteBuffer.cpp.s
@@ -325,8 +321,6 @@ common/ByteBuffer.s: common/ByteBuffer.cpp.s
 # target to generate assembly for a file
 common/ByteBuffer.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/WANCommon.dir/build.make CMakeFiles/WANCommon.dir/common/ByteBuffer.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/common/ByteBuffer.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/common/ByteBuffer.cpp.s
 .PHONY : common/ByteBuffer.cpp.s
 
 server/DatabaseManager.o: server/DatabaseManager.cpp.o

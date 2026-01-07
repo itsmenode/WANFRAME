@@ -66,7 +66,6 @@ namespace net_ops::client
 
     bool ClientNetwork::ReadNextPacket(net_ops::protocol::Header &out_hdr, std::vector<uint8_t> &out_payload)
     {
-        std::lock_guard<std::mutex> lock(m_io_mutex);
 
         if (!m_ssl_handle)
             return false;

@@ -8,7 +8,6 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/andrew/Documents/GitHub/WANFRAME/common/ByteBuffer.cpp" "CMakeFiles/Server.dir/common/ByteBuffer.cpp.o" "gcc" "CMakeFiles/Server.dir/common/ByteBuffer.cpp.o.d"
   "/home/andrew/Documents/GitHub/WANFRAME/server/DatabaseManager.cpp" "CMakeFiles/Server.dir/server/DatabaseManager.cpp.o" "gcc" "CMakeFiles/Server.dir/server/DatabaseManager.cpp.o.d"
   "/home/andrew/Documents/GitHub/WANFRAME/server/NetworkCore.cpp" "CMakeFiles/Server.dir/server/NetworkCore.cpp.o" "gcc" "CMakeFiles/Server.dir/server/NetworkCore.cpp.o.d"
   "/home/andrew/Documents/GitHub/WANFRAME/server/SessionManager.cpp" "CMakeFiles/Server.dir/server/SessionManager.cpp.o" "gcc" "CMakeFiles/Server.dir/server/SessionManager.cpp.o.d"

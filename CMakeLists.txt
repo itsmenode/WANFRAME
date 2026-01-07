@@ -44,7 +44,6 @@ add_executable(Server
     server/Worker.cpp
     server/DatabaseManager.cpp
     server/SessionManager.cpp
-    common/ByteBuffer.cpp
 )
 
 target_link_libraries(Server
@@ -66,7 +65,6 @@ add_executable(Client
     client/SyslogCollector.cpp
     client/DeviceMonitor.cpp
     client/SnmpClient.cpp
-    common/ByteBuffer.cpp
 )
 
 target_link_libraries(Client

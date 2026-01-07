@@ -219,8 +219,14 @@ namespace net_ops::server
             {
                 int err = SSL_get_error(ctx.ssl_handle, count);
 
-                if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
-                    break;
+                if (err == SSL_ERROR_WANT_READ)
+                    return;
+
+                if (err == SSL_ERROR_WANT_WRITE)
+                {
+                    EnableWriteInterest(fd);
+                    return;
+                }
                 else if (err == SSL_ERROR_ZERO_RETURN || err == SSL_ERROR_SYSCALL)
                 {
                     DisconnectClient(fd);
@@ -435,11 +441,28 @@ namespace net_ops::server
     {
         SSL *ssl = nullptr;
 
+        auto enable_write_unlocked = [&](ClientContext &c)
+        {
+            if (!(c.epoll_events & EPOLLOUT))
+            {
+                c.epoll_events |= EPOLLOUT;
+                EpollControlMod(fd, c.epoll_events);
+            }
+        };
+
+        auto disable_write_unlocked = [&](ClientContext &c)
+        {
+            if (c.epoll_events & EPOLLOUT)
+            {
+                c.epoll_events &= ~EPOLLOUT;
+                EpollControlMod(fd, c.epoll_events);
+            }
+        };
+
         while (true)
         {
             std::vector<uint8_t> chunk;
             size_t already_sent = 0;
-            bool handshake_done = false;
 
             {
                 std::lock_guard<std::mutex> lock(m_registry_mutex);
@@ -448,9 +471,8 @@ namespace net_ops::server
                     return;
 
                 ssl = it->second.ssl_handle;
-                handshake_done = it->second.is_handshake_complete;
 
-                if (!handshake_done)
+                if (!it->second.is_handshake_complete)
                 {
                     int ret = SSL_accept(ssl);
                     if (ret == 1)
@@ -460,17 +482,16 @@ namespace net_ops::server
                     else
                     {
                         int err = SSL_get_error(ssl, ret);
-                        if (err == SSL_ERROR_WANT_READ)
-                        {
-                            DisableWriteInterest(fd);
-                            return;
-                        }
                         if (err == SSL_ERROR_WANT_WRITE)
                         {
-                            EnableWriteInterest(fd);
+                            enable_write_unlocked(it->second);
                             return;
                         }
-
+                        if (err == SSL_ERROR_WANT_READ)
+                        {
+                            disable_write_unlocked(it->second);
+                            return;
+                        }
                         goto fatal_disconnect;
                     }
                 }
@@ -479,7 +500,7 @@ namespace net_ops::server
                 {
                     it->second.out_buf.clear();
                     it->second.out_off = 0;
-                    DisableWriteInterest(fd);
+                    disable_write_unlocked(it->second);
                     return;
                 }
 
@@ -501,29 +522,27 @@ namespace net_ops::server
                     return;
 
                 it->second.out_off = already_sent + static_cast<size_t>(n);
-
                 continue;
             }
-            else
-            {
-                int err = SSL_get_error(ssl, n);
-                if (err == SSL_ERROR_WANT_WRITE)
-                {
-                    EnableWriteInterest(fd);
-                    return;
-                }
-                if (err == SSL_ERROR_WANT_READ)
-                {
-                    DisableWriteInterest(fd);
-                    return;
-                }
 
-                goto fatal_disconnect;
+            int err = SSL_get_error(ssl, n);
+            if (err == SSL_ERROR_WANT_WRITE)
+            {
+                EnableWriteInterest(fd);
+                return;
             }
+            if (err == SSL_ERROR_WANT_READ)
+            {
+                DisableWriteInterest(fd);
+                return;
+            }
+
+            goto fatal_disconnect;
         }
 
     fatal_disconnect:
-        std::cerr << "[Server] Disconnecting client " << fd << " due to SSL_write/handshake fatal error\n";
+        std::cerr << "[Server] Disconnecting client " << fd
+                  << " due to SSL_write/handshake fatal error\n";
         DisconnectClient(fd);
     }
 
