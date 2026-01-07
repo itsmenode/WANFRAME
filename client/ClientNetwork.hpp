@@ -4,6 +4,7 @@
 #include <vector>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <mutex>
 #include "../common/protocol.hpp"
 #include "../common/ByteBuffer.hpp"
 
@@ -22,6 +23,9 @@ namespace net_ops::client
         SSL *m_ssl_handle;
 
         net_ops::common::ByteBuffer m_rx_buf;
+
+        mutable std::mutex m_io_mutex;
+
 
         bool ReadNextPacket(net_ops::protocol::Header &out_hdr, std::vector<uint8_t> &out_payload);
 

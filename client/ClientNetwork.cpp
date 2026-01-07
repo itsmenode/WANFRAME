@@ -66,6 +66,8 @@ namespace net_ops::client
 
     bool ClientNetwork::ReadNextPacket(net_ops::protocol::Header &out_hdr, std::vector<uint8_t> &out_payload)
     {
+        std::lock_guard<std::mutex> lock(m_io_mutex);
+
         if (!m_ssl_handle)
             return false;
 
@@ -351,6 +353,8 @@ namespace net_ops::client
 
     bool ClientNetwork::SendAddDevice(const std::string &name, const std::string &ip, int groupId)
     {
+        std::lock_guard<std::mutex> lock(m_io_mutex);
+
         if (!m_ssl_handle)
             return false;
 
@@ -389,6 +393,8 @@ namespace net_ops::client
 
     bool ClientNetwork::SendListDevices()
     {
+        std::lock_guard<std::mutex> lock(m_io_mutex);
+
         if (!m_ssl_handle)
             return false;
 
@@ -414,6 +420,8 @@ namespace net_ops::client
 
     bool ClientNetwork::SendLogUpload(const std::string &source_ip, const std::string &log_msg)
     {
+        std::lock_guard<std::mutex> lock(m_io_mutex);
+
         if (!m_ssl_handle)
             return false;
 
@@ -441,6 +449,8 @@ namespace net_ops::client
 
     bool ClientNetwork::SendStatusUpdate(const std::string &ip, const std::string &status, const std::string &info)
     {
+
+        std::lock_guard<std::mutex> lock(m_io_mutex);
 
         if (!m_ssl_handle)
             return false;
@@ -470,6 +480,8 @@ namespace net_ops::client
 
     void ClientNetwork::SendFetchLogs(int device_id)
     {
+        std::lock_guard<std::mutex> lock(m_io_mutex);
+
         if (!m_ssl_handle)
             return;
 
@@ -497,6 +509,8 @@ namespace net_ops::client
 
     bool ClientNetwork::ReceiveResponse()
     {
+        std::lock_guard<std::mutex> lock(m_io_mutex);
+
         if (!m_ssl_handle)
             return false;
 

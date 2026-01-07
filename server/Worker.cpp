@@ -459,10 +459,17 @@ namespace net_ops::server
         std::string log_msg = ReadString(payload, offset);
 
         if (!SessionManager::GetInstance().GetUserId(token).has_value())
+        {
+            if (network_core_)
+                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
             return;
+        }
 
         DatabaseManager::GetInstance().SaveLog(device_ip, log_msg);
         std::cout << "[Worker] Processed log from " << device_ip << "\n";
+
+        if (network_core_)
+            network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LogUploadResp, "LOG_OK");
     }
 
     void Worker::HandleStatusUpdate(int fd, const std::vector<uint8_t> &payload)
@@ -475,9 +482,16 @@ namespace net_ops::server
 
         auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
         if (!userIdOpt)
+        {
+            if (network_core_)
+                network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
             return;
+        }
 
         DatabaseManager::GetInstance().UpdateDeviceStatus(ip, status, info);
+
+        if (network_core_)
+            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::DeviceStatusResp, "STATUS_OK");
     }
 
     void Worker::HandleLogQuery(int client_fd, const std::vector<uint8_t> &payload)

@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include <stdio.h>
 #include <iostream>
+#include <algorithm>
+#include <errno.h>
 
 #include "NetworkCore.hpp"
 #include "Worker.hpp"
@@ -45,17 +47,24 @@ namespace net_ops::server
         fcntl(fd, F_SETFL, O_NONBLOCK);
     }
 
-    void NetworkCore::EpollControlAdd(int fd)
+    void NetworkCore::EpollControlAdd(int fd, uint32_t events)
     {
-        struct epoll_event event;
-        std::memset(&event, 0, sizeof(event));
-        event.events = EPOLLIN;
+        epoll_event event{};
+        event.events = events;
         event.data.fd = fd;
 
         if (epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)
-        {
             throw std::runtime_error("Failed to add FD to epoll");
-        }
+    }
+
+    void NetworkCore::EpollControlMod(int fd, uint32_t events)
+    {
+        epoll_event event{};
+        event.events = events;
+        event.data.fd = fd;
+
+        if (epoll_ctl(m_epoll_fd, EPOLL_CTL_MOD, fd, &event) == -1)
+            std::cerr << "Warning: Failed to mod FD in epoll\n";
     }
 
     void NetworkCore::EpollControlRemove(int fd)
@@ -66,16 +75,52 @@ namespace net_ops::server
         }
     }
 
+    void NetworkCore::EnableWriteInterest(int fd)
+    {
+        std::lock_guard<std::mutex> lock(m_registry_mutex);
+        auto it = registry.find(fd);
+        if (it == registry.end())
+            return;
+
+        uint32_t want = it->second.epoll_events | EPOLLOUT;
+        if (want != it->second.epoll_events)
+        {
+            it->second.epoll_events = want;
+            EpollControlMod(fd, want);
+        }
+    }
+
+    void NetworkCore::DisableWriteInterest(int fd)
+    {
+        std::lock_guard<std::mutex> lock(m_registry_mutex);
+        auto it = registry.find(fd);
+        if (it == registry.end())
+            return;
+
+        uint32_t want = it->second.epoll_events & ~EPOLLOUT;
+        if (want != it->second.epoll_events)
+        {
+            it->second.epoll_events = want;
+            EpollControlMod(fd, want);
+        }
+    }
+
     void NetworkCore::DisconnectClient(int fd)
     {
         EpollControlRemove(fd);
-        if (registry[fd].ssl_handle)
+
+        std::lock_guard<std::mutex> lock(m_registry_mutex);
+        auto it = registry.find(fd);
+        if (it == registry.end())
+            return;
+
+        if (it->second.ssl_handle)
         {
-            SSL_shutdown(registry[fd].ssl_handle);
-            SSL_free(registry[fd].ssl_handle);
+            SSL_shutdown(it->second.ssl_handle);
+            SSL_free(it->second.ssl_handle);
         }
         close(fd);
-        registry.erase(fd);
+        registry.erase(it);
     }
 
     void NetworkCore::HandleNewConnection()
@@ -102,25 +147,31 @@ namespace net_ops::server
         registry[m_client_fd].ssl_handle = ssl_handle;
 
         int ret = SSL_accept(ssl_handle);
-
         if (ret == 1)
         {
             registry[m_client_fd].is_handshake_complete = true;
-            std::cout << "[Server] New connection accepted and Handshake COMPLETE: " << m_client_fd << std::endl;
-            EpollControlAdd(m_client_fd);
+            registry[m_client_fd].epoll_events = EPOLLIN | EPOLLRDHUP;
+            EpollControlAdd(m_client_fd, registry[m_client_fd].epoll_events);
+            std::cout << "[Server] New connection accepted and Handshake COMPLETE: " << m_client_fd << "\n";
         }
         else
         {
             int ssl_error = SSL_get_error(ssl_handle, ret);
-            if (ssl_error == SSL_ERROR_WANT_READ)
+
+            registry[m_client_fd].is_handshake_complete = false;
+            registry[m_client_fd].epoll_events = EPOLLIN | EPOLLRDHUP;
+
+            if (ssl_error == SSL_ERROR_WANT_WRITE)
+                registry[m_client_fd].epoll_events |= EPOLLOUT;
+
+            if (ssl_error == SSL_ERROR_WANT_READ || ssl_error == SSL_ERROR_WANT_WRITE)
             {
-                registry[m_client_fd].is_handshake_complete = false;
-                EpollControlAdd(m_client_fd);
-                std::cout << "[Server] New connection accepted, Handshake PENDING: " << m_client_fd << std::endl;
+                EpollControlAdd(m_client_fd, registry[m_client_fd].epoll_events);
+                std::cout << "[Server] New connection accepted, Handshake PENDING: " << m_client_fd << "\n";
             }
             else
             {
-                std::cerr << "[Server] Fatal SSL Handshake Error on " << m_client_fd << ". Disconnecting." << std::endl;
+                std::cerr << "[Server] Fatal SSL Handshake Error on " << m_client_fd << " err=" << ssl_error << "\n";
                 close(m_client_fd);
             }
         }
@@ -266,7 +317,18 @@ namespace net_ops::server
             throw std::runtime_error("Failed to create epoll file descriptor.");
         }
 
-        EpollControlAdd(m_server_fd);
+        m_wakeup_fd = eventfd(0, EFD_NONBLOCK);
+        if (m_wakeup_fd == -1)
+            throw std::runtime_error("eventfd failed");
+
+        epoll_event wev{};
+        wev.events = EPOLLIN;
+        wev.data.fd = m_wakeup_fd;
+
+        if (epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, m_wakeup_fd, &wev) == -1)
+            throw std::runtime_error("Failed to add wakeup fd to epoll");
+
+        EpollControlAdd(m_server_fd, EPOLLIN);
     }
 
     void NetworkCore::Run()
@@ -277,7 +339,9 @@ namespace net_ops::server
 
         struct epoll_event ev[128];
         int count = 0;
-        while (m_running)
+
+        running_ = true;
+        while (running_)
         {
             if ((count = epoll_wait(m_epoll_fd, ev, 128, 10)) == -1)
             {
@@ -289,14 +353,51 @@ namespace net_ops::server
 
             for (int i = 0; i < count; i++)
             {
-                int m_current_fd = ev[i].data.fd;
-                if (m_current_fd == m_server_fd)
-                    HandleNewConnection();
-                else
-                    HandleClientData(m_current_fd);
-            }
+                int fd = ev[i].data.fd;
+                uint32_t events = ev[i].events;
 
-            SendPendingResponses();
+                if (fd == m_wakeup_fd)
+                {
+                    uint64_t val;
+                    while (read(m_wakeup_fd, &val, sizeof(val)) == sizeof(val))
+                    {
+                    }
+
+                    std::vector<int> to_flush;
+                    {
+                        std::lock_guard<std::mutex> lock(m_registry_mutex);
+                        to_flush.reserve(registry.size());
+                        for (auto &[cfd, ctx] : registry)
+                        {
+                            if (!ctx.out_buf.empty() && ctx.out_off < ctx.out_buf.size())
+                                to_flush.push_back(cfd);
+                        }
+                    }
+
+                    for (int cfd : to_flush)
+                        FlushClientWrites(cfd);
+
+                    continue;
+                }
+
+                if (fd == m_server_fd)
+                {
+                    HandleNewConnection();
+                    continue;
+                }
+
+                if (events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP))
+                {
+                    DisconnectClient(fd);
+                    continue;
+                }
+
+                if (events & EPOLLOUT)
+                    FlushClientWrites(fd);
+
+                if (events & EPOLLIN)
+                    HandleClientData(fd);
+            }
         }
     }
 
@@ -308,47 +409,133 @@ namespace net_ops::server
         header.payload_length = static_cast<uint32_t>(data.size());
         header.reserved = 0;
 
-        std::vector<uint8_t> payload(data.begin(), data.end());
+        uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
+        net_ops::protocol::SerializeHeader(header, headerBuf);
+
+        std::vector<uint8_t> packet;
+        packet.insert(packet.end(), headerBuf, headerBuf + net_ops::protocol::HEADER_SIZE);
+        packet.insert(packet.end(), data.begin(), data.end());
 
         {
-            std::lock_guard<std::mutex> lock(m_response_mutex);
-            m_response_queue.push({client_fd, header, payload});
+            std::lock_guard<std::mutex> lock(m_registry_mutex);
+            auto it = registry.find(client_fd);
+            if (it == registry.end())
+                return;
+
+            it->second.out_buf.insert(it->second.out_buf.end(), packet.begin(), packet.end());
         }
+
+        EnableWriteInterest(client_fd);
+
+        uint64_t one = 1;
+        (void)write(m_wakeup_fd, &one, sizeof(one));
     }
 
-    void NetworkCore::SendPendingResponses()
+    void NetworkCore::FlushClientWrites(int fd)
     {
-        std::lock_guard<std::mutex> lock(m_response_mutex);
+        SSL *ssl = nullptr;
 
-        while (!m_response_queue.empty())
+        while (true)
         {
-            OutgoingMessage msg = m_response_queue.front();
-            m_response_queue.pop();
+            std::vector<uint8_t> chunk;
+            size_t already_sent = 0;
+            bool handshake_done = false;
 
-            if (registry.find(msg.client_fd) == registry.end())
             {
-                continue;
+                std::lock_guard<std::mutex> lock(m_registry_mutex);
+                auto it = registry.find(fd);
+                if (it == registry.end())
+                    return;
+
+                ssl = it->second.ssl_handle;
+                handshake_done = it->second.is_handshake_complete;
+
+                if (!handshake_done)
+                {
+                    int ret = SSL_accept(ssl);
+                    if (ret == 1)
+                    {
+                        it->second.is_handshake_complete = true;
+                    }
+                    else
+                    {
+                        int err = SSL_get_error(ssl, ret);
+                        if (err == SSL_ERROR_WANT_READ)
+                        {
+                            DisableWriteInterest(fd);
+                            return;
+                        }
+                        if (err == SSL_ERROR_WANT_WRITE)
+                        {
+                            EnableWriteInterest(fd);
+                            return;
+                        }
+
+                        goto fatal_disconnect;
+                    }
+                }
+
+                if (it->second.out_off >= it->second.out_buf.size())
+                {
+                    it->second.out_buf.clear();
+                    it->second.out_off = 0;
+                    DisableWriteInterest(fd);
+                    return;
+                }
+
+                size_t remaining = it->second.out_buf.size() - it->second.out_off;
+                size_t to_send = std::min<size_t>(remaining, 16 * 1024);
+
+                chunk.assign(it->second.out_buf.begin() + it->second.out_off,
+                             it->second.out_buf.begin() + it->second.out_off + to_send);
+
+                already_sent = it->second.out_off;
             }
 
-            SSL *ssl = registry[msg.client_fd].ssl_handle;
-            if (!ssl)
-                continue;
-
-            uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
-            net_ops::protocol::SerializeHeader(msg.header, headerBuf);
-
-            int written = SSL_write(ssl, headerBuf, sizeof(headerBuf));
-            if (written <= 0)
+            int n = SSL_write(ssl, chunk.data(), static_cast<int>(chunk.size()));
+            if (n > 0)
             {
+                std::lock_guard<std::mutex> lock(m_registry_mutex);
+                auto it = registry.find(fd);
+                if (it == registry.end())
+                    return;
+
+                it->second.out_off = already_sent + static_cast<size_t>(n);
+
                 continue;
             }
-
-            if (msg.header.payload_length > 0)
+            else
             {
-                SSL_write(ssl, msg.payload.data(), msg.payload.size());
-            }
+                int err = SSL_get_error(ssl, n);
+                if (err == SSL_ERROR_WANT_WRITE)
+                {
+                    EnableWriteInterest(fd);
+                    return;
+                }
+                if (err == SSL_ERROR_WANT_READ)
+                {
+                    DisableWriteInterest(fd);
+                    return;
+                }
 
-            std::cout << "[Server] Sent response to Client " << msg.client_fd << "\n";
+                goto fatal_disconnect;
+            }
+        }
+
+    fatal_disconnect:
+        std::cerr << "[Server] Disconnecting client " << fd << " due to SSL_write/handshake fatal error\n";
+        DisconnectClient(fd);
+    }
+
+    void NetworkCore::Stop()
+    {
+        running_ = false;
+
+        if (m_wakeup_fd != -1)
+        {
+            uint64_t one = 1;
+            (void)write(m_wakeup_fd, &one, sizeof(one));
         }
     }
+
 }
