@@ -2,10 +2,12 @@
 #include "Scanner.hpp"
 #include <QHeaderView>
 
-namespace net_ops::client {
+namespace net_ops::client
+{
 
     MainWindow::MainWindow(std::shared_ptr<NetworkController> controller, QWidget *parent)
-        : QMainWindow(parent), m_controller(controller) {
+        : QMainWindow(parent), m_controller(controller)
+    {
         setupUi();
         m_dataTimer = new QTimer(this);
         connect(m_dataTimer, &QTimer::timeout, this, &MainWindow::pollData);
@@ -14,7 +16,8 @@ namespace net_ops::client {
         m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, {});
     }
 
-    void MainWindow::setupUi() {
+    void MainWindow::setupUi()
+    {
         auto central = new QWidget();
         auto layout = new QVBoxLayout(central);
 
@@ -37,36 +40,67 @@ namespace net_ops::client {
         resize(900, 700);
     }
 
-    void MainWindow::onScanClicked() {
-        // Run scanner in a background thread to avoid freezing UI
-        std::thread([this]() {
-            auto hosts = NetworkScanner::ScanLocalNetwork(); //
+    void MainWindow::onScanClicked()
+    {
+        std::thread([this]()
+                    {
+            auto hosts = NetworkScanner::ScanLocalNetwork(); 
             for (const auto& h : hosts) {
                 std::vector<uint8_t> p;
                 net_ops::protocol::PackString(p, h.name);
                 net_ops::protocol::PackString(p, h.ip);
                 net_ops::protocol::PackString(p, h.mac);
                 m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
-            }
-        }).detach();
+            } })
+            .detach();
     }
 
-    void MainWindow::pollData() {
-        while (auto resp = m_controller->GetNextResponse()) {
-            if (resp->type == net_ops::protocol::MessageType::DeviceListResp) {
+    void MainWindow::pollData()
+    {
+        while (auto resp = m_controller->GetNextResponse())
+        {
+            if (resp->type == net_ops::protocol::MessageType::DeviceListResp)
+            {
                 updateDeviceList(resp->data);
-            } else if (resp->type == net_ops::protocol::MessageType::LogUploadResp) {
+            }
+            else if (resp->type == net_ops::protocol::MessageType::LogQueryResp)
+            {
+                size_t offset = 0;
+                auto count = net_ops::protocol::UnpackUint32(resp->data, offset);
+                if (count)
+                {
+                    m_logTable->setRowCount(0);
+                    for (uint32_t i = 0; i < *count; ++i)
+                    {
+                        auto ts = net_ops::protocol::UnpackString(resp->data, offset);
+                        auto msg = net_ops::protocol::UnpackString(resp->data, offset);
+                        if (ts && msg)
+                            addLogEntry(*ts, *msg);
+                    }
+                }
             }
         }
     }
 
-    void MainWindow::updateDeviceList(const std::vector<uint8_t>& data) {
+    void MainWindow::addLogEntry(const std::string &timestamp, const std::string &msg)
+    {
+        int row = m_logTable->rowCount();
+        m_logTable->insertRow(row);
+        m_logTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(timestamp)));
+        m_logTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(msg)));
+        m_logTable->scrollToBottom();
+    }
+
+    void MainWindow::updateDeviceList(const std::vector<uint8_t> &data)
+    {
         size_t offset = 0;
         auto count = net_ops::protocol::UnpackUint32(data, offset);
-        if (!count) return;
+        if (!count)
+            return;
 
         m_deviceTable->setRowCount(0);
-        for (uint32_t i = 0; i < *count; ++i) {
+        for (uint32_t i = 0; i < *count; ++i)
+        {
             auto id = net_ops::protocol::UnpackUint32(data, offset);
             auto name = net_ops::protocol::UnpackString(data, offset);
             auto ip = net_ops::protocol::UnpackString(data, offset);
@@ -77,6 +111,7 @@ namespace net_ops::client {
             m_deviceTable->insertRow(row);
             m_deviceTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(*name)));
             m_deviceTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(*ip)));
+            m_deviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString("00:00:00:00:00:00"))); // Placeholder
             m_deviceTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(*status)));
         }
     }

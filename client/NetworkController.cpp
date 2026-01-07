@@ -14,7 +14,8 @@ namespace net_ops::client
 
     void NetworkController::Start()
     {
-        if (m_running) return;
+        if (m_running)
+            return;
         m_running = true;
         m_thread = std::thread(&NetworkController::Run, this);
     }
@@ -23,7 +24,8 @@ namespace net_ops::client
     {
         m_running = false;
         m_requestQueue.Shutdown();
-        if (m_thread.joinable()) m_thread.join();
+        if (m_thread.joinable())
+            m_thread.join();
     }
 
     void NetworkController::QueueRequest(net_ops::protocol::MessageType type, std::vector<uint8_t> payload)
@@ -33,14 +35,23 @@ namespace net_ops::client
 
     std::optional<NetworkResponse> NetworkController::GetNextResponse()
     {
-        if (m_responseQueue.Empty()) return std::nullopt;
+        if (m_responseQueue.Empty())
+            return std::nullopt;
         return m_responseQueue.Pop();
     }
 
     void NetworkController::Run()
     {
-        if (!m_network->Connect()) {
+        if (!m_network->Connect())
+        {
             std::cerr << "[NetworkController] Connection failed.\n";
+            NetworkResponse errorResp;
+            errorResp.type = net_ops::protocol::MessageType::ErrorResp;
+            errorResp.success = false;
+            std::string errMsg = "CONNECTION_FAILED";
+            errorResp.data.assign(errMsg.begin(), errMsg.end());
+            m_responseQueue.Push(errorResp);
+
             m_running = false;
             return;
         }
@@ -48,25 +59,31 @@ namespace net_ops::client
         m_connected = true;
         int sock_fd = SSL_get_fd(m_network->GetSSLHandle());
 
-        while (m_running) {
+        while (m_running)
+        {
             struct pollfd pfd;
             pfd.fd = sock_fd;
             pfd.events = POLLIN;
 
             int poll_ret = poll(&pfd, 1, 50);
 
-            if (poll_ret > 0 && (pfd.revents & POLLIN)) {
+            if (poll_ret > 0 && (pfd.revents & POLLIN))
+            {
                 auto resp = m_network->ReceiveResponseAsObject();
-                if (resp) m_responseQueue.Push(*resp);
-                else {
+                if (resp)
+                    m_responseQueue.Push(*resp);
+                else
+                {
                     std::cerr << "[NetworkController] Connection lost during read.\n";
                     break;
                 }
             }
 
-            if (!m_requestQueue.Empty()) {
+            if (!m_requestQueue.Empty())
+            {
                 auto req = m_requestQueue.Pop();
-                if (req && m_running) {
+                if (req && m_running)
+                {
                     m_network->SendRequest(req->type, req->payload);
                 }
             }

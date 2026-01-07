@@ -26,9 +26,7 @@ namespace net_ops::client
         void Stop();
 
         void QueueRequest(net_ops::protocol::MessageType type, std::vector<uint8_t> payload);
-
         std::optional<NetworkResponse> GetNextResponse();
-
         bool IsConnected() const { return m_connected; }
 
     private:
