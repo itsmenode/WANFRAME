@@ -442,7 +442,7 @@ namespace net_ops::server
         sqlite3_stmt *stmt;
         sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt, nullptr);
         sqlite3_bind_text(stmt, 1, status.c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_text(stmt, 2, info.c_str(), -1, SQLITE_STATIC); // Bind Info
+        sqlite3_bind_text(stmt, 2, info.c_str(), -1, SQLITE_STATIC);
         sqlite3_bind_text(stmt, 3, ip.c_str(), -1, SQLITE_STATIC);
 
         sqlite3_step(stmt);

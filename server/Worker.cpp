@@ -2,7 +2,6 @@
 #include "NetworkCore.hpp"
 #include "DatabaseManager.hpp"
 #include "SessionManager.hpp"
-#include "../common/Codec.hpp"
 
 #include <iostream>
 #include <cstring>
@@ -17,14 +16,35 @@ namespace net_ops::server
 
     std::string ReadString(const std::vector<uint8_t> &data, size_t &offset)
     {
-        std::string out;
-        if (!net_ops::common::wire::read_string(data, offset, out))
+        if (offset + 4 > data.size())
         {
-            std::cout << "[ReadString Error] Malformed string at offset " << offset
-                      << " (payload size=" << data.size() << ")\n";
+            std::cout << "[ReadString Error] Not enough bytes for length. Offset: " << offset << " Size: " << data.size() << "\n";
             return "";
         }
-        return out;
+
+        uint32_t len = 0;
+        std::memcpy(&len, &data[offset], 4);
+
+        uint8_t *b = reinterpret_cast<uint8_t *>(&len);
+
+        uint32_t lenHost = ntohl(len);
+
+        if (lenHost > 10000 && len < 10000)
+        {
+            lenHost = len;
+        }
+
+        offset += 4;
+
+        if (offset + lenHost > data.size())
+        {
+            std::cout << "[ReadString Error] Length " << lenHost << " exceeds payload size " << data.size() << "\n";
+            return "";
+        }
+
+        std::string str(data.begin() + offset, data.begin() + offset + lenHost);
+        offset += lenHost;
+        return str;
     }
 
     std::vector<uint8_t> ComputeHash(const std::string &password, const std::vector<uint8_t> &salt)
@@ -317,11 +337,9 @@ namespace net_ops::server
 
         if (offset + 4 > payload.size())
             return;
-
-        uint32_t group_id_u = 0;
-        if (!net_ops::common::wire::read_u32_be(payload, offset, group_id_u))
-            return;
-        int group_id = static_cast<int>(group_id_u);
+        int group_id = 0;
+        std::memcpy(&group_id, &payload[offset], 4);
+        offset += 4;
 
         std::string new_member_name = ReadString(payload, offset);
 
@@ -373,11 +391,9 @@ namespace net_ops::server
 
         if (offset + 4 > payload.size())
             return;
-
-        uint32_t group_id_u = 0;
-        if (!net_ops::common::wire::read_u32_be(payload, offset, group_id_u))
-            return;
-        int group_id = static_cast<int>(group_id_u);
+        int group_id = 0;
+        std::memcpy(&group_id, &payload[offset], 4);
+        offset += 4;
 
         std::string name = ReadString(payload, offset);
         std::string ip = ReadString(payload, offset);
@@ -459,17 +475,10 @@ namespace net_ops::server
         std::string log_msg = ReadString(payload, offset);
 
         if (!SessionManager::GetInstance().GetUserId(token).has_value())
-        {
-            if (network_core_)
-                network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
             return;
-        }
 
         DatabaseManager::GetInstance().SaveLog(device_ip, log_msg);
         std::cout << "[Worker] Processed log from " << device_ip << "\n";
-
-        if (network_core_)
-            network_core_->QueueResponse(client_fd, net_ops::protocol::MessageType::LogUploadResp, "LOG_OK");
     }
 
     void Worker::HandleStatusUpdate(int fd, const std::vector<uint8_t> &payload)
@@ -482,28 +491,32 @@ namespace net_ops::server
 
         auto userIdOpt = SessionManager::GetInstance().GetUserId(token);
         if (!userIdOpt)
-        {
-            if (network_core_)
-                network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
             return;
-        }
 
         DatabaseManager::GetInstance().UpdateDeviceStatus(ip, status, info);
-
-        if (network_core_)
-            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::DeviceStatusResp, "STATUS_OK");
     }
 
     void Worker::HandleLogQuery(int client_fd, const std::vector<uint8_t> &payload)
     {
         size_t offset = 0;
 
-        std::string token = ReadString(payload, offset);
-
-        uint32_t device_id_u = 0;
-        if (!net_ops::common::wire::read_u32_be(payload, offset, device_id_u))
+        if (offset + 4 > payload.size())
             return;
-        int device_id = static_cast<int>(device_id_u);
+        uint32_t tLen = 0;
+        std::memcpy(&tLen, &payload[offset], 4);
+        tLen = ntohl(tLen);
+        offset += 4;
+        if (offset + tLen > payload.size())
+            return;
+        std::string token(payload.begin() + offset, payload.begin() + offset + tLen);
+        offset += tLen;
+
+        if (offset + 4 > payload.size())
+            return;
+        uint32_t netDevId = 0;
+        std::memcpy(&netDevId, &payload[offset], 4);
+        int device_id = static_cast<int>(ntohl(netDevId));
+        offset += 4;
 
         if (!SessionManager::GetInstance().GetUserId(token).has_value())
         {

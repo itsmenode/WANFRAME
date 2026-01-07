@@ -7,8 +7,6 @@
 #include <vector>
 #include <mutex>
 #include <queue>
-#include <sys/eventfd.h>
-#include <atomic>
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -16,15 +14,11 @@
 #include "../common/ByteBuffer.hpp"
 #include "../common/protocol.hpp"
 
-namespace net_ops::server
-{
-    class Worker;
-}
+namespace net_ops::server { class Worker; }
 
 namespace net_ops::server
 {
-    struct OutgoingMessage
-    {
+    struct OutgoingMessage {
         int client_fd;
         net_ops::protocol::Header header;
         std::vector<uint8_t> payload;
@@ -33,13 +27,9 @@ namespace net_ops::server
     struct ClientContext
     {
         int socketfd;
-        SSL *ssl_handle;
+        SSL* ssl_handle;
         net_ops::common::ByteBuffer buff;
         bool is_handshake_complete;
-
-        std::vector<uint8_t> out_buf;
-        size_t out_off = 0;
-        uint32_t epoll_events = EPOLLIN | EPOLLRDHUP;
     };
 
     class NetworkCore
@@ -49,24 +39,15 @@ namespace net_ops::server
         int m_epoll_fd;
         int m_port;
         bool m_running;
-
-        Worker *m_worker;
+        
+        Worker* m_worker;
 
         std::map<int, ClientContext> registry;
+        
+        std::queue<OutgoingMessage> m_response_queue;
+        std::mutex m_response_mutex;
 
-        SSL_CTX *m_ssl_ctx;
-
-        std::mutex m_registry_mutex;
-
-        int m_wakeup_fd = -1;
-
-        void EpollControlAdd(int fd, uint32_t events);
-        void EpollControlMod(int fd, uint32_t events);
-
-        void EnableWriteInterest(int fd);
-        void DisableWriteInterest(int fd);
-
-        void FlushClientWrites(int fd);
+        SSL_CTX* m_ssl_ctx;
 
         void LogOpenSSLErrors();
 
@@ -77,19 +58,18 @@ namespace net_ops::server
 
         void HandleNewConnection();
         void HandleClientData(int fd);
+        
+        void SendPendingResponses();
 
         void ProcessMessage(int fd, net_ops::protocol::MessageType type, const std::vector<uint8_t> &payload);
 
-        std::atomic_bool running_{false};
     public:
-        explicit NetworkCore(int port, Worker *worker);
+        explicit NetworkCore(int port, Worker* worker);
         ~NetworkCore();
 
         void Init();
         void Run();
 
-        void Stop();
-
-        void QueueResponse(int client_fd, net_ops::protocol::MessageType type, const std::string &data);
+        void QueueResponse(int client_fd, net_ops::protocol::MessageType type, const std::string& data);
     };
 }
