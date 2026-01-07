@@ -199,9 +199,7 @@ namespace net_ops::server
         sqlite3_stmt *stmt;
 
         if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK)
-        {
             return false;
-        }
 
         sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_STATIC);
 
@@ -212,20 +210,15 @@ namespace net_ops::server
         if (sqlite3_step(stmt) == SQLITE_ROW)
         {
             userFound = true;
-
             const void *h = sqlite3_column_blob(stmt, 0);
             int h_len = sqlite3_column_bytes(stmt, 0);
-            if (h && h_len > 0)
-            {
-                storedHash.assign(reinterpret_cast<const uint8_t *>(h), reinterpret_cast<const uint8_t *>(h) + h_len);
-            }
+            if (h)
+                storedHash.assign((const uint8_t *)h, (const uint8_t *)h + h_len);
 
             const void *s = sqlite3_column_blob(stmt, 1);
             int s_len = sqlite3_column_bytes(stmt, 1);
-            if (s && s_len > 0)
-            {
-                salt.assign(reinterpret_cast<const uint8_t *>(s), reinterpret_cast<const uint8_t *>(s) + s_len);
-            }
+            if (s)
+                salt.assign((const uint8_t *)s, (const uint8_t *)s + s_len);
         }
         sqlite3_finalize(stmt);
 
@@ -233,19 +226,8 @@ namespace net_ops::server
             return false;
 
         std::vector<uint8_t> computedHash(storedHash.size());
-        int iterations = 10000;
-
-        int result = PKCS5_PBKDF2_HMAC(
-            password.c_str(),
-            password.length(),
-            salt.data(),
-            salt.size(),
-            iterations,
-            EVP_sha256(),
-            computedHash.size(),
-            computedHash.data());
-
-        if (result != 1)
+        if (PKCS5_PBKDF2_HMAC(password.c_str(), password.length(), salt.data(), salt.size(),
+                              10000, EVP_sha256(), computedHash.size(), computedHash.data()) != 1)
         {
             return false;
         }

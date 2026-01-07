@@ -80,31 +80,19 @@ namespace net_ops::server
 
     void NetworkCore::HandleNewConnection()
     {
-        struct sockaddr_storage clientAddress;
+        struct sockaddr clientAddress;
         socklen_t clientAddressLength = sizeof(clientAddress);
-        int m_client_fd = accept(m_server_fd, reinterpret_cast<struct sockaddr *>(&clientAddress), &clientAddressLength);
+        int m_client_fd = accept(m_server_fd, &clientAddress, &clientAddressLength);
 
         if (m_client_fd == -1)
-        {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-                return;
-            throw std::runtime_error("Failed to accept client connection.");
-        }
+            return;
 
         NonBlockingMode(m_client_fd);
-
         ClientContext &ctx = registry[m_client_fd];
         ctx.socketfd = m_client_fd;
         ctx.is_handshake_complete = false;
 
         SSL *ssl_handle = SSL_new(m_ssl_ctx);
-        if (!ssl_handle)
-        {
-            close(m_client_fd);
-            registry.erase(m_client_fd);
-            throw std::runtime_error("Failed to allocate new SSL session.");
-        }
-
         SSL_set_fd(ssl_handle, m_client_fd);
         ctx.ssl_handle = ssl_handle;
 
@@ -112,33 +100,22 @@ namespace net_ops::server
         if (ret == 1)
         {
             ctx.is_handshake_complete = true;
-            std::cout << "[Server] New connection: Handshake COMPLETE on FD " << m_client_fd << std::endl;
             EpollControlAdd(m_client_fd);
         }
         else
         {
-            int ssl_error = SSL_get_error(ssl_handle, ret);
-            if (ssl_error == SSL_ERROR_WANT_READ || ssl_error == SSL_ERROR_WANT_WRITE)
+            int err = SSL_get_error(ssl_handle, ret);
+            if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
             {
                 struct epoll_event event;
-                std::memset(&event, 0, sizeof(event));
                 event.data.fd = m_client_fd;
                 event.events = EPOLLIN | EPOLLET;
-
-                if (ssl_error == SSL_ERROR_WANT_WRITE)
+                if (err == SSL_ERROR_WANT_WRITE)
                     event.events |= EPOLLOUT;
-
-                if (epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, m_client_fd, &event) == -1)
-                {
-                    DisconnectClient(m_client_fd);
-                }
-                std::cout << "[Server] New connection: Handshake PENDING on FD " << m_client_fd << std::endl;
+                epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, m_client_fd, &event);
             }
             else
-            {
-                std::cerr << "[Server] Fatal SSL Handshake Error on FD " << m_client_fd << ". Disconnecting." << std::endl;
                 DisconnectClient(m_client_fd);
-            }
         }
     }
 
