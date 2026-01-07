@@ -264,15 +264,16 @@ namespace net_ops::server
         }
     }
 
-    void NetworkCore::QueueResponse(int client_fd, net_ops::protocol::MessageType type, const std::string &data)
+    void NetworkCore::QueueResponse(int client_fd, net_ops::protocol::MessageType type, const std::vector<uint8_t> &payload)
     {
         net_ops::protocol::Header header;
         header.magic = net_ops::protocol::EXPECTED_MAGIC;
+        header.version = net_ops::protocol::PROTOCOL_VERSION;
         header.msg_type = static_cast<uint8_t>(type);
-        header.payload_length = static_cast<uint32_t>(data.size());
+        header.payload_length = static_cast<uint32_t>(payload.size());
         header.reserved = 0;
 
         std::lock_guard<std::mutex> lock(m_response_mutex);
-        m_response_queue.push({client_fd, header, std::vector<uint8_t>(data.begin(), data.end())});
+        m_response_queue.push({client_fd, header, payload});
     }
 }

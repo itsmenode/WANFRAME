@@ -66,8 +66,6 @@ namespace net_ops::server
 
         void SendPendingResponses();
 
-        void ProcessMessage(int fd, net_ops::protocol::MessageType type, const std::vector<uint8_t> &payload);
-
     public:
         explicit NetworkCore(int port, Worker *worker);
         ~NetworkCore();
@@ -77,6 +75,6 @@ namespace net_ops::server
 
         void Stop() { m_running = false; }
 
-        void QueueResponse(int client_fd, net_ops::protocol::MessageType type, const std::string &data);
+        void QueueResponse(int client_fd, net_ops::protocol::MessageType type, const std::vector<uint8_t> &payload);
     };
 }
