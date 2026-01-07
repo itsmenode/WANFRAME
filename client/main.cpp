@@ -7,6 +7,7 @@
 #include "Scanner.hpp"
 #include "SyslogCollector.hpp"
 #include "DeviceMonitor.hpp"
+#include "NetworkController.hpp"
 
 std::mutex g_net_lock;
 net_ops::client::DeviceMonitor g_monitor;
@@ -167,7 +168,7 @@ void DashboardLoop(net_ops::client::ClientNetwork &client)
 
 int main()
 {
-    net_ops::client::ClientNetwork client("127.0.0.1", 8080);
+    net_ops::client::NetworkController netController("127.0.0.1", 8080);
     if (!client.Connect())
     {
         std::cerr << "Failed to connect to server.\n";

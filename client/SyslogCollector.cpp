@@ -29,10 +29,9 @@ namespace net_ops::client
         m_running = true;
 
         m_udp_worker = std::thread(&SyslogCollector::ReceiveLoop, this, port);
-
         m_file_worker = std::thread(&SyslogCollector::FileMonitorLoop, this);
 
-        std::cout << "[SyslogCollector] Dual-mode Agent started (UDP Port: " << port << ")\n";
+        std::cout << "[SyslogCollector] Agent monitoring UDP:" << port << " and file:" << m_path << "\n";
     }
 
     void SyslogCollector::Stop()
@@ -89,6 +88,7 @@ namespace net_ops::client
                 buffer[received] = '\0';
                 char ip_str[INET_ADDRSTRLEN];
                 inet_ntop(AF_INET, &client_addr.sin_addr, ip_str, INET_ADDRSTRLEN);
+
                 m_callback(std::string(ip_str), std::string(buffer));
             }
         }
