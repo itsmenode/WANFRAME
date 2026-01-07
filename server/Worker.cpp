@@ -518,7 +518,7 @@ namespace net_ops::server
         if (!token.empty())
         {
             SessionManager::GetInstance().RemoveSession(token);
-            std::cout << "[Worker] Session invalidated for Client " << client_fd << "\n";
+            std::cout << "[Worker] Session invalidated for Client FD: " << client_fd << "\n";
         }
 
         if (network_core_)

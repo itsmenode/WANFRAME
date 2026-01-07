@@ -45,7 +45,16 @@ void DashboardLoop(net_ops::client::ClientNetwork &client)
 
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-        if (choice == "1")
+        if (choice == "8")
+        {
+            std::cout << "[System] Performing network logout...\n";
+            {
+                std::lock_guard<std::mutex> lock(g_net_lock);
+                client.SendLogout();
+            }
+            in_dashboard = false;
+        }
+        else if (choice == "1")
         {
             std::string name = GetInput("Enter Group Name: ");
             std::lock_guard<std::mutex> lock(g_net_lock);
@@ -149,15 +158,6 @@ void DashboardLoop(net_ops::client::ClientNetwork &client)
                 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             }
         }
-        else if (choice == "8")
-        {
-            std::cout << "[System] Logging out...\n";
-            {
-                std::lock_guard<std::mutex> lock(g_net_lock);
-                client.SendLogout();
-            }
-            in_dashboard = false;
-        }
         else
         {
             std::cout << "Invalid option.\n";
@@ -214,7 +214,7 @@ int main()
 
                 g_monitor.Stop();
                 syslogAgent.Stop();
-                std::cout << "[System] Services stopped.\n";
+                std::cout << "[System] Logged out. Returning to Main Menu.\n";
             }
             else
             {

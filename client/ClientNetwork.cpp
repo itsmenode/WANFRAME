@@ -130,7 +130,7 @@ namespace net_ops::client
         }
 
         m_session_token.clear();
-        std::cout << "[Client] Session cleared locally." << std::endl;
+        std::cout << "[Client] Local session token cleared." << std::endl;
         return true;
     }
 
