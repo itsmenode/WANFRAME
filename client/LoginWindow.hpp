@@ -4,6 +4,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QTimer>
 #include <memory>
@@ -22,6 +23,7 @@ namespace net_ops::client {
 
     private slots:
         void onLoginClicked();
+        void onSignupClicked();
         void checkNetworkResponses();
 
     private:
@@ -29,6 +31,7 @@ namespace net_ops::client {
         QLineEdit *m_usernameField;
         QLineEdit *m_passwordField;
         QPushButton *m_loginButton;
+        QPushButton *m_signupButton;
         QLabel *m_statusLabel;
         QTimer *m_responseTimer;
 
