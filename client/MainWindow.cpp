@@ -6,8 +6,8 @@
 namespace net_ops::client
 {
 
-    MainWindow::MainWindow(std::shared_ptr<NetworkController> controller,
-                           std::shared_ptr<DeviceMonitor> monitor,
+    MainWindow::MainWindow(std::shared_ptr<NetworkController> controller, 
+                           std::shared_ptr<DeviceMonitor> monitor, 
                            QWidget *parent)
         : QMainWindow(parent), m_controller(controller), m_monitor(monitor)
     {
@@ -19,8 +19,7 @@ namespace net_ops::client
     void MainWindow::showEvent(QShowEvent *event)
     {
         QMainWindow::showEvent(event);
-        if (!m_dataTimer->isActive())
-        {
+        if (!m_dataTimer->isActive()) {
             m_dataTimer->start(200);
             m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, {});
         }
@@ -63,7 +62,8 @@ namespace net_ops::client
                 m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
             } 
             
-            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, {}); })
+            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, {});
+            })
             .detach();
     }
 
@@ -111,7 +111,7 @@ namespace net_ops::client
             return;
 
         m_deviceTable->setRowCount(0);
-
+        
         std::vector<std::string> monitorIPs;
 
         for (uint32_t i = 0; i < *count; ++i)
@@ -129,12 +129,10 @@ namespace net_ops::client
             m_deviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString("00:00:00:00:00:00")));
             m_deviceTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(*status + " " + *info)));
 
-            if (ip)
-                monitorIPs.push_back(*ip);
+            if (ip) monitorIPs.push_back(*ip);
         }
 
-        if (m_monitor)
-        {
+        if (m_monitor) {
             m_monitor->SetTargets(monitorIPs);
         }
     }
