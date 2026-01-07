@@ -395,7 +395,7 @@ namespace net_ops::server
         return is_owner;
     }
 
-    int DatabaseManager::AddDevice(int owner_id, const std::string &name, const std::string &ip, int group_id)
+    bool DatabaseManager::AddDevice(int owner_id, int group_id, const std::string &name, const std::string &ip, const std::string &mac)
     {
         std::lock_guard<std::mutex> lock(db_mutex_);
 

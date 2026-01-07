@@ -88,7 +88,7 @@ void DashboardLoop(net_ops::client::ClientNetwork &client)
             }
             catch (...)
             {
-                std::cout << "Invalid Group ID. Using 0.\n";
+                std::cout << "Invalid Group ID.\n";
             }
         }
         else if (choice == "5")
@@ -113,21 +113,15 @@ void DashboardLoop(net_ops::client::ClientNetwork &client)
             }
             else
             {
-                std::cout << "Found " << hosts.size() << " devices. Uploading & Monitoring...\n";
-                std::vector<std::string> monitor_ips;
+                std::cout << "Found " << hosts.size() << " devices. Uploading...\n";
                 {
                     std::lock_guard<std::mutex> lock(g_net_lock);
                     for (const auto &host : hosts)
                     {
                         client.SendAddDevice(host.name, host.ip, host.mac, 0);
                         client.ReceiveResponse();
-                        monitor_ips.push_back(host.ip);
                     }
                 }
-
-                monitor_ips.push_back("127.0.0.1");
-
-                g_monitor.SetTargets(monitor_ips);
             }
         }
         else if (choice == "7")
