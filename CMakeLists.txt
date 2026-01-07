@@ -57,7 +57,7 @@ target_link_libraries(Server
 # ==========================
 #        CLIENT BUILD
 # ==========================
-# Note: Added LoginWindow files here
+# Note: Added LoginWindow and MainWindow files here
 add_executable(Client
     client/main.cpp
     client/NetworkController.cpp
@@ -65,8 +65,8 @@ add_executable(Client
     client/Scanner.cpp
     client/SyslogCollector.cpp
     client/LoginWindow.cpp
-    common/ByteBuffer.cpp
     client/MainWindow.cpp
+    common/ByteBuffer.cpp
 )
 
 target_link_libraries(Client
@@ -75,3 +75,10 @@ target_link_libraries(Client
     OpenSSL::Crypto
     Threads::Threads
 )
+
+# ==========================
+#      RESOURCE HANDLING
+# ==========================
+# Copy the certs directory to the build folder for runtime access
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/certs" 
+     DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
