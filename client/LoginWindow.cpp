@@ -15,51 +15,35 @@ namespace net_ops::client
     void LoginWindow::setupUi()
     {
         auto layout = new QVBoxLayout(this);
-
-        layout->addWidget(new QLabel("Username:"));
         m_usernameField = new QLineEdit();
-        m_usernameField->setPlaceholderText("Enter username...");
-        layout->addWidget(m_usernameField);
-
-        layout->addWidget(new QLabel("Password:"));
         m_passwordField = new QLineEdit();
         m_passwordField->setEchoMode(QLineEdit::Password);
-        m_passwordField->setPlaceholderText("Enter password...");
-        layout->addWidget(m_passwordField);
 
-        auto buttonLayout = new QHBoxLayout();
+        auto btnLayout = new QHBoxLayout();
         m_loginButton = new QPushButton("Login");
         m_signupButton = new QPushButton("Sign Up");
-        buttonLayout->addWidget(m_loginButton);
-        buttonLayout->addWidget(m_signupButton);
-        layout->addLayout(buttonLayout);
+        btnLayout->addWidget(m_loginButton);
+        btnLayout->addWidget(m_signupButton);
 
+        layout->addWidget(new QLabel("Username:"));
+        layout->addWidget(m_usernameField);
+        layout->addWidget(new QLabel("Password:"));
+        layout->addWidget(m_passwordField);
+        layout->addLayout(btnLayout);
         m_statusLabel = new QLabel("");
-        m_statusLabel->setAlignment(Qt::AlignCenter);
         layout->addWidget(m_statusLabel);
 
         connect(m_loginButton, &QPushButton::clicked, this, &LoginWindow::onLoginClicked);
         connect(m_signupButton, &QPushButton::clicked, this, &LoginWindow::onSignupClicked);
-
-        this->setWindowTitle("WANFRAME - Authentication");
-        this->setMinimumWidth(320);
+        setWindowTitle("WANFRAME Auth");
     }
 
     void LoginWindow::onLoginClicked()
     {
-        std::string user = m_usernameField->text().toStdString();
-        std::string pass = m_passwordField->text().toStdString();
-        if (user.empty() || pass.empty())
-        {
-            m_statusLabel->setText("Fields cannot be empty.");
-            return;
-        }
-
-        std::vector<uint8_t> payload;
-        net_ops::protocol::PackString(payload, user);
-        net_ops::protocol::PackString(payload, pass);
-
-        m_controller->QueueRequest(net_ops::protocol::MessageType::LoginReq, payload);
+        std::vector<uint8_t> p;
+        net_ops::protocol::PackString(p, m_usernameField->text().toStdString());
+        net_ops::protocol::PackString(p, m_passwordField->text().toStdString());
+        m_controller->QueueRequest(net_ops::protocol::MessageType::LoginReq, p);
         m_statusLabel->setText("Authenticating...");
         m_loginButton->setEnabled(false);
         m_signupButton->setEnabled(false);
@@ -67,19 +51,10 @@ namespace net_ops::client
 
     void LoginWindow::onSignupClicked()
     {
-        std::string user = m_usernameField->text().toStdString();
-        std::string pass = m_passwordField->text().toStdString();
-        if (user.empty() || pass.empty())
-        {
-            m_statusLabel->setText("Fields cannot be empty.");
-            return;
-        }
-
-        std::vector<uint8_t> payload;
-        net_ops::protocol::PackString(payload, user);
-        net_ops::protocol::PackString(payload, pass);
-
-        m_controller->QueueRequest(net_ops::protocol::MessageType::SignupReq, payload);
+        std::vector<uint8_t> p;
+        net_ops::protocol::PackString(p, m_usernameField->text().toStdString());
+        net_ops::protocol::PackString(p, m_passwordField->text().toStdString());
+        m_controller->QueueRequest(net_ops::protocol::MessageType::SignupReq, p);
         m_statusLabel->setText("Creating account...");
         m_loginButton->setEnabled(false);
         m_signupButton->setEnabled(false);
@@ -91,39 +66,29 @@ namespace net_ops::client
         if (!resp)
             return;
 
+        size_t off = 0;
+        auto msg = net_ops::protocol::UnpackString(resp->data, off);
+
         if (resp->type == net_ops::protocol::MessageType::LoginResp)
         {
-            std::string data(resp->data.begin(), resp->data.end());
-            if (data.find("LOGIN_SUCCESS") != std::string::npos)
-            {
+            if (msg && msg->find("LOGIN_SUCCESS") != std::string::npos)
                 emit loginSuccessful();
-            }
             else
-            {
-                m_statusLabel->setText("Invalid credentials.");
-                m_loginButton->setEnabled(true);
-                m_signupButton->setEnabled(true);
-            }
+                m_statusLabel->setText("Login failed.");
         }
         else if (resp->type == net_ops::protocol::MessageType::SignupResp)
         {
-            std::string data(resp->data.begin(), resp->data.end());
-            if (data.find("SIGNUP_SUCCESS") != std::string::npos)
-            {
-                m_statusLabel->setText("Account created! You can now login.");
-            }
+            if (msg && msg->find("SIGNUP_SUCCESS") != std::string::npos)
+                m_statusLabel->setText("Success! Now Login.");
             else
-            {
-                m_statusLabel->setText("Signup failed. User may already exist.");
-            }
-            m_loginButton->setEnabled(true);
-            m_signupButton->setEnabled(true);
+                m_statusLabel->setText("Signup failed.");
         }
-        else if (resp->type == net_ops::protocol::MessageType::ErrorResp)
+        else
         {
-            m_statusLabel->setText("Server Error: Check connection.");
-            m_loginButton->setEnabled(true);
-            m_signupButton->setEnabled(true);
+            m_statusLabel->setText(QString::fromStdString(msg.value_or("Error")));
         }
+
+        m_loginButton->setEnabled(true);
+        m_signupButton->setEnabled(true);
     }
 }

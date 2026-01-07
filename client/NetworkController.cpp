@@ -48,10 +48,8 @@ namespace net_ops::client
             NetworkResponse errorResp;
             errorResp.type = net_ops::protocol::MessageType::ErrorResp;
             errorResp.success = false;
-            std::string errMsg = "CONNECTION_FAILED";
-            errorResp.data.assign(errMsg.begin(), errMsg.end());
+            net_ops::protocol::PackString(errorResp.data, "CONNECTION_FAILED");
             m_responseQueue.Push(errorResp);
-
             m_running = false;
             return;
         }
@@ -65,17 +63,23 @@ namespace net_ops::client
             pfd.fd = sock_fd;
             pfd.events = POLLIN;
 
-            int poll_ret = poll(&pfd, 1, 50);
+            int poll_ret = poll(&pfd, 1, 100);
 
-            if (poll_ret > 0 && (pfd.revents & POLLIN))
+            if (poll_ret > 0)
             {
-                auto resp = m_network->ReceiveResponseAsObject();
-                if (resp)
-                    m_responseQueue.Push(*resp);
-                else
-                {
-                    std::cerr << "[NetworkController] Connection lost during read.\n";
+                if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+                    std::cerr << "[NetworkController] Socket error.\n";
                     break;
+                }
+                
+                if (pfd.revents & POLLIN) {
+                    auto resp = m_network->ReceiveResponseAsObject();
+                    if (resp) {
+                        m_responseQueue.Push(*resp);
+                    } else if (!m_network->IsConnected()) {
+                        std::cerr << "[NetworkController] Connection lost.\n";
+                        break;
+                    }
                 }
             }
 
@@ -91,5 +95,6 @@ namespace net_ops::client
 
         m_network->Disconnect();
         m_connected = false;
+        std::cerr << "[NetworkController] Thread exiting.\n";
     }
 }
