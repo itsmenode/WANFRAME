@@ -389,6 +389,47 @@ namespace net_ops::client
         return true;
     }
 
+    std::optional<NetworkResponse> ClientNetwork::ReceiveResponseAsObject()
+    {
+        if (!m_ssl_handle)
+            return std::nullopt;
+
+        uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
+        int bytesRead = SSL_read(m_ssl_handle, headerBuf, sizeof(headerBuf));
+        if (bytesRead <= 0)
+            return std::nullopt;
+
+        auto header = net_ops::protocol::DeserializeHeader(headerBuf);
+
+        NetworkResponse resp;
+        resp.type = static_cast<net_ops::protocol::MessageType>(header.msg_type);
+        resp.success = (resp.type != net_ops::protocol::MessageType::ErrorResp);
+
+        if (header.payload_length > 0)
+        {
+            resp.data.resize(header.payload_length);
+            int total = 0;
+            while (total < header.payload_length)
+            {
+                int n = SSL_read(m_ssl_handle, resp.data.data() + total, header.payload_length - total);
+                if (n <= 0)
+                    break;
+                total += n;
+            }
+        }
+
+        if (resp.type == net_ops::protocol::MessageType::LoginResp)
+        {
+            std::string msg(resp.data.begin(), resp.data.end());
+            if (msg.find("LOGIN_SUCCESS:") == 0)
+            {
+                m_session_token = msg.substr(14);
+            }
+        }
+
+        return resp;
+    }
+
     bool ClientNetwork::SendStatusUpdate(const std::string &ip, const std::string &status, const std::string &info)
     {
 

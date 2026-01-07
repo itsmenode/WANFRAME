@@ -8,28 +8,15 @@
 
 namespace net_ops::server
 {
-    std::string ReadString(const std::vector<uint8_t> &data, size_t &offset)
-    {
-        if (offset + 4 > data.size())
-            return "";
-        uint32_t netLen = 0;
-        std::memcpy(&netLen, &data[offset], 4);
-        uint32_t len = ntohl(netLen);
-        offset += 4;
-        if (offset + len > data.size())
-            return "";
-        std::string str(data.begin() + offset, data.begin() + offset + len);
-        offset += len;
-        return str;
-    }
-
     Worker::Worker() : running_(false), network_core_(nullptr) {}
     Worker::~Worker() { Stop(); }
+
     void Worker::Start()
     {
         running_ = true;
         worker_thread_ = std::thread(&Worker::ProcessLoop, this);
     }
+
     void Worker::Stop()
     {
         running_ = false;
@@ -37,6 +24,7 @@ namespace net_ops::server
         if (worker_thread_.joinable())
             worker_thread_.join();
     }
+
     void Worker::SetNetworkCore(NetworkCore *core) { network_core_ = core; }
 
     void Worker::AddJob(int client_fd, net_ops::protocol::MessageType type, std::vector<uint8_t> payload)
@@ -62,6 +50,7 @@ namespace net_ops::server
                 job = job_queue_.front();
                 job_queue_.pop();
             }
+
             switch (job.type)
             {
             case net_ops::protocol::MessageType::LoginReq:
@@ -125,16 +114,15 @@ namespace net_ops::server
                 return;
             }
         }
-
-        if (network_core_)
-            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "LOGIN_FAILURE");
+        network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "LOGIN_FAILURE");
     }
 
     void Worker::HandleRegister(int fd, const std::vector<uint8_t> &p)
     {
         size_t off = 0;
-        std::string u = ReadString(p, off), pw = ReadString(p, off);
-        if (DatabaseManager::GetInstance().CreateUser(u, pw))
+        auto u = net_ops::protocol::UnpackString(p, off);
+        auto pw = net_ops::protocol::UnpackString(p, off);
+        if (u && pw && DatabaseManager::GetInstance().CreateUser(*u, *pw))
             network_core_->QueueResponse(fd, net_ops::protocol::MessageType::SignupResp, "SIGNUP_SUCCESS");
         else
             network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "SIGNUP_FAILURE");
@@ -143,51 +131,52 @@ namespace net_ops::server
     void Worker::HandleGroupCreate(int fd, const std::vector<uint8_t> &p)
     {
         size_t off = 0;
-        std::string t = ReadString(p, off), n = ReadString(p, off);
-        auto uid = SessionManager::GetInstance().GetUserId(t);
-        if (uid && DatabaseManager::GetInstance().CreateGroup(n, *uid) != -1)
-            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::GroupCreateResp, "GROUP_CREATED");
-        else
-            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "GROUP_CREATION_FAILED");
+        auto t = net_ops::protocol::UnpackString(p, off);
+        auto n = net_ops::protocol::UnpackString(p, off);
+        if (t && n)
+        {
+            auto uid = SessionManager::GetInstance().GetUserId(*t);
+            if (uid && DatabaseManager::GetInstance().CreateGroup(*n, *uid) != -1)
+            {
+                network_core_->QueueResponse(fd, net_ops::protocol::MessageType::GroupCreateResp, "GROUP_CREATED");
+                return;
+            }
+        }
+        network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "GROUP_CREATION_FAILED");
     }
 
     void Worker::HandleGroupList(int fd, const std::vector<uint8_t> &p)
     {
         size_t off = 0;
-        auto uid = SessionManager::GetInstance().GetUserId(ReadString(p, off));
+        auto t = net_ops::protocol::UnpackString(p, off);
+        auto uid = t ? SessionManager::GetInstance().GetUserId(*t) : std::nullopt;
         if (!uid)
         {
-            if (network_core_)
-                network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
+            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
             return;
         }
         auto groups = DatabaseManager::GetInstance().GetGroupsForUser(*uid);
         std::string res = groups.empty() ? "NO_GROUPS" : "";
         for (const auto &g : groups)
             res += std::to_string(g.id) + ":" + g.name + ",";
-        if (network_core_)
-            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::GroupListResp, res);
+        network_core_->QueueResponse(fd, net_ops::protocol::MessageType::GroupListResp, res);
     }
 
     void Worker::HandleGroupAddMember(int fd, const std::vector<uint8_t> &p)
     {
         size_t off = 0;
-        std::string t = ReadString(p, off);
-        if (off + 4 > p.size())
-            return;
-        uint32_t gid;
-        std::memcpy(&gid, &p[off], 4);
-        off += 4;
-        std::string member = ReadString(p, off);
-        auto uid = SessionManager::GetInstance().GetUserId(t);
-        if (!uid || !DatabaseManager::GetInstance().IsGroupOwner(ntohl(gid), *uid))
+        auto t = net_ops::protocol::UnpackString(p, off);
+        auto gid = net_ops::protocol::UnpackUint32(p, off);
+        auto member = net_ops::protocol::UnpackString(p, off);
+
+        auto uid = t ? SessionManager::GetInstance().GetUserId(*t) : std::nullopt;
+        if (!uid || !gid || !member || !DatabaseManager::GetInstance().IsGroupOwner(*gid, *uid))
         {
-            if (network_core_)
-                network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "ACCESS_DENIED");
+            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "ACCESS_DENIED");
             return;
         }
-        auto target = DatabaseManager::GetInstance().GetUserByName(member);
-        if (target && DatabaseManager::GetInstance().AddMemberToGroup(target->id, ntohl(gid)))
+        auto target = DatabaseManager::GetInstance().GetUserByName(*member);
+        if (target && DatabaseManager::GetInstance().AddMemberToGroup(target->id, *gid))
             network_core_->QueueResponse(fd, net_ops::protocol::MessageType::GroupAddMemberResp, "MEMBER_ADDED");
         else
             network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "ADD_FAILED");
@@ -196,15 +185,14 @@ namespace net_ops::server
     void Worker::HandleDeviceAdd(int fd, const std::vector<uint8_t> &p)
     {
         size_t off = 0;
-        std::string t = ReadString(p, off);
-        if (off + 4 > p.size())
-            return;
-        uint32_t gid;
-        std::memcpy(&gid, &p[off], 4);
-        off += 4;
-        std::string n = ReadString(p, off), ip = ReadString(p, off), mac = ReadString(p, off);
-        auto uid = SessionManager::GetInstance().GetUserId(t);
-        if (uid && DatabaseManager::GetInstance().AddDevice(*uid, ntohl(gid), n, ip, mac))
+        auto t = net_ops::protocol::UnpackString(p, off);
+        auto gid = net_ops::protocol::UnpackUint32(p, off);
+        auto n = net_ops::protocol::UnpackString(p, off);
+        auto ip = net_ops::protocol::UnpackString(p, off);
+        auto mac = net_ops::protocol::UnpackString(p, off);
+
+        auto uid = t ? SessionManager::GetInstance().GetUserId(*t) : std::nullopt;
+        if (uid && gid && n && ip && mac && DatabaseManager::GetInstance().AddDevice(*uid, *gid, *n, *ip, *mac))
             network_core_->QueueResponse(fd, net_ops::protocol::MessageType::DeviceAddResp, "DEVICE_ADDED");
         else
             network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "ADD_FAILED");
@@ -213,88 +201,73 @@ namespace net_ops::server
     void Worker::HandleDeviceList(int fd, const std::vector<uint8_t> &p)
     {
         size_t off = 0;
-        auto uid = SessionManager::GetInstance().GetUserId(ReadString(p, off));
+        auto t = net_ops::protocol::UnpackString(p, off);
+        auto uid = t ? SessionManager::GetInstance().GetUserId(*t) : std::nullopt;
         if (!uid)
         {
-            if (network_core_)
-                network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
+            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
             return;
         }
         auto devs = DatabaseManager::GetInstance().GetAllDevicesForUser(*uid);
         std::string res = devs.empty() ? "NO_DEVICES" : "";
         for (const auto &d : devs)
             res += std::to_string(d.id) + ":" + d.name + ":" + d.ip_address + ":" + d.status + ":" + std::to_string(d.group_id) + ":" + d.info + ",";
-        if (network_core_)
-            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::DeviceListResp, res);
+        network_core_->QueueResponse(fd, net_ops::protocol::MessageType::DeviceListResp, res);
     }
 
     void Worker::HandleLogUpload(int fd, const std::vector<uint8_t> &p)
     {
         size_t off = 0;
-
         auto token = net_ops::protocol::UnpackString(p, off);
         auto ip = net_ops::protocol::UnpackString(p, off);
         auto msg = net_ops::protocol::UnpackString(p, off);
 
-        if (!token || !ip || !msg)
+        if (token && ip && msg && SessionManager::GetInstance().GetUserId(*token))
         {
-            std::cerr << "[Worker] Malformed LogUploadReq from FD " << fd << "\n";
-            return;
+            DatabaseManager::GetInstance().SaveLog(*ip, *msg);
         }
-
-        auto uid = SessionManager::GetInstance().GetUserId(*token);
-        if (!uid)
-        {
-            if (network_core_)
-                network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
-            return;
-        }
-
-        DatabaseManager::GetInstance().SaveLog(*ip, *msg);
     }
 
     void Worker::HandleStatusUpdate(int fd, const std::vector<uint8_t> &p)
     {
         size_t off = 0;
-        std::string t = ReadString(p, off), ip = ReadString(p, off), st = ReadString(p, off), inf = ReadString(p, off);
-        if (SessionManager::GetInstance().GetUserId(t))
-            DatabaseManager::GetInstance().UpdateDeviceStatus(ip, st, inf);
+        auto t = net_ops::protocol::UnpackString(p, off);
+        auto ip = net_ops::protocol::UnpackString(p, off);
+        auto st = net_ops::protocol::UnpackString(p, off);
+        auto inf = net_ops::protocol::UnpackString(p, off);
+        if (t && ip && st && inf && SessionManager::GetInstance().GetUserId(*t))
+            DatabaseManager::GetInstance().UpdateDeviceStatus(*ip, *st, *inf);
     }
 
     void Worker::HandleLogQuery(int fd, const std::vector<uint8_t> &p)
     {
         size_t off = 0;
-        std::string t = ReadString(p, off);
-        if (off + 4 > p.size())
-            return;
-        uint32_t dev_id;
-        std::memcpy(&dev_id, &p[off], 4);
-        off += 4;
-        if (!SessionManager::GetInstance().GetUserId(t).has_value())
+        auto t = net_ops::protocol::UnpackString(p, off);
+        auto dev_id = net_ops::protocol::UnpackUint32(p, off);
+        if (t && dev_id && SessionManager::GetInstance().GetUserId(*t))
         {
-            if (network_core_)
-                network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
-            return;
-        }
-        auto logs = DatabaseManager::GetInstance().GetLogsForDevice(ntohl(dev_id));
-        std::vector<uint8_t> res;
-        net_ops::protocol::PackUint32(res, (uint32_t)logs.size());
-        for (const auto &l : logs)
-        {
-            net_ops::protocol::PackString(res, l.timestamp);
-            net_ops::protocol::PackString(res, l.message);
-        }
-        if (network_core_)
+            auto logs = DatabaseManager::GetInstance().GetLogsForDevice(*dev_id);
+            std::vector<uint8_t> res;
+            net_ops::protocol::PackUint32(res, (uint32_t)logs.size());
+            for (const auto &l : logs)
+            {
+                net_ops::protocol::PackString(res, l.timestamp);
+                net_ops::protocol::PackString(res, l.message);
+            }
             network_core_->QueueResponse(fd, net_ops::protocol::MessageType::LogQueryResp, std::string(res.begin(), res.end()));
+        }
+        else
+        {
+            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
+        }
     }
 
     void Worker::HandleLogout(int fd, const std::vector<uint8_t> &p)
     {
         size_t off = 0;
-        std::string t = ReadString(p, off);
-        if (!t.empty())
-            SessionManager::GetInstance().RemoveSession(t);
-        if (network_core_)
-            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::LogoutResp, "LOGOUT_SUCCESS");
+        auto t = net_ops::protocol::UnpackString(p, off);
+        if (t)
+            SessionManager::GetInstance().RemoveSession(*t);
+        network_core_->QueueResponse(fd, net_ops::protocol::MessageType::LogoutResp, "LOGOUT_SUCCESS");
     }
 }
