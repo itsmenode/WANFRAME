@@ -1,102 +1,39 @@
 #include "SyslogCollector.hpp"
-#include <iostream>
-#include <cstring>
+#include "ClientNetwork.hpp"
+#include <sys/inotify.h>
 #include <unistd.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
+#include <fstream>
+#include <iostream>
 
-namespace net_ops::client
+extern net_ops::client::ClientNetwork g_client;
+
+void net_ops::client::SyslogCollector::MonitorLoop()
 {
+    int fd = inotify_init();
+    if (fd < 0)
+        return;
 
-    SyslogCollector::SyslogCollector() : m_sockfd(-1), m_port(5140), m_running(false)
+    int wd = inotify_add_watch(fd, m_path.c_str(), IN_MODIFY);
+
+    std::ifstream file(m_path);
+    file.seekg(0, std::ios::end);
+
+    char buffer[4096];
+    while (m_running)
     {
-        std::memset(m_buffer, 0, sizeof(m_buffer));
-    }
-
-    SyslogCollector::~SyslogCollector()
-    {
-        Stop();
-    }
-
-    bool SyslogCollector::Start(int port, LogCallback callback)
-    {
-        if (m_running)
-            return false;
-
-        m_port = port;
-        m_callback = callback;
-
-        m_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-        if (m_sockfd < 0)
+        int length = read(fd, buffer, sizeof(buffer));
+        if (length > 0)
         {
-            std::cerr << "[Agent] Failed to create UDP socket.\n";
-            return false;
-        }
-
-        int opt = 1;
-        setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
-        struct sockaddr_in server_addr;
-        std::memset(&server_addr, 0, sizeof(server_addr));
-
-        server_addr.sin_family = AF_INET;
-        server_addr.sin_addr.s_addr = INADDR_ANY;
-        server_addr.sin_port = htons(m_port);
-
-        if (bind(m_sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
-        {
-            std::cerr << "[Agent] Failed to bind to UDP port " << m_port << ".\n";
-            close(m_sockfd);
-            return false;
-        }
-
-        m_running = true;
-        m_worker_thread = std::thread(&SyslogCollector::ListenerLoop, this);
-
-        std::cout << "[Agent] Syslog Listener started on port " << m_port << "\n";
-        return true;
-    }
-
-    void SyslogCollector::Stop() {
-        if (!m_running) return;
-        
-        m_running = false;
-
-        if (m_sockfd >= 0) {
-            shutdown(m_sockfd, SHUT_RDWR);
-            close(m_sockfd);
-            m_sockfd = -1;
-        }
-
-        if (m_worker_thread.joinable()) {
-            m_worker_thread.join();
-        }
-    }
-
-    void SyslogCollector::ListenerLoop()
-    {
-        struct sockaddr_in client_addr;
-        socklen_t client_len;
-        ssize_t bytes_received;
-        char sender_ip[INET_ADDRSTRLEN];
-
-        while (m_running)
-        {
-            std::memset(&client_addr, 0, sizeof(client_addr));
-            client_len = sizeof(client_addr);
-
-            bytes_received = recvfrom(m_sockfd, m_buffer, sizeof(m_buffer) - 1, 0, (struct sockaddr *)&client_addr, &client_len);
-
-            if (bytes_received > 0)
+            std::string line;
+            while (std::getline(file, line))
             {
-                m_buffer[bytes_received] = '\0';
-                inet_ntop(AF_INET, &(client_addr.sin_addr), sender_ip, INET_ADDRSTRLEN);
-
-                if (m_callback)
+                if (!line.empty())
                 {
-                    m_callback(std::string(sender_ip), std::string(m_buffer));
                 }
             }
+            file.clear();
         }
     }
+    inotify_rm_watch(fd, wd);
+    close(fd);
 }

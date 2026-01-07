@@ -1,32 +1,22 @@
 #pragma once
-
 #include <string>
 #include <thread>
 #include <atomic>
-#include <functional>
-#include <netinet/in.h>
 
-namespace net_ops::client {
-
-    using LogCallback = std::function<void(const std::string&, const std::string&)>;
-
-    class SyslogCollector {
+namespace net_ops::client
+{
+    class SyslogCollector
+    {
     public:
-        SyslogCollector();
+        SyslogCollector(const std::string &logPath = "/var/log/syslog");
         ~SyslogCollector();
-
-        bool Start(int port, LogCallback callback);
+        void Start();
         void Stop();
 
     private:
-        void ListenerLoop();
-
-        int m_sockfd;
-        int m_port;
+        void MonitorLoop();
+        std::string m_path;
+        std::thread m_worker;
         std::atomic<bool> m_running;
-        std::thread m_worker_thread;
-        char m_buffer[4096];
-        
-        LogCallback m_callback; 
     };
 }
