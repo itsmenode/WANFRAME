@@ -30,7 +30,7 @@ namespace net_ops::server
         return instance;
     }
 
-    DatabaseManager::DatabaseManager() : db_(nullptr), stmt_insert_user_(nullptr), stmt_get_user_(nullptr) {}
+    DatabaseManager::DatabaseManager() : db_(nullptr) {}
 
     DatabaseManager::~DatabaseManager()
     {
@@ -58,21 +58,6 @@ namespace net_ops::server
             "salt BLOB NOT NULL"
             ");"
 
-            "CREATE TABLE IF NOT EXISTS groups ("
-            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-            "name TEXT NOT NULL, "
-            "owner_id INTEGER, "
-            "FOREIGN KEY(owner_id) REFERENCES users(id) ON DELETE CASCADE"
-            ");"
-
-            "CREATE TABLE IF NOT EXISTS group_members ("
-            "group_id INTEGER, "
-            "user_id INTEGER, "
-            "UNIQUE(group_id, user_id), "
-            "FOREIGN KEY(group_id) REFERENCES groups(id) ON DELETE CASCADE, "
-            "FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE"
-            ");"
-
             "CREATE TABLE IF NOT EXISTS physical_devices ("
             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
             "mac_address TEXT UNIQUE NOT NULL, "
@@ -85,13 +70,11 @@ namespace net_ops::server
             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
             "user_id INTEGER NOT NULL, "
             "physical_id INTEGER NOT NULL, "
-            "group_id INTEGER, "
             "custom_name TEXT NOT NULL, "
             "custom_info TEXT DEFAULT '', "
             "UNIQUE(user_id, physical_id), "
             "FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE, "
-            "FOREIGN KEY(physical_id) REFERENCES physical_devices(id) ON DELETE CASCADE, "
-            "FOREIGN KEY(group_id) REFERENCES groups(id) ON DELETE SET NULL"
+            "FOREIGN KEY(physical_id) REFERENCES physical_devices(id) ON DELETE CASCADE"
             ");"
 
             "CREATE TABLE IF NOT EXISTS logs ("
@@ -115,16 +98,6 @@ namespace net_ops::server
     void DatabaseManager::Shutdown()
     {
         std::lock_guard<std::mutex> lock(db_mutex_);
-        if (stmt_insert_user_)
-        {
-            sqlite3_finalize(stmt_insert_user_);
-            stmt_insert_user_ = nullptr;
-        }
-        if (stmt_get_user_)
-        {
-            sqlite3_finalize(stmt_get_user_);
-            stmt_get_user_ = nullptr;
-        }
         if (db_)
         {
             sqlite3_close(db_);
@@ -247,83 +220,10 @@ namespace net_ops::server
         return result;
     }
 
-    int DatabaseManager::CreateGroup(const std::string &group_name, int owner_id)
+    bool DatabaseManager::AddDevice(int user_id, const std::string &name, const std::string &ip, std::string mac)
     {
         std::lock_guard<std::mutex> lock(db_mutex_);
-        sqlite3_stmt *stmt;
-        if (sqlite3_prepare_v2(db_, "INSERT INTO groups (name, owner_id) VALUES (?, ?);", -1, &stmt, nullptr) != SQLITE_OK)
-            return -1;
-        sqlite3_bind_text(stmt, 1, group_name.c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_int(stmt, 2, owner_id);
-        int new_id = -1;
-        if (sqlite3_step(stmt) == SQLITE_DONE)
-            new_id = (int)sqlite3_last_insert_rowid(db_);
-        sqlite3_finalize(stmt);
-        return new_id;
-    }
-
-    bool DatabaseManager::AddMemberToGroup(int user_id, int group_id)
-    {
-        std::lock_guard<std::mutex> lock(db_mutex_);
-        sqlite3_stmt *stmt;
-        if (sqlite3_prepare_v2(db_, "INSERT OR IGNORE INTO group_members (group_id, user_id) VALUES (?, ?);", -1, &stmt, nullptr) != SQLITE_OK)
-            return false;
-        sqlite3_bind_int(stmt, 1, group_id);
-        sqlite3_bind_int(stmt, 2, user_id);
-        bool success = (sqlite3_step(stmt) == SQLITE_DONE);
-        sqlite3_finalize(stmt);
-        return success;
-    }
-
-    std::vector<GroupRecord> DatabaseManager::GetGroupsForUser(int user_id)
-    {
-        std::lock_guard<std::mutex> lock(db_mutex_);
-        std::vector<GroupRecord> groups;
-        const char *sql = "SELECT DISTINCT g.id, g.name, g.owner_id FROM groups g "
-                          "LEFT JOIN group_members gm ON g.id = gm.group_id "
-                          "WHERE g.owner_id = ? OR gm.user_id = ?;";
-        sqlite3_stmt *stmt;
-        if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK)
-            return groups;
-        sqlite3_bind_int(stmt, 1, user_id);
-        sqlite3_bind_int(stmt, 2, user_id);
-        while (sqlite3_step(stmt) == SQLITE_ROW)
-        {
-            GroupRecord g;
-            g.id = sqlite3_column_int(stmt, 0);
-            const char *name = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
-            if (name)
-                g.name = name;
-            g.owner_id = sqlite3_column_int(stmt, 2);
-            groups.push_back(g);
-        }
-        sqlite3_finalize(stmt);
-        return groups;
-    }
-
-    bool DatabaseManager::IsGroupOwner(int group_id, int user_id)
-    {
-        std::lock_guard<std::mutex> lock(db_mutex_);
-        sqlite3_stmt *stmt;
-        if (sqlite3_prepare_v2(db_, "SELECT 1 FROM groups WHERE id = ? AND owner_id = ?;", -1, &stmt, nullptr) != SQLITE_OK)
-            return false;
-        sqlite3_bind_int(stmt, 1, group_id);
-        sqlite3_bind_int(stmt, 2, user_id);
-        bool is_owner = (sqlite3_step(stmt) == SQLITE_ROW);
-        sqlite3_finalize(stmt);
-        return is_owner;
-    }
-
-    std::string StandardizeMac(std::string mac)
-    {
         std::transform(mac.begin(), mac.end(), mac.begin(), ::tolower);
-        return mac;
-    }
-
-    bool DatabaseManager::AddDevice(int user_id, int group_id, const std::string &name, const std::string &ip, std::string mac)
-    {
-        std::lock_guard<std::mutex> lock(db_mutex_);
-        mac = StandardizeMac(mac);
 
         const char *phys_sql = "INSERT OR IGNORE INTO physical_devices (mac_address, ip_address) VALUES (?, ?);";
         sqlite3_stmt *stmt;
@@ -347,15 +247,11 @@ namespace net_ops::server
             phys_id = sqlite3_column_int(stmt, 0);
         sqlite3_finalize(stmt);
 
-        const char *user_dev_sql = "INSERT OR REPLACE INTO user_devices (user_id, physical_id, group_id, custom_name) VALUES (?, ?, ?, ?);";
+        const char *user_dev_sql = "INSERT OR REPLACE INTO user_devices (user_id, physical_id, custom_name) VALUES (?, ?, ?);";
         sqlite3_prepare_v2(db_, user_dev_sql, -1, &stmt, nullptr);
         sqlite3_bind_int(stmt, 1, user_id);
         sqlite3_bind_int(stmt, 2, phys_id);
-        if (group_id <= 0)
-            sqlite3_bind_null(stmt, 3);
-        else
-            sqlite3_bind_int(stmt, 3, group_id);
-        sqlite3_bind_text(stmt, 4, name.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, name.c_str(), -1, SQLITE_TRANSIENT);
 
         bool ok = (sqlite3_step(stmt) == SQLITE_DONE);
         sqlite3_finalize(stmt);
@@ -366,7 +262,7 @@ namespace net_ops::server
     {
         std::lock_guard<std::mutex> lock(db_mutex_);
         std::vector<DeviceRecord> devices;
-        const char *sql = "SELECT ud.id, ud.user_id, ud.group_id, ud.custom_name, pd.ip_address, pd.mac_address, pd.status, ud.custom_info "
+        const char *sql = "SELECT ud.id, ud.user_id, ud.custom_name, pd.ip_address, pd.mac_address, pd.status, ud.custom_info "
                           "FROM user_devices ud "
                           "JOIN physical_devices pd ON ud.physical_id = pd.id "
                           "WHERE ud.user_id = ?;";
@@ -379,12 +275,11 @@ namespace net_ops::server
             DeviceRecord d;
             d.id = sqlite3_column_int(stmt, 0);
             d.owner_id = sqlite3_column_int(stmt, 1);
-            d.group_id = sqlite3_column_int(stmt, 2);
-            d.name = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 3));
-            d.ip_address = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 4));
-            d.mac_address = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 5));
-            d.status = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 6));
-            const char *info = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 7));
+            d.name = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
+            d.ip_address = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 3));
+            d.mac_address = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 4));
+            d.status = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 5));
+            const char *info = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 6));
             if (info)
                 d.info = info;
             devices.push_back(d);
@@ -393,35 +288,17 @@ namespace net_ops::server
         return devices;
     }
 
-    std::vector<DeviceRecord> DatabaseManager::GetDevicesInGroup(int group_id)
+    void DatabaseManager::UpdateDeviceStatus(const std::string &ip, const std::string &status, const std::string &info)
     {
         std::lock_guard<std::mutex> lock(db_mutex_);
-        std::vector<DeviceRecord> devices;
-        const char *sql = "SELECT ud.id, ud.user_id, ud.group_id, ud.custom_name, pd.ip_address, pd.mac_address, pd.status, ud.custom_info "
-                          "FROM user_devices ud "
-                          "JOIN physical_devices pd ON ud.physical_id = pd.id "
-                          "WHERE ud.group_id = ?;";
         sqlite3_stmt *stmt;
-        if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK)
-            return devices;
-        sqlite3_bind_int(stmt, 1, group_id);
-        while (sqlite3_step(stmt) == SQLITE_ROW)
+        if (sqlite3_prepare_v2(db_, "UPDATE physical_devices SET status = ?, last_seen = CURRENT_TIMESTAMP WHERE ip_address = ?;", -1, &stmt, nullptr) == SQLITE_OK)
         {
-            DeviceRecord d;
-            d.id = sqlite3_column_int(stmt, 0);
-            d.owner_id = sqlite3_column_int(stmt, 1);
-            d.group_id = sqlite3_column_int(stmt, 2);
-            d.name = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 3));
-            d.ip_address = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 4));
-            d.mac_address = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 5));
-            d.status = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 6));
-            const char *info = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 7));
-            if (info)
-                d.info = info;
-            devices.push_back(d);
+            sqlite3_bind_text(stmt, 1, status.c_str(), -1, SQLITE_STATIC);
+            sqlite3_bind_text(stmt, 2, ip.c_str(), -1, SQLITE_STATIC);
+            sqlite3_step(stmt);
+            sqlite3_finalize(stmt);
         }
-        sqlite3_finalize(stmt);
-        return devices;
     }
 
     void DatabaseManager::SaveLog(const std::string &ip_address, const std::string &message)
@@ -435,9 +312,7 @@ namespace net_ops::server
         {
             sqlite3_bind_text(stmt, 1, ip_address.c_str(), -1, SQLITE_STATIC);
             if (sqlite3_step(stmt) == SQLITE_ROW)
-            {
                 phys_id = sqlite3_column_int(stmt, 0);
-            }
             sqlite3_finalize(stmt);
         }
 
@@ -450,9 +325,7 @@ namespace net_ops::server
                 sqlite3_bind_text(stmt, 1, placeholder_mac.c_str(), -1, SQLITE_TRANSIENT);
                 sqlite3_bind_text(stmt, 2, ip_address.c_str(), -1, SQLITE_TRANSIENT);
                 if (sqlite3_step(stmt) == SQLITE_DONE)
-                {
                     phys_id = static_cast<int>(sqlite3_last_insert_rowid(db_));
-                }
                 sqlite3_finalize(stmt);
             }
         }
@@ -491,18 +364,5 @@ namespace net_ops::server
         }
         sqlite3_finalize(stmt);
         return logs;
-    }
-
-    void DatabaseManager::UpdateDeviceStatus(const std::string &ip, const std::string &status, const std::string &info)
-    {
-        std::lock_guard<std::mutex> lock(db_mutex_);
-        sqlite3_stmt *stmt;
-        if (sqlite3_prepare_v2(db_, "UPDATE physical_devices SET status = ?, last_seen = CURRENT_TIMESTAMP WHERE ip_address = ?;", -1, &stmt, nullptr) == SQLITE_OK)
-        {
-            sqlite3_bind_text(stmt, 1, status.c_str(), -1, SQLITE_STATIC);
-            sqlite3_bind_text(stmt, 2, ip.c_str(), -1, SQLITE_STATIC);
-            sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
-        }
     }
 }

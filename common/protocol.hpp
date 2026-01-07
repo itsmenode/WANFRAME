@@ -13,7 +13,7 @@ namespace net_ops::protocol
     inline constexpr uint16_t EXPECTED_MAGIC = 0xBBBB;
     inline constexpr uint8_t PROTOCOL_VERSION = 0x01;
     inline constexpr uint32_t MAX_PAYLOAD_LENGTH = 10 * 1024 * 1024; // 10MB
-    inline constexpr size_t HEADER_SIZE = 12; // 2(magic) + 1(ver) + 1(type) + 4(len) + 4(res)
+    inline constexpr size_t HEADER_SIZE = 12;                        // 2(magic) + 1(ver) + 1(type) + 4(len) + 4(res)
 
     struct Header
     {
@@ -30,20 +30,17 @@ namespace net_ops::protocol
         LoginResp = 0x02,
         SignupReq = 0x03,
         SignupResp = 0x04,
-        GroupCreateReq = 0x05,
-        GroupCreateResp = 0x06,
-        GroupListReq = 0x07,
-        GroupListResp = 0x08,
-        GroupAddMemberReq = 0x09,
-        GroupAddMemberResp = 0x0A,
+
         DeviceAddReq = 0x0B,
         DeviceAddResp = 0x0C,
         DeviceListReq = 0x0D,
         DeviceListResp = 0x0E,
+
         LogUploadReq = 0x0F,
         LogUploadResp = 0x10,
         DeviceStatusReq = 0x11,
         DeviceStatusResp = 0x12,
+
         LogQueryReq = 0x15,
         LogQueryResp = 0x16,
 
@@ -59,10 +56,10 @@ namespace net_ops::protocol
         buffer[1] = static_cast<uint8_t>(hdr.magic & 0xFF);
         buffer[2] = hdr.version;
         buffer[3] = hdr.msg_type;
-        
+
         uint32_t netLen = htonl(hdr.payload_length);
         std::memcpy(buffer + 4, &netLen, 4);
-        
+
         uint32_t netRes = htonl(hdr.reserved);
         std::memcpy(buffer + 8, &netRes, 4);
     }
@@ -73,18 +70,17 @@ namespace net_ops::protocol
         hdr.magic = (static_cast<uint16_t>(buffer[0]) << 8) | static_cast<uint16_t>(buffer[1]);
         hdr.version = buffer[2];
         hdr.msg_type = buffer[3];
-        
+
         uint32_t netLen;
         std::memcpy(&netLen, buffer + 4, 4);
         hdr.payload_length = ntohl(netLen);
-        
+
         uint32_t netRes;
         std::memcpy(&netRes, buffer + 8, 4);
         hdr.reserved = ntohl(netRes);
-        
+
         return hdr;
     }
-
 
     inline void PackUint32(std::vector<uint8_t> &buf, uint32_t val)
     {
@@ -99,10 +95,10 @@ namespace net_ops::protocol
         buf.insert(buf.end(), s.begin(), s.end());
     }
 
-
     inline std::optional<uint32_t> UnpackUint32(const std::vector<uint8_t> &buf, size_t &offset)
     {
-        if (offset + 4 > buf.size()) return std::nullopt;
+        if (offset + 4 > buf.size())
+            return std::nullopt;
         uint32_t netVal;
         std::memcpy(&netVal, buf.data() + offset, 4);
         offset += 4;
@@ -112,9 +108,10 @@ namespace net_ops::protocol
     inline std::optional<std::string> UnpackString(const std::vector<uint8_t> &buf, size_t &offset)
     {
         auto len = UnpackUint32(buf, offset);
-        if (!len || offset + *len > buf.size()) return std::nullopt;
-        
-        std::string s(reinterpret_cast<const char*>(buf.data() + offset), *len);
+        if (!len || offset + *len > buf.size())
+            return std::nullopt;
+
+        std::string s(reinterpret_cast<const char *>(buf.data() + offset), *len);
         offset += *len;
         return s;
     }

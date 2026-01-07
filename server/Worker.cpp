@@ -59,15 +59,6 @@ namespace net_ops::server
             case net_ops::protocol::MessageType::SignupReq:
                 HandleRegister(job.client_fd, job.payload);
                 break;
-            case net_ops::protocol::MessageType::GroupCreateReq:
-                HandleGroupCreate(job.client_fd, job.payload);
-                break;
-            case net_ops::protocol::MessageType::GroupListReq:
-                HandleGroupList(job.client_fd, job.payload);
-                break;
-            case net_ops::protocol::MessageType::GroupAddMemberReq:
-                HandleGroupAddMember(job.client_fd, job.payload);
-                break;
             case net_ops::protocol::MessageType::DeviceAddReq:
                 HandleDeviceAdd(job.client_fd, job.payload);
                 break;
@@ -97,13 +88,11 @@ namespace net_ops::server
         size_t off = 0;
         auto u = net_ops::protocol::UnpackString(p, off);
         auto pw = net_ops::protocol::UnpackString(p, off);
-
         if (!u || !pw)
         {
             network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "MALFORMED_REQUEST");
             return;
         }
-
         if (DatabaseManager::GetInstance().ValidateUser(*u, *pw))
         {
             auto user = DatabaseManager::GetInstance().GetUserByName(*u);
@@ -128,71 +117,15 @@ namespace net_ops::server
             network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "SIGNUP_FAILURE");
     }
 
-    void Worker::HandleGroupCreate(int fd, const std::vector<uint8_t> &p)
-    {
-        size_t off = 0;
-        auto t = net_ops::protocol::UnpackString(p, off);
-        auto n = net_ops::protocol::UnpackString(p, off);
-        if (t && n)
-        {
-            auto uid = SessionManager::GetInstance().GetUserId(*t);
-            if (uid && DatabaseManager::GetInstance().CreateGroup(*n, *uid) != -1)
-            {
-                network_core_->QueueResponse(fd, net_ops::protocol::MessageType::GroupCreateResp, "GROUP_CREATED");
-                return;
-            }
-        }
-        network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "GROUP_CREATION_FAILED");
-    }
-
-    void Worker::HandleGroupList(int fd, const std::vector<uint8_t> &p)
-    {
-        size_t off = 0;
-        auto t = net_ops::protocol::UnpackString(p, off);
-        auto uid = t ? SessionManager::GetInstance().GetUserId(*t) : std::nullopt;
-        if (!uid)
-        {
-            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
-            return;
-        }
-        auto groups = DatabaseManager::GetInstance().GetGroupsForUser(*uid);
-        std::string res = groups.empty() ? "NO_GROUPS" : "";
-        for (const auto &g : groups)
-            res += std::to_string(g.id) + ":" + g.name + ",";
-        network_core_->QueueResponse(fd, net_ops::protocol::MessageType::GroupListResp, res);
-    }
-
-    void Worker::HandleGroupAddMember(int fd, const std::vector<uint8_t> &p)
-    {
-        size_t off = 0;
-        auto t = net_ops::protocol::UnpackString(p, off);
-        auto gid = net_ops::protocol::UnpackUint32(p, off);
-        auto member = net_ops::protocol::UnpackString(p, off);
-
-        auto uid = t ? SessionManager::GetInstance().GetUserId(*t) : std::nullopt;
-        if (!uid || !gid || !member || !DatabaseManager::GetInstance().IsGroupOwner(*gid, *uid))
-        {
-            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "ACCESS_DENIED");
-            return;
-        }
-        auto target = DatabaseManager::GetInstance().GetUserByName(*member);
-        if (target && DatabaseManager::GetInstance().AddMemberToGroup(target->id, *gid))
-            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::GroupAddMemberResp, "MEMBER_ADDED");
-        else
-            network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "ADD_FAILED");
-    }
-
     void Worker::HandleDeviceAdd(int fd, const std::vector<uint8_t> &p)
     {
         size_t off = 0;
         auto t = net_ops::protocol::UnpackString(p, off);
-        auto gid = net_ops::protocol::UnpackUint32(p, off);
         auto n = net_ops::protocol::UnpackString(p, off);
         auto ip = net_ops::protocol::UnpackString(p, off);
         auto mac = net_ops::protocol::UnpackString(p, off);
-
         auto uid = t ? SessionManager::GetInstance().GetUserId(*t) : std::nullopt;
-        if (uid && gid && n && ip && mac && DatabaseManager::GetInstance().AddDevice(*uid, *gid, *n, *ip, *mac))
+        if (uid && n && ip && mac && DatabaseManager::GetInstance().AddDevice(*uid, *n, *ip, *mac))
             network_core_->QueueResponse(fd, net_ops::protocol::MessageType::DeviceAddResp, "DEVICE_ADDED");
         else
             network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "ADD_FAILED");
@@ -211,7 +144,7 @@ namespace net_ops::server
         auto devs = DatabaseManager::GetInstance().GetAllDevicesForUser(*uid);
         std::string res = devs.empty() ? "NO_DEVICES" : "";
         for (const auto &d : devs)
-            res += std::to_string(d.id) + ":" + d.name + ":" + d.ip_address + ":" + d.status + ":" + std::to_string(d.group_id) + ":" + d.info + ",";
+            res += std::to_string(d.id) + ":" + d.name + ":" + d.ip_address + ":" + d.status + ":" + d.info + ",";
         network_core_->QueueResponse(fd, net_ops::protocol::MessageType::DeviceListResp, res);
     }
 
@@ -221,11 +154,8 @@ namespace net_ops::server
         auto token = net_ops::protocol::UnpackString(p, off);
         auto ip = net_ops::protocol::UnpackString(p, off);
         auto msg = net_ops::protocol::UnpackString(p, off);
-
         if (token && ip && msg && SessionManager::GetInstance().GetUserId(*token))
-        {
             DatabaseManager::GetInstance().SaveLog(*ip, *msg);
-        }
     }
 
     void Worker::HandleStatusUpdate(int fd, const std::vector<uint8_t> &p)
