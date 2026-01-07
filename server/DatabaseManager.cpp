@@ -7,9 +7,22 @@
 #include <sstream>
 #include <iomanip>
 #include <openssl/sha.h>
+#include <openssl/evp.h>
 
 namespace net_ops::server
 {
+
+    static std::vector<uint8_t> PBKDF2_Hash(const std::string &password, const std::vector<uint8_t> &salt)
+    {
+        std::vector<uint8_t> hash(32);
+        PKCS5_PBKDF2_HMAC(password.c_str(), password.length(),
+                          salt.data(), salt.size(),
+                          10000,
+                          EVP_sha256(),
+                          hash.size(), hash.data());
+        return hash;
+    }
+
     static std::string HashPassword(const std::string &password, const std::string &salt)
     {
         std::string combined = password + salt;
@@ -160,14 +173,14 @@ namespace net_ops::server
         }
 
         sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_blob(stmt, 2, hash.data(), hash.size(), SQLITE_TRANSIENT);
-        sqlite3_bind_blob(stmt, 3, salt.data(), salt.size(), SQLITE_TRANSIENT);
+        sqlite3_bind_blob(stmt, 2, hash.data(), static_cast<int>(hash.size()), SQLITE_TRANSIENT);
+        sqlite3_bind_blob(stmt, 3, salt.data(), static_cast<int>(salt.size()), SQLITE_TRANSIENT);
 
         bool success = false;
         if (sqlite3_step(stmt) == SQLITE_DONE)
         {
             success = true;
-            std::cout << "[DB Debug] Inserted User: " << username << " | HashSize: " << hash.size() << " | SaltSize: " << salt.size() << "\n";
+            std::cout << "[DB Debug] Inserted User: " << username << " | PBKDF2 Hash Size: " << hash.size() << "\n";
         }
         else
         {
@@ -193,8 +206,8 @@ namespace net_ops::server
         sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_STATIC);
 
         bool userFound = false;
-        std::string storedHashBlob;
-        std::string saltBlob;
+        std::vector<uint8_t> storedHash;
+        std::vector<uint8_t> salt;
 
         if (sqlite3_step(stmt) == SQLITE_ROW)
         {
@@ -202,31 +215,42 @@ namespace net_ops::server
 
             const void *h = sqlite3_column_blob(stmt, 0);
             int h_len = sqlite3_column_bytes(stmt, 0);
-            storedHashBlob.assign((const char *)h, h_len);
+            if (h && h_len > 0)
+            {
+                storedHash.assign(reinterpret_cast<const uint8_t *>(h), reinterpret_cast<const uint8_t *>(h) + h_len);
+            }
 
             const void *s = sqlite3_column_blob(stmt, 1);
             int s_len = sqlite3_column_bytes(stmt, 1);
-            saltBlob.assign((const char *)s, s_len);
+            if (s && s_len > 0)
+            {
+                salt.assign(reinterpret_cast<const uint8_t *>(s), reinterpret_cast<const uint8_t *>(s) + s_len);
+            }
         }
         sqlite3_finalize(stmt);
 
-        if (!userFound)
+        if (!userFound || salt.empty() || storedHash.empty())
             return false;
 
-        std::string combined = password + saltBlob;
-        unsigned char calcHash[SHA256_DIGEST_LENGTH];
-        SHA256(reinterpret_cast<const unsigned char *>(combined.c_str()), combined.size(), calcHash);
+        std::vector<uint8_t> computedHash(storedHash.size());
+        int iterations = 10000;
 
-        if (storedHashBlob.size() == SHA256_DIGEST_LENGTH &&
-            std::memcmp(storedHashBlob.data(), calcHash, SHA256_DIGEST_LENGTH) == 0)
+        int result = PKCS5_PBKDF2_HMAC(
+            password.c_str(),
+            password.length(),
+            salt.data(),
+            salt.size(),
+            iterations,
+            EVP_sha256(),
+            computedHash.size(),
+            computedHash.data());
+
+        if (result != 1)
         {
-            return true;
+            return false;
         }
 
-        if (storedHashBlob == HashPassword(password, saltBlob))
-            return true;
-
-        return false;
+        return (computedHash == storedHash);
     }
 
     std::optional<UserRecord> DatabaseManager::GetUserByName(const std::string &username)

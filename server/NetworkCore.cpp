@@ -80,74 +80,105 @@ namespace net_ops::server
 
     void NetworkCore::HandleNewConnection()
     {
-        struct sockaddr clientAddress;
+        struct sockaddr_storage clientAddress;
         socklen_t clientAddressLength = sizeof(clientAddress);
-        int m_client_fd = accept(m_server_fd, static_cast<struct sockaddr *>(&clientAddress), &clientAddressLength);
+        int m_client_fd = accept(m_server_fd, reinterpret_cast<struct sockaddr *>(&clientAddress), &clientAddressLength);
+
         if (m_client_fd == -1)
         {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                return;
             throw std::runtime_error("Failed to accept client connection.");
         }
 
         NonBlockingMode(m_client_fd);
-        registry[m_client_fd].socketfd = m_client_fd;
+
+        ClientContext &ctx = registry[m_client_fd];
+        ctx.socketfd = m_client_fd;
+        ctx.is_handshake_complete = false;
 
         SSL *ssl_handle = SSL_new(m_ssl_ctx);
         if (!ssl_handle)
         {
             close(m_client_fd);
+            registry.erase(m_client_fd);
             throw std::runtime_error("Failed to allocate new SSL session.");
         }
 
         SSL_set_fd(ssl_handle, m_client_fd);
-        registry[m_client_fd].ssl_handle = ssl_handle;
+        ctx.ssl_handle = ssl_handle;
 
         int ret = SSL_accept(ssl_handle);
-
         if (ret == 1)
         {
-            registry[m_client_fd].is_handshake_complete = true;
-            std::cout << "[Server] New connection accepted and Handshake COMPLETE: " << m_client_fd << std::endl;
+            ctx.is_handshake_complete = true;
+            std::cout << "[Server] New connection: Handshake COMPLETE on FD " << m_client_fd << std::endl;
             EpollControlAdd(m_client_fd);
         }
         else
         {
             int ssl_error = SSL_get_error(ssl_handle, ret);
-            if (ssl_error == SSL_ERROR_WANT_READ)
+            if (ssl_error == SSL_ERROR_WANT_READ || ssl_error == SSL_ERROR_WANT_WRITE)
             {
-                registry[m_client_fd].is_handshake_complete = false;
-                EpollControlAdd(m_client_fd);
-                std::cout << "[Server] New connection accepted, Handshake PENDING: " << m_client_fd << std::endl;
+                struct epoll_event event;
+                std::memset(&event, 0, sizeof(event));
+                event.data.fd = m_client_fd;
+                event.events = EPOLLIN | EPOLLET;
+
+                if (ssl_error == SSL_ERROR_WANT_WRITE)
+                    event.events |= EPOLLOUT;
+
+                if (epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, m_client_fd, &event) == -1)
+                {
+                    DisconnectClient(m_client_fd);
+                }
+                std::cout << "[Server] New connection: Handshake PENDING on FD " << m_client_fd << std::endl;
             }
             else
             {
-                std::cerr << "[Server] Fatal SSL Handshake Error on " << m_client_fd << ". Disconnecting." << std::endl;
-                close(m_client_fd);
+                std::cerr << "[Server] Fatal SSL Handshake Error on FD " << m_client_fd << ". Disconnecting." << std::endl;
+                DisconnectClient(m_client_fd);
             }
         }
     }
 
     void NetworkCore::HandleClientData(int fd)
     {
+        if (registry.find(fd) == registry.end())
+            return;
         ClientContext &ctx = registry[fd];
 
-        if (ctx.is_handshake_complete == false)
+        if (!ctx.is_handshake_complete)
         {
             int ret = SSL_accept(ctx.ssl_handle);
             if (ret == 1)
             {
                 ctx.is_handshake_complete = true;
                 std::cout << "[Server] TLS Handshake complete for client " << fd << std::endl;
+
+                struct epoll_event event;
+                std::memset(&event, 0, sizeof(event));
+                event.data.fd = fd;
+                event.events = EPOLLIN | EPOLLET;
+                epoll_ctl(m_epoll_fd, EPOLL_CTL_MOD, fd, &event);
             }
             else
             {
                 int err = SSL_get_error(ctx.ssl_handle, ret);
                 if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
                 {
+                    struct epoll_event event;
+                    std::memset(&event, 0, sizeof(event));
+                    event.data.fd = fd;
+                    event.events = EPOLLIN | EPOLLET;
+                    if (err == SSL_ERROR_WANT_WRITE)
+                        event.events |= EPOLLOUT;
+                    epoll_ctl(m_epoll_fd, EPOLL_CTL_MOD, fd, &event);
                     return;
                 }
                 else
                 {
-                    std::cerr << "SSL Handshake Failed. Error: " << err << std::endl;
+                    std::cerr << "[Server] SSL Handshake Failed for client " << fd << ". Error: " << err << std::endl;
                     DisconnectClient(fd);
                     return;
                 }
@@ -155,31 +186,25 @@ namespace net_ops::server
         }
 
         uint8_t temp_buffer[4096];
-
         while (true)
         {
-            ssize_t count = SSL_read(ctx.ssl_handle, temp_buffer, sizeof(temp_buffer));
-
+            int count = SSL_read(ctx.ssl_handle, temp_buffer, sizeof(temp_buffer));
             if (count > 0)
             {
-                ctx.buff.Append(temp_buffer, count);
+                ctx.buff.Append(temp_buffer, static_cast<size_t>(count));
             }
             else
             {
                 int err = SSL_get_error(ctx.ssl_handle, count);
-
-                if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
+                if (err == SSL_ERROR_WANT_READ)
                     break;
-                else if (err == SSL_ERROR_ZERO_RETURN || err == SSL_ERROR_SYSCALL)
+
+                if (err == SSL_ERROR_ZERO_RETURN || err == SSL_ERROR_SYSCALL || err == SSL_ERROR_SSL)
                 {
                     DisconnectClient(fd);
                     return;
                 }
-                else
-                {
-                    DisconnectClient(fd);
-                    return;
-                }
+                break;
             }
         }
 

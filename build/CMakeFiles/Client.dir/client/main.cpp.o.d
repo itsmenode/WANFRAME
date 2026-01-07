@@ -231,6 +231,7 @@ CMakeFiles/Client.dir/client/main.cpp.o: \
  /usr/include/c++/11/bits/this_thread_sleep.h /usr/include/c++/11/atomic \
  /usr/include/c++/11/bits/atomic_base.h \
  /usr/include/c++/11/bits/atomic_lockfree_defines.h \
+ /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.hpp \
  /usr/include/c++/11/functional /usr/include/c++/11/bits/std_function.h \
  /usr/include/c++/11/unordered_map \
  /usr/include/c++/11/ext/aligned_buffer.h \
@@ -243,5 +244,4 @@ CMakeFiles/Client.dir/client/main.cpp.o: \
  /usr/include/c++/11/bits/algorithmfwd.h \
  /usr/include/c++/11/bits/stl_heap.h \
  /usr/include/c++/11/bits/stl_tempbuf.h \
- /usr/include/c++/11/bits/uniform_int_dist.h \
- /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.hpp
+ /usr/include/c++/11/bits/uniform_int_dist.h

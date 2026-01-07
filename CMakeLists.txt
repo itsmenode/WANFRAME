@@ -60,6 +60,7 @@ add_executable(Client
     client/SyslogCollector.cpp
     client/DeviceMonitor.cpp
     client/SnmpClient.cpp
+    common/ByteBuffer.cpp
 )
 
 target_link_libraries(Client

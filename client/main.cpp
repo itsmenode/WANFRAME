@@ -146,7 +146,7 @@ void DashboardLoop(net_ops::client::ClientNetwork &client)
             {
                 std::cout << "Invalid input. Please enter a number.\n";
                 std::cin.clear();
-                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Discard bad input
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             }
         }
         else if (choice == "8")

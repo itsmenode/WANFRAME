@@ -11,6 +11,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/Client.dir/client/SyslogCollector.cpp.o.d"
   "CMakeFiles/Client.dir/client/main.cpp.o"
   "CMakeFiles/Client.dir/client/main.cpp.o.d"
+  "CMakeFiles/Client.dir/common/ByteBuffer.cpp.o"
+  "CMakeFiles/Client.dir/common/ByteBuffer.cpp.o.d"
   "Client"
   "Client.pdb"
 )

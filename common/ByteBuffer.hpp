@@ -12,6 +12,7 @@ namespace net_ops::common
     {
     private:
         std::vector<uint8_t> m_buffer;
+        size_t m_readPos = 0;
 
     public:
         ByteBuffer() = default;
@@ -21,7 +22,7 @@ namespace net_ops::common
         bool HasCompleteMessage(const net_ops::protocol::Header &hdr) const;
         void Consume(size_t bytes);
         std::vector<uint8_t> ExtractPayload(size_t payload_len);
-        size_t Size() const { return m_buffer.size(); }
+        size_t Size() const { return m_buffer.size() - m_readPos; }
     };
 
 }
