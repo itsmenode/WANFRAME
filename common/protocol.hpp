@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstddef>
 #include <arpa/inet.h>
+#include <string>
 
 namespace net_ops::protocol
 {

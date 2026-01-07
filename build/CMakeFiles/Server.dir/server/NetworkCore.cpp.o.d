@@ -247,7 +247,8 @@ CMakeFiles/Server.dir/server/NetworkCore.cpp.o: \
  /usr/include/openssl/err.h \
  /home/andrew/Documents/GitHub/WANFRAME/server/../common/ByteBuffer.hpp \
  /home/andrew/Documents/GitHub/WANFRAME/server/../common/protocol.hpp \
- /usr/include/c++/11/cstddef \
+ /usr/include/c++/11/cstddef /usr/include/arpa/inet.h \
+ /usr/include/netinet/in.h /usr/include/x86_64-linux-gnu/bits/in.h \
  /home/andrew/Documents/GitHub/WANFRAME/server/Worker.hpp \
  /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
  /usr/include/c++/11/bits/refwrap.h /usr/include/c++/11/bits/unique_ptr.h \
@@ -258,5 +259,4 @@ CMakeFiles/Server.dir/server/NetworkCore.cpp.o: \
  /usr/include/c++/11/bits/allocated_ptr.h \
  /usr/include/c++/11/ext/concurrence.h /usr/include/c++/11/atomic \
  /usr/include/c++/11/bits/atomic_base.h \
- /usr/include/c++/11/bits/atomic_lockfree_defines.h \
- /usr/include/netinet/in.h /usr/include/x86_64-linux-gnu/bits/in.h
+ /usr/include/c++/11/bits/atomic_lockfree_defines.h
