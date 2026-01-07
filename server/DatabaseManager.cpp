@@ -62,6 +62,7 @@ namespace net_ops::server
         }
 
         sqlite3_exec(db_, "PRAGMA journal_mode=WAL;", nullptr, nullptr, nullptr);
+        sqlite3_exec(db_, "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr);
 
         const char *sql_tables =
             "CREATE TABLE IF NOT EXISTS users ("
@@ -73,9 +74,9 @@ namespace net_ops::server
 
             "CREATE TABLE IF NOT EXISTS groups ("
             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-            "name TEXT UNIQUE NOT NULL, "
+            "name TEXT NOT NULL, "
             "owner_id INTEGER, "
-            "FOREIGN KEY(owner_id) REFERENCES users(id)"
+            "FOREIGN KEY(owner_id) REFERENCES users(id) ON DELETE CASCADE"
             ");"
 
             "CREATE TABLE IF NOT EXISTS physical_devices ("
@@ -90,10 +91,11 @@ namespace net_ops::server
             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
             "user_id INTEGER NOT NULL, "
             "physical_id INTEGER NOT NULL, "
-            "group_id INTEGER DEFAULT 0, "
+            "group_id INTEGER, "
             "custom_name TEXT NOT NULL, "
             "custom_info TEXT DEFAULT '', "
-            "FOREIGN KEY(user_id) REFERENCES users(id), "
+            "UNIQUE(user_id, physical_id), "
+            "FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE, "
             "FOREIGN KEY(physical_id) REFERENCES physical_devices(id) ON DELETE CASCADE, "
             "FOREIGN KEY(group_id) REFERENCES groups(id) ON DELETE SET NULL"
             ");"
@@ -113,7 +115,6 @@ namespace net_ops::server
             sqlite3_free(err_msg);
             return false;
         }
-
         return true;
     }
 
@@ -363,13 +364,16 @@ namespace net_ops::server
     {
         std::lock_guard<std::mutex> lock(db_mutex_);
 
-        const char *sql_phys = "INSERT INTO physical_devices (mac_address, ip_address, status) VALUES (?, ?, 'ACTIVE') "
-                               "ON CONFLICT(mac_address) DO UPDATE SET ip_address=excluded.ip_address, status='ACTIVE';";
+        const char *sql_phys = "INSERT INTO physical_devices (mac_address, ip_address, status, last_seen) "
+                               "VALUES (?, ?, 'ACTIVE', CURRENT_TIMESTAMP) "
+                               "ON CONFLICT(mac_address) DO UPDATE SET ip_address=excluded.ip_address, status='ACTIVE', last_seen=CURRENT_TIMESTAMP;";
+
         sqlite3_stmt *stmt_phys;
         if (sqlite3_prepare_v2(db_, sql_phys, -1, &stmt_phys, nullptr) != SQLITE_OK)
             return false;
         sqlite3_bind_text(stmt_phys, 1, mac.c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt_phys, 2, ip.c_str(), -1, SQLITE_TRANSIENT);
+
         if (sqlite3_step(stmt_phys) != SQLITE_DONE)
         {
             sqlite3_finalize(stmt_phys);
@@ -377,27 +381,32 @@ namespace net_ops::server
         }
         sqlite3_finalize(stmt_phys);
 
-        int phys_id = (int)sqlite3_last_insert_rowid(db_);
+        int phys_id = -1;
+        sqlite3_stmt *sel_stmt;
+        sqlite3_prepare_v2(db_, "SELECT id FROM physical_devices WHERE mac_address = ?;", -1, &sel_stmt, nullptr);
+        sqlite3_bind_text(sel_stmt, 1, mac.c_str(), -1, SQLITE_TRANSIENT);
+        if (sqlite3_step(sel_stmt) == SQLITE_ROW)
+            phys_id = sqlite3_column_int(sel_stmt, 0);
+        sqlite3_finalize(sel_stmt);
 
-        if (phys_id == 0 || sqlite3_changes(db_) == 0)
-        {
-            const char *select_phys = "SELECT id FROM physical_devices WHERE mac_address = ?;";
-            sqlite3_stmt *sel_stmt;
-            sqlite3_prepare_v2(db_, select_phys, -1, &sel_stmt, nullptr);
-            sqlite3_bind_text(sel_stmt, 1, mac.c_str(), -1, SQLITE_TRANSIENT);
-            if (sqlite3_step(sel_stmt) == SQLITE_ROW)
-                phys_id = sqlite3_column_int(sel_stmt, 0);
-            sqlite3_finalize(sel_stmt);
-        }
+        if (phys_id == -1)
+            return false;
 
         const char *sql_user = "INSERT INTO user_devices (user_id, physical_id, group_id, custom_name) VALUES (?, ?, ?, ?) "
                                "ON CONFLICT(user_id, physical_id) DO UPDATE SET custom_name=excluded.custom_name, group_id=excluded.group_id;";
+
         sqlite3_stmt *stmt_user;
         if (sqlite3_prepare_v2(db_, sql_user, -1, &stmt_user, nullptr) != SQLITE_OK)
             return false;
+
         sqlite3_bind_int(stmt_user, 1, user_id);
         sqlite3_bind_int(stmt_user, 2, phys_id);
-        sqlite3_bind_int(stmt_user, 3, group_id);
+
+        if (group_id <= 0)
+            sqlite3_bind_null(stmt_user, 3);
+        else
+            sqlite3_bind_int(stmt_user, 3, group_id);
+
         sqlite3_bind_text(stmt_user, 4, name.c_str(), -1, SQLITE_TRANSIENT);
 
         bool success = (sqlite3_step(stmt_user) == SQLITE_DONE);
@@ -418,7 +427,6 @@ namespace net_ops::server
         sqlite3_stmt *stmt;
         if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK)
             return devices;
-
         sqlite3_bind_int(stmt, 1, user_id);
 
         while (sqlite3_step(stmt) == SQLITE_ROW)
@@ -431,10 +439,9 @@ namespace net_ops::server
             d.ip_address = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 4));
             d.mac_address = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 5));
             d.status = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 6));
-            const char *i = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 7));
-            if (i)
-                d.info = i;
-
+            const char *info = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 7));
+            if (info)
+                d.info = info;
             devices.push_back(d);
         }
         sqlite3_finalize(stmt);
@@ -488,22 +495,20 @@ namespace net_ops::server
         {
             sqlite3_bind_text(stmt, 1, ip_address.c_str(), -1, SQLITE_STATIC);
             if (sqlite3_step(stmt) == SQLITE_ROW)
-            {
                 phys_id = sqlite3_column_int(stmt, 0);
-            }
             sqlite3_finalize(stmt);
         }
 
         if (phys_id == -1)
         {
-            const char *insert_phys = "INSERT INTO physical_devices (mac_address, ip_address, status) VALUES ('UNKNOWN', ?, 'Online');";
-            if (sqlite3_prepare_v2(db_, insert_phys, -1, &stmt, nullptr) == SQLITE_OK)
+            std::string placeholder_mac = "AUTO_" + ip_address;
+            const char *reg_sql = "INSERT INTO physical_devices (mac_address, ip_address, status) VALUES (?, ?, 'Online');";
+            if (sqlite3_prepare_v2(db_, reg_sql, -1, &stmt, nullptr) == SQLITE_OK)
             {
-                sqlite3_bind_text(stmt, 1, ip_address.c_str(), -1, SQLITE_STATIC);
+                sqlite3_bind_text(stmt, 1, placeholder_mac.c_str(), -1, SQLITE_TRANSIENT);
+                sqlite3_bind_text(stmt, 2, ip_address.c_str(), -1, SQLITE_TRANSIENT);
                 if (sqlite3_step(stmt) == SQLITE_DONE)
-                {
                     phys_id = static_cast<int>(sqlite3_last_insert_rowid(db_));
-                }
                 sqlite3_finalize(stmt);
             }
         }
@@ -518,7 +523,6 @@ namespace net_ops::server
             sqlite3_bind_text(stmt, 2, message.c_str(), -1, SQLITE_STATIC);
             sqlite3_step(stmt);
             sqlite3_finalize(stmt);
-            std::cout << "[DB] Log saved for Physical Device ID " << phys_id << "\n";
         }
     }
 

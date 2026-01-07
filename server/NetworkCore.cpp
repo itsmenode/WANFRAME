@@ -274,32 +274,32 @@ namespace net_ops::server
     void NetworkCore::Run()
     {
         m_running = true;
-
-        std::cout << "Server started on port " << m_port << "..." << std::endl;
-
         struct epoll_event ev[128];
-        int count = 0;
+
         while (m_running)
         {
-            if ((count = epoll_wait(m_epoll_fd, ev, 128, 10)) == -1)
+            int count = epoll_wait(m_epoll_fd, ev, 128, 1000);
+
+            if (count == -1)
             {
                 if (errno == EINTR)
                     continue;
-                else
-                    break;
+                break;
             }
 
             for (int i = 0; i < count; i++)
             {
-                int m_current_fd = ev[i].data.fd;
-                if (m_current_fd == m_server_fd)
+                int current_fd = ev[i].data.fd;
+                if (current_fd == m_server_fd)
                     HandleNewConnection();
                 else
-                    HandleClientData(m_current_fd);
+                    HandleClientData(current_fd);
             }
 
             SendPendingResponses();
         }
+
+        std::cout << "[Network] Stopping event loop...\n";
     }
 
     void NetworkCore::QueueResponse(int client_fd, net_ops::protocol::MessageType type, const std::string &data)

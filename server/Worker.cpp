@@ -426,10 +426,12 @@ namespace net_ops::server
         std::string log_msg = ReadString(payload, offset);
 
         if (!SessionManager::GetInstance().GetUserId(token).has_value())
+        {
+            std::cerr << "[Worker] Log upload rejected: Invalid token\n";
             return;
+        }
 
         DatabaseManager::GetInstance().SaveLog(device_ip, log_msg);
-        std::cout << "[Worker] Processed log from " << device_ip << "\n";
     }
 
     void Worker::HandleStatusUpdate(int fd, const std::vector<uint8_t> &payload)
@@ -450,15 +452,13 @@ namespace net_ops::server
     void Worker::HandleLogQuery(int client_fd, const std::vector<uint8_t> &payload)
     {
         size_t offset = 0;
-
         std::string token = ReadString(payload, offset);
 
         if (offset + 4 > payload.size())
             return;
-
         uint32_t netDevId = 0;
         std::memcpy(&netDevId, &payload[offset], 4);
-        int device_id = static_cast<int>(ntohl(netDevId));
+        int user_device_id = static_cast<int>(ntohl(netDevId));
         offset += 4;
 
         if (!SessionManager::GetInstance().GetUserId(token).has_value())
@@ -468,11 +468,9 @@ namespace net_ops::server
             return;
         }
 
-        auto logs = DatabaseManager::GetInstance().GetLogsForDevice(device_id);
-        std::cout << "[Worker] Fetching " << logs.size() << " logs for Device " << device_id << "\n";
+        auto logs = DatabaseManager::GetInstance().GetLogsForDevice(user_device_id);
 
         std::vector<uint8_t> response;
-
         net_ops::protocol::PackUint32(response, static_cast<uint32_t>(logs.size()));
 
         for (const auto &log : logs)

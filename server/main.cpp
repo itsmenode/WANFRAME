@@ -1,10 +1,22 @@
 #include "NetworkCore.hpp"
 #include "DatabaseManager.hpp"
 #include "Worker.hpp"
+
 #include <iostream>
+#include <csignal>
 #include <unistd.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <cstdlib>
+
+static net_ops::server::NetworkCore *g_network_core = nullptr;
+
+void SignalHandler(int signum)
+{
+    if (g_network_core)
+        g_network_core->Stop();
+}
 
 void Daemonize()
 {
@@ -16,6 +28,9 @@ void Daemonize()
     if (setsid() < 0)
         exit(EXIT_FAILURE);
 
+    signal(SIGCHLD, SIG_IGN);
+    signal(SIGHUP, SIG_IGN);
+
     pid = fork();
     if (pid < 0)
         exit(EXIT_FAILURE);
@@ -23,31 +38,24 @@ void Daemonize()
         exit(EXIT_SUCCESS);
 
     umask(0);
-    if (chdir("/") < 0)
-        exit(EXIT_FAILURE);
 
-    int devNull = open("/dev/null", O_RDWR);
-    if (devNull != -1)
+    int fd = open("/dev/null", O_RDWR);
+    if (fd != -1)
     {
-        dup2(devNull, STDIN_FILENO);
-        dup2(devNull, STDOUT_FILENO);
-        dup2(devNull, STDERR_FILENO);
-        close(devNull);
+        dup2(fd, STDIN_FILENO);
+        dup2(fd, STDOUT_FILENO);
+        dup2(fd, STDERR_FILENO);
+        close(fd);
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+    bool run_as_daemon = (argc > 1 && std::string(argv[1]) == "-d");
 
     auto &db = net_ops::server::DatabaseManager::GetInstance();
-
     if (!db.Initialize("server_data.db"))
-    {
-        std::cerr << "Failed to init DB\n";
-        return -1;
-    }
-
-    std::cout << "[System] Database initialized successfully.\n";
+        return EXIT_FAILURE;
 
     try
     {
@@ -56,18 +64,33 @@ int main()
 
         net_ops::server::NetworkCore server(8080, &worker);
         worker.SetNetworkCore(&server);
+        g_network_core = &server;
 
-        std::cout << "[System] Server listening on port 8080...\n";
+        signal(SIGINT, SignalHandler);
+        signal(SIGTERM, SignalHandler);
+
         server.Init();
+
+        if (run_as_daemon)
+        {
+            std::cout << "[System] Entering daemon mode (check logs for errors)...\n";
+            Daemonize();
+        }
+        else
+        {
+            std::cout << "[System] Starting in interactive mode. Press Ctrl+C to stop.\n";
+        }
+
         server.Run();
 
         worker.Stop();
+        db.Shutdown();
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Fatal Server Error: " << e.what() << '\n';
-        return -1;
+        std::cerr << "[Fatal] " << e.what() << "\n";
+        return EXIT_FAILURE;
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
