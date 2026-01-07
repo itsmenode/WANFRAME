@@ -30,19 +30,12 @@ void DashboardLoop(net_ops::client::ClientNetwork &client)
     while (in_dashboard)
     {
         std::cout << "\n--- DASHBOARD ---\n";
-        std::cout << "1. Create Group\n";
-        std::cout << "2. List My Groups\n";
-        std::cout << "3. Add Member to Group\n";
-        std::cout << "4. Add Device (Manual)\n";
-        std::cout << "5. List All Devices\n";
-        std::cout << "6. Auto-Scan & Monitor\n";
-        std::cout << "7. View Device Logs\n";
-        std::cout << "8. Logout\n";
-        std::cout << "Select: ";
+        std::cout << "1. Create Group\n2. List My Groups\n3. Add Member to Group\n";
+        std::cout << "4. Add Device (Manual)\n5. List All Devices\n6. Auto-Scan & Monitor\n";
+        std::cout << "7. View Device Logs\n8. Logout\nSelect: ";
 
         std::string choice;
-        std::cin >> choice;
-
+        if (!(std::cin >> choice)) break;
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
         if (choice == "8")
@@ -50,7 +43,9 @@ void DashboardLoop(net_ops::client::ClientNetwork &client)
             std::cout << "[System] Performing network logout...\n";
             {
                 std::lock_guard<std::mutex> lock(g_net_lock);
-                client.SendLogout();
+                if (client.SendLogout()) {
+                    client.ReceiveResponse(); 
+                }
             }
             in_dashboard = false;
         }
@@ -71,34 +66,24 @@ void DashboardLoop(net_ops::client::ClientNetwork &client)
         {
             std::string idStr = GetInput("Enter Group ID: ");
             std::string userToAdd = GetInput("Enter Username to Invite: ");
-            try
-            {
+            try {
                 int gid = std::stoi(idStr);
                 std::lock_guard<std::mutex> lock(g_net_lock);
                 client.SendAddMember(gid, userToAdd);
                 client.ReceiveResponse();
-            }
-            catch (...)
-            {
-                std::cout << "Invalid Group ID.\n";
-            }
+            } catch (...) { std::cout << "Invalid Group ID.\n"; }
         }
         else if (choice == "4")
         {
             std::string name = GetInput("Device Name: ");
             std::string ip = GetInput("IP Address: ");
             std::string gidStr = GetInput("Group ID (0 for none): ");
-            try
-            {
+            try {
                 int gid = gidStr.empty() ? 0 : std::stoi(gidStr);
                 std::lock_guard<std::mutex> lock(g_net_lock);
                 client.SendAddDevice(name, ip, "00:00:00:00:00:00", gid);
                 client.ReceiveResponse();
-            }
-            catch (...)
-            {
-                std::cout << "Invalid Group ID.\n";
-            }
+            } catch (...) { std::cout << "Invalid Group ID.\n"; }
         }
         else if (choice == "5")
         {
@@ -109,51 +94,32 @@ void DashboardLoop(net_ops::client::ClientNetwork &client)
         else if (choice == "6")
         {
             std::cout << "\n--- AUTO-SCAN INITIATED ---\n";
-            std::cout << "Scanning local network... (This may take a moment)\n";
-
             auto hosts = net_ops::client::NetworkScanner::ScanLocalNetwork();
-
-            if (hosts.empty())
-            {
-                std::cout << "No OTHER devices found.\n";
-                std::vector<std::string> monitor_ips;
-                monitor_ips.push_back("127.0.0.1");
+            if (hosts.empty()) {
+                std::vector<std::string> monitor_ips = {"127.0.0.1"};
                 g_monitor.SetTargets(monitor_ips);
-            }
-            else
-            {
-                std::cout << "Found " << hosts.size() << " devices. Uploading...\n";
-                {
-                    std::lock_guard<std::mutex> lock(g_net_lock);
-                    for (const auto &host : hosts)
-                    {
-                        client.SendAddDevice(host.name, host.ip, host.mac, 0);
-                        client.ReceiveResponse();
-                    }
+            } else {
+                std::lock_guard<std::mutex> lock(g_net_lock);
+                for (const auto &host : hosts) {
+                    client.SendAddDevice(host.name, host.ip, host.mac, 0);
+                    client.ReceiveResponse();
                 }
             }
         }
         else if (choice == "7")
         {
-            std::cout << "--- Device List ---\n";
             {
                 std::lock_guard<std::mutex> lock(g_net_lock);
                 client.SendListDevices();
                 client.ReceiveResponse();
             }
-
             std::cout << "Enter Device ID to view logs: ";
             int devId = -1;
-            if (std::cin >> devId)
-            {
-                std::cout << "[Client] Requesting logs for Device ID: " << devId << "...\n";
+            if (std::cin >> devId) {
                 std::lock_guard<std::mutex> lock(g_net_lock);
                 client.SendFetchLogs(devId);
                 client.ReceiveResponse();
-            }
-            else
-            {
-                std::cout << "Invalid input. Please enter a number.\n";
+            } else {
                 std::cin.clear();
                 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             }
