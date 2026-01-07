@@ -5,6 +5,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include "../common/protocol.hpp"
+#include "../common/ByteBuffer.hpp"
 
 namespace net_ops::client
 {
@@ -14,16 +15,20 @@ namespace net_ops::client
         std::string m_host;
         int m_port;
         int m_socket_fd;
-        
+
         std::string m_session_token;
-        
-        SSL_CTX* m_ssl_ctx;
-        SSL* m_ssl_handle;
+
+        SSL_CTX *m_ssl_ctx;
+        SSL *m_ssl_handle;
+
+        net_ops::common::ByteBuffer m_rx_buf;
+
+        bool ReadNextPacket(net_ops::protocol::Header &out_hdr, std::vector<uint8_t> &out_payload);
 
         void InitSSL();
         void CleanupSSL();
-        
-        void AppendString(std::vector<uint8_t>& buffer, const std::string& str);
+
+        void AppendString(std::vector<uint8_t> &buffer, const std::string &str);
 
     public:
         ClientNetwork(std::string host, int port);
@@ -32,23 +37,23 @@ namespace net_ops::client
         bool Connect();
         void Disconnect();
 
-        bool SendLogin(const std::string& username, const std::string& password);
-        bool SendRegister(const std::string& username, const std::string& password);
-        
-        bool SendCreateGroup(const std::string& groupName);
+        bool SendLogin(const std::string &username, const std::string &password);
+        bool SendRegister(const std::string &username, const std::string &password);
+
+        bool SendCreateGroup(const std::string &groupName);
         bool SendListGroups();
 
-        bool SendAddMember(int groupId, const std::string& username);
+        bool SendAddMember(int groupId, const std::string &username);
 
-        bool SendAddDevice(const std::string& name, const std::string& ip, int groupId = 0);
+        bool SendAddDevice(const std::string &name, const std::string &ip, int groupId = 0);
         bool SendListDevices();
 
-        bool SendLogUpload(const std::string& source_ip, const std::string& log_msg);
+        bool SendLogUpload(const std::string &source_ip, const std::string &log_msg);
 
-        bool SendStatusUpdate(const std::string& ip, const std::string& status, const std::string& info);
+        bool SendStatusUpdate(const std::string &ip, const std::string &status, const std::string &info);
 
         void SendFetchLogs(int device_id);
 
-        bool ReceiveResponse(); 
+        bool ReceiveResponse();
     };
 }

@@ -6,9 +6,52 @@
 #include <cstring>
 #include <vector>
 #include <iomanip>
+#include <poll.h>
 
 namespace net_ops::client
 {
+
+    static bool wait_fd(int fd, short events, int timeout_ms = 5000)
+    {
+        pollfd pfd{};
+        pfd.fd = fd;
+        pfd.events = events;
+
+        int r = poll(&pfd, 1, timeout_ms);
+        return r > 0;
+    }
+
+    static bool ssl_write_all(SSL *ssl, int fd, const uint8_t *data, size_t len)
+    {
+        size_t off = 0;
+        while (off < len)
+        {
+            int n = SSL_write(ssl, data + off, static_cast<int>(len - off));
+            if (n > 0)
+            {
+                off += static_cast<size_t>(n);
+                continue;
+            }
+
+            int err = SSL_get_error(ssl, n);
+            if (err == SSL_ERROR_WANT_READ)
+            {
+                if (!wait_fd(fd, POLLIN))
+                    return false;
+                continue;
+            }
+            if (err == SSL_ERROR_WANT_WRITE)
+            {
+                if (!wait_fd(fd, POLLOUT))
+                    return false;
+                continue;
+            }
+
+            return false;
+        }
+        return true;
+    }
+
     ClientNetwork::ClientNetwork(std::string host, int port)
         : m_host(host), m_port(port), m_socket_fd(-1), m_ssl_ctx(nullptr), m_ssl_handle(nullptr)
     {
@@ -19,6 +62,61 @@ namespace net_ops::client
     {
         Disconnect();
         CleanupSSL();
+    }
+
+    bool ClientNetwork::ReadNextPacket(net_ops::protocol::Header &out_hdr, std::vector<uint8_t> &out_payload)
+    {
+        if (!m_ssl_handle)
+            return false;
+
+        uint8_t tmp[4096];
+
+        while (true)
+        {
+            if (m_rx_buf.HasHeader())
+            {
+                auto hdr = m_rx_buf.PeekHeader();
+                if (m_rx_buf.HasCompleteMessage(hdr))
+                {
+                    out_hdr = hdr;
+                    out_payload = m_rx_buf.ExtractPayload(hdr.payload_length);
+                    m_rx_buf.Consume(net_ops::protocol::HEADER_SIZE + hdr.payload_length);
+                    return true;
+                }
+            }
+
+            int n = SSL_read(m_ssl_handle, tmp, sizeof(tmp));
+            if (n > 0)
+            {
+                m_rx_buf.Append(tmp, static_cast<size_t>(n));
+                continue;
+            }
+
+            if (n == 0)
+            {
+                std::cerr << "[Client] Server closed connection.\n";
+                Disconnect();
+                return false;
+            }
+
+            int err = SSL_get_error(m_ssl_handle, n);
+            if (err == SSL_ERROR_WANT_READ)
+            {
+                if (!wait_fd(m_socket_fd, POLLIN))
+                    return false;
+                continue;
+            }
+            if (err == SSL_ERROR_WANT_WRITE)
+            {
+                if (!wait_fd(m_socket_fd, POLLOUT))
+                    return false;
+                continue;
+            }
+
+            std::cerr << "[Client] SSL_read fatal error: " << err << "\n";
+            Disconnect();
+            return false;
+        }
     }
 
     void ClientNetwork::InitSSL()
@@ -96,6 +194,7 @@ namespace net_ops::client
             close(m_socket_fd);
             m_socket_fd = -1;
         }
+        m_rx_buf = net_ops::common::ByteBuffer{};
     }
 
     void ClientNetwork::AppendString(std::vector<uint8_t> &buffer, const std::string &str)
@@ -361,8 +460,10 @@ namespace net_ops::client
         uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
         net_ops::protocol::SerializeHeader(header, headerBuf);
 
-        SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf));
-        SSL_write(m_ssl_handle, payload.data(), payload.size());
+        if (!ssl_write_all(m_ssl_handle, m_socket_fd, headerBuf, sizeof(headerBuf)))
+            return false;
+        if (!ssl_write_all(m_ssl_handle, m_socket_fd, payload.data(), payload.size()))
+            return false;
 
         return true;
     }
@@ -385,8 +486,10 @@ namespace net_ops::client
         uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
         net_ops::protocol::SerializeHeader(header, headerBuf);
 
-        SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf));
-        SSL_write(m_ssl_handle, payload.data(), payload.size());
+        if (!ssl_write_all(m_ssl_handle, m_socket_fd, headerBuf, sizeof(headerBuf)))
+            std::cout << "[ERROR]" << '\n';
+        if (!ssl_write_all(m_ssl_handle, m_socket_fd, payload.data(), payload.size()))
+            std::cout << "[ERROR]" << '\n';
 
         std::cout << "[Client Debug] Sent LogQueryReq. TokenLen: " << m_session_token.length()
                   << " DevID: " << device_id << " Total Payload: " << payload.size() << "\n";
@@ -397,32 +500,11 @@ namespace net_ops::client
         if (!m_ssl_handle)
             return false;
 
-        net_ops::protocol::Header header;
-        uint8_t headerBuf[net_ops::protocol::HEADER_SIZE];
-
-        int bytesRead = SSL_read(m_ssl_handle, headerBuf, sizeof(headerBuf));
-        if (bytesRead <= 0)
-        {
-            std::cerr << "[Client] Server disconnected.\n";
-            Disconnect();
-            return false;
-        }
-
-        header = net_ops::protocol::DeserializeHeader(headerBuf);
-
+        net_ops::protocol::Header header{};
         std::vector<uint8_t> body;
-        if (header.payload_length > 0)
-        {
-            body.resize(header.payload_length);
-            int total = 0;
-            while (total < header.payload_length)
-            {
-                int n = SSL_read(m_ssl_handle, body.data() + total, header.payload_length - total);
-                if (n <= 0)
-                    break;
-                total += n;
-            }
-        }
+
+        if (!ReadNextPacket(header, body))
+            return false;
 
         if (header.msg_type == static_cast<uint8_t>(net_ops::protocol::MessageType::ErrorResp))
         {

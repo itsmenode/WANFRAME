@@ -1,0 +1,2 @@
+/usr/bin/ar qc libWANCommon.a CMakeFiles/WANCommon.dir/common/ByteBuffer.cpp.o
+/usr/bin/ranlib libWANCommon.a

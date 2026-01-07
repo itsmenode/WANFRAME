@@ -22,6 +22,11 @@ else()
 endif()
 
 # --- 2. Include Directories ---
+
+add_library(WANCommon
+    common/ByteBuffer.cpp
+)
+
 include_directories(
     ${OPENSSL_INCLUDE_DIR}
     ${SQLITE3_INCLUDE_DIR}
@@ -43,6 +48,7 @@ add_executable(Server
 )
 
 target_link_libraries(Server
+    WANCommon
     OpenSSL::SSL
     OpenSSL::Crypto
     ${SQLITE3_LIBRARY}
@@ -60,9 +66,11 @@ add_executable(Client
     client/SyslogCollector.cpp
     client/DeviceMonitor.cpp
     client/SnmpClient.cpp
+    common/ByteBuffer.cpp
 )
 
 target_link_libraries(Client
+    WANCommon
     OpenSSL::SSL
     OpenSSL::Crypto
     Threads::Threads
