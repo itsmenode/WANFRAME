@@ -530,6 +530,7 @@
  mdp:/home/andrew/Documents/GitHub/WANFRAME/client/MainWindow.hpp
  mdp:/home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/moc_predefs.h
  mdp:/home/andrew/Documents/GitHub/WANFRAME/client/ClientNetwork.hpp
+ mdp:/home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.hpp
  mdp:/home/andrew/Documents/GitHub/WANFRAME/client/NetworkController.hpp
  mdp:/home/andrew/Documents/GitHub/WANFRAME/client/ThreadSafeQueue.hpp
  mdp:/home/andrew/Documents/GitHub/WANFRAME/common/ByteBuffer.hpp
@@ -646,6 +647,7 @@
  mdp:/usr/include/c++/11/bits/vector.tcc
  mdp:/usr/include/c++/11/cctype
  mdp:/usr/include/c++/11/cerrno
+ mdp:/usr/include/c++/11/chrono
  mdp:/usr/include/c++/11/climits
  mdp:/usr/include/c++/11/clocale
  mdp:/usr/include/c++/11/cmath

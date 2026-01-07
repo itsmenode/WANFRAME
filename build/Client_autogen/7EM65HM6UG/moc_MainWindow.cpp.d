@@ -1,6 +1,7 @@
 /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/moc_MainWindow.cpp: /home/andrew/Documents/GitHub/WANFRAME/client/MainWindow.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/moc_predefs.h \
   /home/andrew/Documents/GitHub/WANFRAME/client/ClientNetwork.hpp \
+  /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/client/NetworkController.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/client/ThreadSafeQueue.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/common/ByteBuffer.hpp \
@@ -117,6 +118,7 @@
   /usr/include/c++/11/bits/vector.tcc \
   /usr/include/c++/11/cctype \
   /usr/include/c++/11/cerrno \
+  /usr/include/c++/11/chrono \
   /usr/include/c++/11/climits \
   /usr/include/c++/11/clocale \
   /usr/include/c++/11/cmath \

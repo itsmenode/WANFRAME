@@ -467,5 +467,5 @@ CMakeFiles/Client.dir/client/main.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt6/QtCore/QSizeF \
  /usr/include/x86_64-linux-gnu/qt6/QtGui/QTransform \
  /usr/include/x86_64-linux-gnu/qt6/QtGui/qtransform.h \
- /home/andrew/Documents/GitHub/WANFRAME/client/SyslogCollector.hpp \
- /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.hpp
+ /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.hpp \
+ /home/andrew/Documents/GitHub/WANFRAME/client/SyslogCollector.hpp
