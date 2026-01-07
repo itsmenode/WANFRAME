@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <cstddef>
+#include <arpa/inet.h>
 
 namespace net_ops::protocol
 {
