@@ -429,29 +429,44 @@ namespace net_ops::server
         std::lock_guard<std::mutex> lock(db_mutex_);
         sqlite3_stmt *stmt;
         int phys_id = -1;
-        if (sqlite3_prepare_v2(db_, "SELECT id FROM physical_devices WHERE ip_address = ? LIMIT 1;", -1, &stmt, nullptr) == SQLITE_OK)
+
+        const char *find_sql = "SELECT id FROM physical_devices WHERE ip_address = ? LIMIT 1;";
+        if (sqlite3_prepare_v2(db_, find_sql, -1, &stmt, nullptr) == SQLITE_OK)
         {
             sqlite3_bind_text(stmt, 1, ip_address.c_str(), -1, SQLITE_STATIC);
             if (sqlite3_step(stmt) == SQLITE_ROW)
+            {
                 phys_id = sqlite3_column_int(stmt, 0);
+            }
             sqlite3_finalize(stmt);
         }
+
         if (phys_id == -1)
         {
-            std::string placeholder = "AUTO_" + ip_address;
-            sqlite3_prepare_v2(db_, "INSERT OR IGNORE INTO physical_devices (mac_address, ip_address, status) VALUES (?, ?, 'Online');", -1, &stmt, nullptr);
-            sqlite3_bind_text(stmt, 1, placeholder.c_str(), -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmt, 2, ip_address.c_str(), -1, SQLITE_TRANSIENT);
-            if (sqlite3_step(stmt) == SQLITE_DONE)
-                phys_id = (int)sqlite3_last_insert_rowid(db_);
-            sqlite3_finalize(stmt);
+            const char *insert_phys = "INSERT OR IGNORE INTO physical_devices (mac_address, ip_address, status) VALUES (?, ?, 'Online');";
+            if (sqlite3_prepare_v2(db_, insert_phys, -1, &stmt, nullptr) == SQLITE_OK)
+            {
+                std::string placeholder_mac = "AUTO_" + ip_address;
+                sqlite3_bind_text(stmt, 1, placeholder_mac.c_str(), -1, SQLITE_TRANSIENT);
+                sqlite3_bind_text(stmt, 2, ip_address.c_str(), -1, SQLITE_TRANSIENT);
+                if (sqlite3_step(stmt) == SQLITE_DONE)
+                {
+                    phys_id = static_cast<int>(sqlite3_last_insert_rowid(db_));
+                }
+                sqlite3_finalize(stmt);
+            }
         }
-        if (phys_id != -1 && sqlite3_prepare_v2(db_, "INSERT INTO logs (physical_id, message) VALUES (?, ?);", -1, &stmt, nullptr) == SQLITE_OK)
+
+        if (phys_id != -1)
         {
-            sqlite3_bind_int(stmt, 1, phys_id);
-            sqlite3_bind_text(stmt, 2, message.c_str(), -1, SQLITE_STATIC);
-            sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
+            const char *log_sql = "INSERT INTO logs (physical_id, message) VALUES (?, ?);";
+            if (sqlite3_prepare_v2(db_, log_sql, -1, &stmt, nullptr) == SQLITE_OK)
+            {
+                sqlite3_bind_int(stmt, 1, phys_id);
+                sqlite3_bind_text(stmt, 2, message.c_str(), -1, SQLITE_STATIC);
+                sqlite3_step(stmt);
+                sqlite3_finalize(stmt);
+            }
         }
     }
 

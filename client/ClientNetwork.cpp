@@ -356,13 +356,20 @@ namespace net_ops::client
         if (!m_ssl_handle)
             return false;
 
+        if (m_session_token.empty())
+        {
+            std::cerr << "[Client] Error: No session token. Login required for log upload.\n";
+            return false;
+        }
+
         std::vector<uint8_t> payload;
-        AppendString(payload, m_session_token);
-        AppendString(payload, source_ip);
-        AppendString(payload, log_msg);
+        net_ops::protocol::PackString(payload, m_session_token);
+        net_ops::protocol::PackString(payload, source_ip);
+        net_ops::protocol::PackString(payload, log_msg);
 
         net_ops::protocol::Header header;
         header.magic = net_ops::protocol::EXPECTED_MAGIC;
+        header.version = net_ops::protocol::PROTOCOL_VERSION;
         header.msg_type = static_cast<uint8_t>(net_ops::protocol::MessageType::LogUploadReq);
         header.payload_length = static_cast<uint32_t>(payload.size());
         header.reserved = 0;
@@ -372,8 +379,12 @@ namespace net_ops::client
 
         if (SSL_write(m_ssl_handle, headerBuf, sizeof(headerBuf)) <= 0)
             return false;
-        if (SSL_write(m_ssl_handle, payload.data(), payload.size()) <= 0)
-            return false;
+
+        if (!payload.empty())
+        {
+            if (SSL_write(m_ssl_handle, payload.data(), static_cast<int>(payload.size())) <= 0)
+                return false;
+        }
 
         return true;
     }

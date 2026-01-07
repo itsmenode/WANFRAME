@@ -231,9 +231,26 @@ namespace net_ops::server
     void Worker::HandleLogUpload(int fd, const std::vector<uint8_t> &p)
     {
         size_t off = 0;
-        std::string t = ReadString(p, off), ip = ReadString(p, off), msg = ReadString(p, off);
-        if (SessionManager::GetInstance().GetUserId(t))
-            DatabaseManager::GetInstance().SaveLog(ip, msg);
+
+        auto token = net_ops::protocol::UnpackString(p, off);
+        auto ip = net_ops::protocol::UnpackString(p, off);
+        auto msg = net_ops::protocol::UnpackString(p, off);
+
+        if (!token || !ip || !msg)
+        {
+            std::cerr << "[Worker] Malformed LogUploadReq from FD " << fd << "\n";
+            return;
+        }
+
+        auto uid = SessionManager::GetInstance().GetUserId(*token);
+        if (!uid)
+        {
+            if (network_core_)
+                network_core_->QueueResponse(fd, net_ops::protocol::MessageType::ErrorResp, "AUTH_FAILED");
+            return;
+        }
+
+        DatabaseManager::GetInstance().SaveLog(*ip, *msg);
     }
 
     void Worker::HandleStatusUpdate(int fd, const std::vector<uint8_t> &p)
