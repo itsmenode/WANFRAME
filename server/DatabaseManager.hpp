@@ -64,7 +64,7 @@ namespace net_ops::server
         bool Initialize(const std::string &db_path);
         void Shutdown();
 
-        bool DatabaseManager::CreateUser(const std::string &username, const std::string &password);
+        bool CreateUser(const std::string &username, const std::string &password);
         std::optional<UserRecord> GetUserByName(const std::string &username);
         std::optional<UserRecord> GetUserById(int id);
 
