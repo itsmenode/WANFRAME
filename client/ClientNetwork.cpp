@@ -233,8 +233,6 @@ namespace net_ops::client
 
         AppendString(payload, m_session_token);
 
-        size_t currentSize = payload.size();
-        payload.resize(currentSize + 4);
         net_ops::protocol::PackUint32(payload, static_cast<uint32_t>(groupId));
 
         AppendString(payload, username);
@@ -271,8 +269,6 @@ namespace net_ops::client
 
         AppendString(payload, m_session_token);
 
-        size_t currentSize = payload.size();
-        payload.resize(currentSize + 4);
         net_ops::protocol::PackUint32(payload, static_cast<uint32_t>(groupId));
 
         AppendString(payload, name);

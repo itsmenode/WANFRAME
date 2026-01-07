@@ -511,21 +511,12 @@ namespace net_ops::server
 
         std::vector<uint8_t> response;
 
-        uint32_t count = htonl(static_cast<uint32_t>(logs.size()));
-        const uint8_t *countBytes = reinterpret_cast<const uint8_t *>(&count);
-        response.insert(response.end(), countBytes, countBytes + 4);
+        net_ops::protocol::PackUint32(response, static_cast<uint32_t>(logs.size()));
 
         for (const auto &log : logs)
         {
-            uint32_t timeLen = htonl(static_cast<uint32_t>(log.timestamp.size()));
-            const uint8_t *timeLenBytes = reinterpret_cast<const uint8_t *>(&timeLen);
-            response.insert(response.end(), timeLenBytes, timeLenBytes + 4);
-            response.insert(response.end(), log.timestamp.begin(), log.timestamp.end());
-
-            uint32_t msgLen = htonl(static_cast<uint32_t>(log.message.size()));
-            const uint8_t *msgLenBytes = reinterpret_cast<const uint8_t *>(&msgLen);
-            response.insert(response.end(), msgLenBytes, msgLenBytes + 4);
-            response.insert(response.end(), log.message.begin(), log.message.end());
+            net_ops::protocol::PackString(response, log.timestamp);
+            net_ops::protocol::PackString(response, log.message);
         }
 
         if (network_core_)
