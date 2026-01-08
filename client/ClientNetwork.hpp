@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <optional>
+#include <mutex>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include "../common/protocol.hpp"
@@ -23,6 +24,8 @@ namespace net_ops::client
         std::string m_host;
         int m_port;
         int m_socket_fd;
+
+        std::mutex m_sendMutex;
 
         SSL_CTX *m_ssl_ctx;
         SSL *m_ssl_handle;

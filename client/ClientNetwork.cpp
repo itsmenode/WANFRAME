@@ -89,6 +89,8 @@ namespace net_ops::client
 
     void ClientNetwork::SendRequest(net_ops::protocol::MessageType type, const std::vector<uint8_t> &payload)
     {
+        std::lock_guard<std::mutex> lock(m_sendMutex);
+        
         if (!IsConnected()) return;
 
         net_ops::protocol::Header header;
