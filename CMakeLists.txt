@@ -76,6 +76,7 @@ add_executable(Client
     client/MainWindow.cpp
     client/DeviceMonitor.cpp
     client/SnmpMonitor.cpp
+    client/SnmpClient.cpp
     common/ByteBuffer.cpp
 )
 
