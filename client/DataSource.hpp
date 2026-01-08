@@ -18,6 +18,9 @@ namespace net_ops::client
         std::string ip;
         std::string message;
 
+        std::string status; 
+        std::string info;
+
         int priority = -1;
         int facility = -1;
         int severity = -1;

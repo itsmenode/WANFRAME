@@ -71,32 +71,43 @@ namespace net_ops::client
                 int n = recvfrom(sockfd, buffer, sizeof(buffer) - 1, 0, (struct sockaddr *)&cliaddr, &len);
                 
                 if (n > 0) {
-                    buffer[n] = '\0';
-                    std::string raw(buffer);
-                    DataRecord record;
-                    record.type = DataRecordType::Syslog;
-                    record.ip = inet_ntoa(cliaddr.sin_addr);
+    buffer[n] = '\0';
+    std::string raw(buffer);
+    DataRecord record;
+    record.type = DataRecordType::Syslog;
+    record.ip = inet_ntoa(cliaddr.sin_addr);
 
-                    if (raw[0] == '<') {
-                        size_t endPri = raw.find('>');
-                        if (endPri != std::string::npos) {
-                            record.priority = std::stoi(raw.substr(1, endPri - 1));
-                            record.facility = record.priority / 8;
-                            record.severity = record.priority % 8;
-            
-                            record.message = raw.substr(endPri + 1);
-                        }
-                    } else {
-                        record.message = raw;
-                    }
+    if (raw[0] == '<') {
+        size_t endPri = raw.find('>');
+        if (endPri != std::string::npos) {
+            record.priority = std::stoi(raw.substr(1, endPri - 1));
+            record.facility = record.priority / 8;
+            record.severity = record.priority % 8;
 
-                    if (callback) callback(record);
+            std::string remaining = raw.substr(endPri + 1);
+            if (remaining.length() > 16) {
+                record.timestamp = remaining.substr(0, 15);
+                size_t hostEnd = remaining.find(' ', 16);
+                if (hostEnd != std::string::npos) {
+                    record.hostname = remaining.substr(16, hostEnd - 16);
+                    record.message = remaining.substr(hostEnd + 1);
+                } else {
+                    record.message = remaining.substr(16);
                 }
+            } else {
+                record.message = remaining;
+            }
+        }
+    } else {
+        record.message = raw;
+    }
+
+    if (callback) callback(record);
+}
             }
 
             close(sockfd);
-            std::cout << "[Syslog] Stopped.\n";
-        });
+            std::cout << "[Syslog] Stopped.\n"; });
     }
 
     void SyslogCollector::Stop()

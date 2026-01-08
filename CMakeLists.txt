@@ -90,6 +90,24 @@ target_link_libraries(Client
 )
 
 # ==========================
+#        AGENT BUILD
+# ==========================
+# Standalone CLI agent for log collection
+add_executable(Agent
+    agent/main.cpp
+    client/SyslogCollector.cpp
+    client/NetworkController.cpp
+    client/ClientNetwork.cpp
+    common/ByteBuffer.cpp
+)
+
+target_link_libraries(Agent
+    OpenSSL::SSL
+    OpenSSL::Crypto
+    Threads::Threads
+)
+
+# ==========================
 #      RESOURCE HANDLING
 # ==========================
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/certs" 

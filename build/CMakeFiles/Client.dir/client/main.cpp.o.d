@@ -481,4 +481,5 @@ CMakeFiles/Client.dir/client/main.cpp.o: \
  /home/andrew/Documents/GitHub/WANFRAME/client/SnmpMonitor.hpp \
  /home/andrew/Documents/GitHub/WANFRAME/client/SnmpClient.hpp \
  /home/andrew/Documents/GitHub/WANFRAME/client/SyslogCollector.hpp \
- /home/andrew/Documents/GitHub/WANFRAME/client/DataSourceRegistry.hpp
+ /home/andrew/Documents/GitHub/WANFRAME/client/DataSourceRegistry.hpp \
+ /home/andrew/Documents/GitHub/WANFRAME/client/LogFilter.hpp
