@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <iostream>
+#include <cstdlib>
 #include "NetworkController.hpp"
 #include "LoginWindow.hpp"
 #include "MainWindow.hpp"
@@ -14,6 +15,7 @@ int main(int argc, char *argv[])
     controller->Start();
 
     auto agent = std::make_shared<net_ops::client::SyslogCollector>(""); 
+    const bool syslogAgentEnabled = std::getenv("WANFRAME_SYSLOG_AGENT") != nullptr;
 
     auto monitor = std::make_shared<net_ops::client::DeviceMonitor>();
 
@@ -25,15 +27,18 @@ int main(int argc, char *argv[])
                      {
                          mainWin.SetToken(token);
 
-                         int syslogPort = 55555; 
-                         agent->Start(syslogPort, [controller, token](const std::string &source, const std::string &msg)
+                         if (syslogAgentEnabled)
                          {
-                            std::vector<uint8_t> payload;
-                            net_ops::protocol::PackString(payload, token);
-                            net_ops::protocol::PackString(payload, source);
-                            net_ops::protocol::PackString(payload, msg);
-                            controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload); 
-                         });
+                             int syslogPort = 55555; 
+                             agent->Start(syslogPort, [controller, token](const std::string &source, const std::string &msg)
+                             {
+                                std::vector<uint8_t> payload;
+                                net_ops::protocol::PackString(payload, token);
+                                net_ops::protocol::PackString(payload, source);
+                                net_ops::protocol::PackString(payload, msg);
+                                controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload); 
+                             });
+                         }
 
                          monitor->Start([controller, token](const std::string &ip, const std::string &status, const std::string &desc)
                          {
@@ -55,7 +60,8 @@ int main(int argc, char *argv[])
 
     std::cout << "[Main] Shutting down...\n";
     monitor->Stop();
-    agent->Stop();
+    if (syslogAgentEnabled)
+        agent->Stop();
     controller->Stop();
     
     return ret;
