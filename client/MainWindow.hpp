@@ -43,6 +43,7 @@ namespace net_ops::client
         std::shared_ptr<SnmpMonitor> m_snmpMonitor;
         QTableWidget *m_deviceTable;
         QTableWidget *m_logTable;
+        QTableWidget *m_metricsTable;
         QTimer *m_dataTimer;
         std::string m_sessionToken;
         QPushButton *m_scanBtn;
@@ -57,5 +58,6 @@ namespace net_ops::client
         void addLogEntry(const std::string &timestamp, const std::string &msg);
         void sendDeviceListRequest();
         void sendLogQueryRequest();
+        void sendMetricsRequest();
     };
 }

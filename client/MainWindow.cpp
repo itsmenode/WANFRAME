@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include <unistd.h>
 #include <QStatusBar>
+#include <QLabel>
 
 namespace net_ops::client
 {
@@ -44,8 +45,9 @@ namespace net_ops::client
         QMainWindow::showEvent(event);
         if (!m_dataTimer->isActive())
         {
-            m_dataTimer->start(1000);
+            m_dataTimer->start(5000);
             sendDeviceListRequest();
+            sendMetricsRequest();
         }
     }
 
@@ -56,6 +58,12 @@ namespace net_ops::client
         std::vector<uint8_t> p;
         net_ops::protocol::PackString(p, m_sessionToken);
         m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, p);
+    }
+
+    void MainWindow::sendMetricsRequest()
+    {
+        std::vector<uint8_t> p;
+        m_controller->QueueRequest(net_ops::protocol::MessageType::MetricsReq, p);
     }
 
     void MainWindow::sendLogQueryRequest()
@@ -79,16 +87,13 @@ namespace net_ops::client
         connect(m_scanBtn, &QPushButton::clicked, this, &MainWindow::onScanClicked);
         layout->addWidget(m_scanBtn);
 
-        auto testLogBtn = new QPushButton("Send Test Log");
-        connect(testLogBtn, &QPushButton::clicked, [this]()
-                {
-                if (m_sessionToken.empty()) return;
-                std::vector<uint8_t> payload;
-                net_ops::protocol::PackString(payload, m_sessionToken);
-                net_ops::protocol::PackString(payload, "127.0.0.1");
-                net_ops::protocol::PackString(payload, "Manual Test Log");
-                m_controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload); });
-        layout->addWidget(testLogBtn);
+        auto metricsLabel = new QLabel("<b>Network Incident Metrics (Logs per Device)</b>");
+        layout->addWidget(metricsLabel);
+
+        m_metricsTable = new QTableWidget(0, 3);
+        m_metricsTable->setHorizontalHeaderLabels({"Device ID", "Total Logs", "Current Status"});
+        m_metricsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+        layout->addWidget(m_metricsTable);
 
         m_deviceTable = new QTableWidget(0, 5);
         m_deviceTable->setHorizontalHeaderLabels({"Name", "IP", "MAC", "Status", "ID"});
@@ -175,22 +180,15 @@ namespace net_ops::client
 
     void MainWindow::pollData()
     {
-
         while (auto resp = m_controller->GetNextResponse())
         {
-            if (resp->type == net_ops::protocol::MessageType::LogQueryResp)
+            switch (resp->type)
             {
-                size_t offset = 0;
-                auto ip = net_ops::protocol::UnpackString(resp->data, offset);
-                auto msg = net_ops::protocol::UnpackString(resp->data, offset);
-                if (ip && msg)
-                    addLogEntry("NOW", "[" + *ip + "] " + *msg);
-            }
-            else if (resp->type == net_ops::protocol::MessageType::LogQueryResp)
+            case net_ops::protocol::MessageType::LogQueryResp:
             {
                 size_t offset = 0;
                 auto count = net_ops::protocol::UnpackUint32(resp->data, offset);
-                if (count)
+                if (count && offset < resp->data.size())
                 {
                     m_logTable->setRowCount(0);
                     for (uint32_t i = 0; i < *count; ++i)
@@ -201,6 +199,55 @@ namespace net_ops::client
                             addLogEntry(*ts, *msg);
                     }
                 }
+                else
+                {
+                    offset = 0;
+                    auto ip = net_ops::protocol::UnpackString(resp->data, offset);
+                    auto msg = net_ops::protocol::UnpackString(resp->data, offset);
+                    if (ip && msg)
+                        addLogEntry("LIVE", "[" + *ip + "] " + *msg);
+                }
+                break;
+            }
+
+            case net_ops::protocol::MessageType::DeviceListResp:
+                updateDeviceList(resp->data);
+                break;
+
+            case net_ops::protocol::MessageType::MetricsResp:
+            {
+                size_t offset = 0;
+                auto count = net_ops::protocol::UnpackUint32(resp->data, offset);
+                if (count)
+                {
+                    m_metricsTable->setRowCount(0);
+                    for (uint32_t i = 0; i < *count; ++i)
+                    {
+                        auto id = net_ops::protocol::UnpackUint32(resp->data, offset);
+                        auto logCnt = net_ops::protocol::UnpackUint32(resp->data, offset);
+                        auto status = net_ops::protocol::UnpackString(resp->data, offset);
+
+                        int row = m_metricsTable->rowCount();
+                        m_metricsTable->insertRow(row);
+                        m_metricsTable->setItem(row, 0, new QTableWidgetItem(QString::number(*id)));
+                        m_metricsTable->setItem(row, 1, new QTableWidgetItem(QString::number(*logCnt)));
+                        m_metricsTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString(status.value_or("N/A"))));
+                    }
+                }
+                break;
+            }
+
+            case net_ops::protocol::MessageType::ErrorResp:
+            {
+                size_t offset = 0;
+                auto msg = net_ops::protocol::UnpackString(resp->data, offset);
+                if (msg)
+                    QMessageBox::warning(this, "Server Error", QString::fromStdString(*msg));
+                break;
+            }
+
+            default:
+                break;
             }
         }
     }
