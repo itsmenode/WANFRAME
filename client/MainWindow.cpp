@@ -49,25 +49,25 @@ namespace net_ops::client
         connect(scanBtn, &QPushButton::clicked, this, &MainWindow::onScanClicked);
         layout->addWidget(scanBtn);
 
-        auto testLogBtn = new QPushButton("Send Test Log");
-        connect(testLogBtn, &QPushButton::clicked, [this]()
-            {
-                if (m_sessionToken.empty()) return;
-
-                std::vector<uint8_t> payload;
-                net_ops::protocol::PackString(payload, m_sessionToken);
-                net_ops::protocol::PackString(payload, "127.0.0.1");
-                net_ops::protocol::PackString(payload, "Manual Test Log Entry from Client UI");
-    
-                m_controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload);
-            });
-        layout->addWidget(testLogBtn);
-
-        m_deviceTable = new QTableWidget(0, 4);
-
         m_deviceTable = new QTableWidget(0, 4);
         m_deviceTable->setHorizontalHeaderLabels({"Name", "IP", "MAC", "Status"});
         m_deviceTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+        m_deviceTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+        m_deviceTable->setSelectionMode(QAbstractItemView::SingleSelection);
+
+        connect(m_deviceTable, &QTableWidget::itemSelectionChanged, [this]()
+                {
+            auto items = m_deviceTable->selectedItems();
+            if (items.isEmpty()) return;
+            
+            int deviceId = items[0]->data(Qt::UserRole).toInt();
+            if (deviceId > 0 && !m_sessionToken.empty()) {
+                std::vector<uint8_t> p;
+                net_ops::protocol::PackString(p, m_sessionToken);
+                net_ops::protocol::PackUint32(p, static_cast<uint32_t>(deviceId));
+                m_controller->QueueRequest(net_ops::protocol::MessageType::LogQueryReq, p);
+            } });
+
         layout->addWidget(m_deviceTable);
 
         m_logTable = new QTableWidget(0, 2);
@@ -84,7 +84,6 @@ namespace net_ops::client
     {
         if (m_sessionToken.empty())
             return;
-
         std::string token = m_sessionToken;
 
         std::thread([this, token]()
@@ -152,6 +151,8 @@ namespace net_ops::client
 
         std::vector<std::string> monitorIPs;
 
+        m_deviceTable->blockSignals(true);
+
         for (uint32_t i = 0; i < *count; ++i)
         {
             auto id = net_ops::protocol::UnpackUint32(data, offset);
@@ -160,20 +161,33 @@ namespace net_ops::client
             auto status = net_ops::protocol::UnpackString(data, offset);
             auto info = net_ops::protocol::UnpackString(data, offset);
 
+            if (!id || !name || !ip || !status || !info)
+                continue;
+
             int row = m_deviceTable->rowCount();
             m_deviceTable->insertRow(row);
-            m_deviceTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(*name)));
+
+            auto nameItem = new QTableWidgetItem(QString::fromStdString(*name));
+            nameItem->setData(Qt::UserRole, QVariant(*id));
+
+            m_deviceTable->setItem(row, 0, nameItem);
             m_deviceTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(*ip)));
-            m_deviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString("00:00:00:00:00:00")));
+            m_deviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString("00:00:00:00:00:00"))); // MAC not sent by server in list currently
             m_deviceTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(*status + " " + *info)));
 
-            if (ip)
-                monitorIPs.push_back(*ip);
+            monitorIPs.push_back(*ip);
         }
+
+        m_deviceTable->blockSignals(false);
 
         if (m_monitor)
         {
             m_monitor->SetTargets(monitorIPs);
+        }
+
+        if (m_deviceTable->rowCount() > 0)
+        {
+            m_deviceTable->selectRow(0);
         }
     }
 }
