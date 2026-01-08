@@ -14,28 +14,24 @@ int main(int argc, char *argv[])
 
     net_ops::client::SyslogCollector agent("/var/log/syslog");
     agent.Start(514, [controller](const std::string &source, const std::string &msg)
-                {
-        std::vector<uint8_t> payload;
-        net_ops::protocol::PackString(payload, source);
-        net_ops::protocol::PackString(payload, msg);
-        controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload); });
+                { std::vector<uint8_t> payload; });
 
     auto monitor = std::make_shared<net_ops::client::DeviceMonitor>();
-    
-    monitor->Start([controller](const std::string& ip, const std::string& status, const std::string& desc) {
-        std::vector<uint8_t> payload;
-        net_ops::protocol::PackString(payload, ip);
-        net_ops::protocol::PackString(payload, status);
-        net_ops::protocol::PackString(payload, desc);
-        controller->QueueRequest(net_ops::protocol::MessageType::DeviceStatusReq, payload);
-    });
+
+    monitor->Start([controller](const std::string &ip, const std::string &status, const std::string &desc)
+                   {
+         std::vector<uint8_t> payload; 
+         net_ops::protocol::PackString(payload, ip);
+         net_ops::protocol::PackString(payload, status);
+         net_ops::protocol::PackString(payload, desc);
+         controller->QueueRequest(net_ops::protocol::MessageType::DeviceStatusReq, payload); });
 
     net_ops::client::LoginWindow loginWin(controller);
-    
-    net_ops::client::MainWindow mainWin(controller, monitor); 
+    net_ops::client::MainWindow mainWin(controller, monitor);
 
-    QObject::connect(&loginWin, &net_ops::client::LoginWindow::loginSuccessful, [&]()
+    QObject::connect(&loginWin, &net_ops::client::LoginWindow::loginSuccessful, [&](const std::string &token)
                      {
+        mainWin.SetToken(token);
         loginWin.hide();
         mainWin.show(); });
 

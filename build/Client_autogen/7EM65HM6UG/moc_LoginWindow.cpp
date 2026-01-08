@@ -23,8 +23,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_net_ops__client__LoginWindow_t {
-    const uint offsetsAndSize[12];
-    char stringdata0[99];
+    const uint offsetsAndSize[16];
+    char stringdata0[117];
 };
 #define QT_MOC_LITERAL(ofs, len) \
     uint(offsetof(qt_meta_stringdata_net_ops__client__LoginWindow_t, stringdata0) + ofs), len 
@@ -33,14 +33,17 @@ static const qt_meta_stringdata_net_ops__client__LoginWindow_t qt_meta_stringdat
 QT_MOC_LITERAL(0, 28), // "net_ops::client::LoginWindow"
 QT_MOC_LITERAL(29, 15), // "loginSuccessful"
 QT_MOC_LITERAL(45, 0), // ""
-QT_MOC_LITERAL(46, 14), // "onLoginClicked"
-QT_MOC_LITERAL(61, 15), // "onSignupClicked"
-QT_MOC_LITERAL(77, 21) // "checkNetworkResponses"
+QT_MOC_LITERAL(46, 11), // "std::string"
+QT_MOC_LITERAL(58, 5), // "token"
+QT_MOC_LITERAL(64, 14), // "onLoginClicked"
+QT_MOC_LITERAL(79, 15), // "onSignupClicked"
+QT_MOC_LITERAL(95, 21) // "checkNetworkResponses"
 
     },
     "net_ops::client::LoginWindow\0"
-    "loginSuccessful\0\0onLoginClicked\0"
-    "onSignupClicked\0checkNetworkResponses"
+    "loginSuccessful\0\0std::string\0token\0"
+    "onLoginClicked\0onSignupClicked\0"
+    "checkNetworkResponses"
 };
 #undef QT_MOC_LITERAL
 
@@ -58,15 +61,15 @@ static const uint qt_meta_data_net_ops__client__LoginWindow[] = {
        1,       // signalCount
 
  // signals: name, argc, parameters, tag, flags, initial metatype offsets
-       1,    0,   38,    2, 0x06,    1 /* Public */,
+       1,    1,   38,    2, 0x06,    1 /* Public */,
 
  // slots: name, argc, parameters, tag, flags, initial metatype offsets
-       3,    0,   39,    2, 0x08,    2 /* Private */,
-       4,    0,   40,    2, 0x08,    3 /* Private */,
-       5,    0,   41,    2, 0x08,    4 /* Private */,
+       5,    0,   41,    2, 0x08,    3 /* Private */,
+       6,    0,   42,    2, 0x08,    4 /* Private */,
+       7,    0,   43,    2, 0x08,    5 /* Private */,
 
  // signals: parameters
-    QMetaType::Void,
+    QMetaType::Void, 0x80000000 | 3,    4,
 
  // slots: parameters
     QMetaType::Void,
@@ -82,7 +85,7 @@ void net_ops::client::LoginWindow::qt_static_metacall(QObject *_o, QMetaObject::
         auto *_t = static_cast<LoginWindow *>(_o);
         (void)_t;
         switch (_id) {
-        case 0: _t->loginSuccessful(); break;
+        case 0: _t->loginSuccessful((*reinterpret_cast< std::add_pointer_t<std::string>>(_a[1]))); break;
         case 1: _t->onLoginClicked(); break;
         case 2: _t->onSignupClicked(); break;
         case 3: _t->checkNetworkResponses(); break;
@@ -91,14 +94,13 @@ void net_ops::client::LoginWindow::qt_static_metacall(QObject *_o, QMetaObject::
     } else if (_c == QMetaObject::IndexOfMethod) {
         int *result = reinterpret_cast<int *>(_a[0]);
         {
-            using _t = void (LoginWindow::*)();
+            using _t = void (LoginWindow::*)(const std::string & );
             if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&LoginWindow::loginSuccessful)) {
                 *result = 0;
                 return;
             }
         }
     }
-    (void)_a;
 }
 
 const QMetaObject net_ops::client::LoginWindow::staticMetaObject = { {
@@ -108,7 +110,7 @@ const QMetaObject net_ops::client::LoginWindow::staticMetaObject = { {
     qt_static_metacall,
     nullptr,
 qt_incomplete_metaTypeArray<qt_meta_stringdata_net_ops__client__LoginWindow_t
-, QtPrivate::TypeAndForceComplete<LoginWindow, std::true_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>
+, QtPrivate::TypeAndForceComplete<LoginWindow, std::true_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<const std::string &, std::false_type>
 , QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>
 
 
@@ -148,9 +150,10 @@ int net_ops::client::LoginWindow::qt_metacall(QMetaObject::Call _c, int _id, voi
 }
 
 // SIGNAL 0
-void net_ops::client::LoginWindow::loginSuccessful()
+void net_ops::client::LoginWindow::loginSuccessful(const std::string & _t1)
 {
-    QMetaObject::activate(this, &staticMetaObject, 0, nullptr);
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    QMetaObject::activate(this, &staticMetaObject, 0, _a);
 }
 QT_WARNING_POP
 QT_END_MOC_NAMESPACE

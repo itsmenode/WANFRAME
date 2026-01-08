@@ -18,9 +18,11 @@ namespace net_ops::client
         Q_OBJECT
 
     public:
-        explicit MainWindow(std::shared_ptr<NetworkController> controller, 
-                            std::shared_ptr<DeviceMonitor> monitor, 
+        explicit MainWindow(std::shared_ptr<NetworkController> controller,
+                            std::shared_ptr<DeviceMonitor> monitor,
                             QWidget *parent = nullptr);
+
+        void SetToken(const std::string &token);
 
     protected:
         void showEvent(QShowEvent *event) override;
@@ -35,9 +37,11 @@ namespace net_ops::client
         QTableWidget *m_deviceTable;
         QTableWidget *m_logTable;
         QTimer *m_dataTimer;
+        std::string m_sessionToken;
 
         void setupUi();
         void updateDeviceList(const std::vector<uint8_t> &data);
         void addLogEntry(const std::string &timestamp, const std::string &msg);
+        void sendDeviceListRequest();
     };
 }

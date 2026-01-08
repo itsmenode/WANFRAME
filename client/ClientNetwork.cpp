@@ -8,6 +8,11 @@
 
 namespace net_ops::client
 {
+    ClientNetwork::ClientNetwork(std::string host, int port)
+        : m_host(host), m_port(port), m_socket_fd(-1), m_ssl_ctx(nullptr), m_ssl_handle(nullptr)
+    {
+        InitSSL();
+    }
 
     ClientNetwork::~ClientNetwork()
     {

@@ -4,22 +4,23 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QVBoxLayout>
-#include <QHBoxLayout>
 #include <QLabel>
 #include <QTimer>
 #include <memory>
 #include "NetworkController.hpp"
 
-namespace net_ops::client {
+namespace net_ops::client
+{
 
-    class LoginWindow : public QWidget {
+    class LoginWindow : public QWidget
+    {
         Q_OBJECT
 
     public:
         explicit LoginWindow(std::shared_ptr<NetworkController> controller, QWidget *parent = nullptr);
 
     signals:
-        void loginSuccessful();
+        void loginSuccessful(const std::string &token);
 
     private slots:
         void onLoginClicked();

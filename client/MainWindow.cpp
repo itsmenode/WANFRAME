@@ -16,13 +16,24 @@ namespace net_ops::client
         connect(m_dataTimer, &QTimer::timeout, this, &MainWindow::pollData);
     }
 
+    void MainWindow::SetToken(const std::string& token) {
+        m_sessionToken = token;
+    }
+
     void MainWindow::showEvent(QShowEvent *event)
     {
         QMainWindow::showEvent(event);
         if (!m_dataTimer->isActive()) {
             m_dataTimer->start(200);
-            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, {});
+            sendDeviceListRequest();
         }
+    }
+
+    void MainWindow::sendDeviceListRequest() {
+        if (m_sessionToken.empty()) return;
+        std::vector<uint8_t> p;
+        net_ops::protocol::PackString(p, m_sessionToken);
+        m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, p);
     }
 
     void MainWindow::setupUi()
@@ -51,18 +62,25 @@ namespace net_ops::client
 
     void MainWindow::onScanClicked()
     {
-        std::thread([this]()
+        if (m_sessionToken.empty()) return;
+
+        std::string token = m_sessionToken;
+
+        std::thread([this, token]()
                     {
             auto hosts = NetworkScanner::ScanLocalNetwork(); 
             for (const auto& h : hosts) {
                 std::vector<uint8_t> p;
+                net_ops::protocol::PackString(p, token);
                 net_ops::protocol::PackString(p, h.name);
                 net_ops::protocol::PackString(p, h.ip);
                 net_ops::protocol::PackString(p, h.mac);
                 m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
             } 
             
-            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, {});
+            std::vector<uint8_t> listP;
+            net_ops::protocol::PackString(listP, token);
+            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP);
             })
             .detach();
     }
@@ -112,7 +130,7 @@ namespace net_ops::client
 
         m_deviceTable->setRowCount(0);
         
-        std::vector<std::string> monitorIPs;
+        std::vector<std::string> monitorIPs; 
 
         for (uint32_t i = 0; i < *count; ++i)
         {

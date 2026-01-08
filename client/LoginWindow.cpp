@@ -1,4 +1,5 @@
 #include "LoginWindow.hpp"
+#include <iostream>
 
 namespace net_ops::client
 {
@@ -30,12 +31,13 @@ namespace net_ops::client
         layout->addWidget(new QLabel("Password:"));
         layout->addWidget(m_passwordField);
         layout->addLayout(btnLayout);
-        m_statusLabel = new QLabel("");
+        m_statusLabel = new QLabel("Ready");
         layout->addWidget(m_statusLabel);
 
         connect(m_loginButton, &QPushButton::clicked, this, &LoginWindow::onLoginClicked);
         connect(m_signupButton, &QPushButton::clicked, this, &LoginWindow::onSignupClicked);
         setWindowTitle("WANFRAME Auth");
+        resize(300, 200);
     }
 
     void LoginWindow::onLoginClicked()
@@ -73,8 +75,14 @@ namespace net_ops::client
         {
             if (msg && msg->find("LOGIN_SUCCESS") != std::string::npos)
             {
+                std::string token = "";
+                size_t delimiterPos = msg->find(':');
+                if (delimiterPos != std::string::npos) {
+                    token = msg->substr(delimiterPos + 1);
+                }
+
                 m_responseTimer->stop();
-                emit loginSuccessful();
+                emit loginSuccessful(token);
             }
             else
                 m_statusLabel->setText("Login failed.");
