@@ -63,7 +63,7 @@ namespace net_ops::client
             pfd.fd = sock_fd;
             pfd.events = POLLIN;
 
-            int poll_ret = poll(&pfd, 1, 100);
+            int poll_ret = poll(&pfd, 1, 50);
 
             if (poll_ret > 0)
             {
@@ -73,10 +73,16 @@ namespace net_ops::client
                 }
                 
                 if (pfd.revents & POLLIN) {
-                    auto resp = m_network->ReceiveResponseAsObject();
-                    if (resp) {
-                        m_responseQueue.Push(*resp);
-                    } else if (!m_network->IsConnected()) {
+                    while (m_running) {
+                        auto resp = m_network->ReceiveResponseAsObject();
+                        if (resp) {
+                            m_responseQueue.Push(*resp);
+                        } else {
+                            break; 
+                        }
+                    }
+                    
+                    if (!m_network->IsConnected()) {
                         std::cerr << "[NetworkController] Connection lost.\n";
                         break;
                     }

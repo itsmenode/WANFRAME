@@ -4,6 +4,9 @@
 #include <QTableWidget>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
 #include <QTimer>
 #include <QShowEvent>
 #include <memory>
@@ -35,13 +38,18 @@ namespace net_ops::client
         void onScanClicked();
         void pollData();
         void onDeviceSelected(int row, int col);
+        void onFilterLogs(const QString &text);
 
     private:
         std::shared_ptr<NetworkController> m_controller;
         std::shared_ptr<DeviceMonitor> m_monitor;
         std::unique_ptr<SyslogCollector> m_syslogCollector;
+        
         QTableWidget *m_deviceTable;
         QTableWidget *m_logTable;
+        QLineEdit *m_filterInput;
+        QLabel *m_statsLabel;
+        
         QTimer *m_dataTimer;
         std::string m_sessionToken;
         QPushButton *m_scanBtn;
@@ -50,11 +58,13 @@ namespace net_ops::client
         std::atomic<bool> m_isScanning;
 
         int m_selectedDeviceId = -1;
+        int m_onlineCount = 0;
 
         void setupUi();
         void updateDeviceList(const std::vector<uint8_t> &data);
         void addLogEntry(const std::string &timestamp, const std::string &msg);
         void sendDeviceListRequest();
         void sendLogQueryRequest();
+        void updateStats();
     };
 }
