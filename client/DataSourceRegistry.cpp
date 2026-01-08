@@ -17,25 +17,6 @@ namespace net_ops::client
         return it->second;
     }
 
-    void DataSourceRegistry::StartAll(const DataCallback &callback)
-    {
-        auto filteredCallback = [this, callback](const DataRecord &record)
-        {
-            for (auto &filter : m_filters)
-            {
-                if (!filter->IsMatch(record))
-                    return;
-            }
-            callback(record);
-        };
-
-        for (const auto &pair : m_sources)
-        {
-            if (pair.second)
-                pair.second->Start(filteredCallback);
-        }
-    }
-
     void DataSourceRegistry::AddFilter(std::shared_ptr<LogFilter> filter)
     {
         if (filter)
