@@ -35,13 +35,19 @@ namespace net_ops::client
             std::memset(&servaddr, 0, sizeof(servaddr));
             servaddr.sin_family = AF_INET;
             servaddr.sin_addr.s_addr = INADDR_ANY;
-            servaddr.sin_port = htons(port);
-
+            
+            int boundPort = 514;
+            servaddr.sin_port = htons(boundPort);
+            
             if (bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
-                std::cerr << "[Syslog] Bind failed on port " << port << " (Permission denied?)\n";
-                close(sockfd);
-                m_running = false;
-                return;
+                boundPort = port;
+                servaddr.sin_port = htons(boundPort);
+                if (bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
+                    std::cerr << "[Syslog] Bind failed on port " << boundPort << "\n";
+                    close(sockfd);
+                    m_running = false;
+                    return;
+                }
             }
 
             struct timeval tv;
@@ -49,7 +55,7 @@ namespace net_ops::client
             tv.tv_usec = 0;
             setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
 
-            std::cout << "[Syslog] Listening on UDP port " << port << "\n";
+            std::cout << "[Syslog] Listening on UDP port " << boundPort << "\n";
 
             char buffer[4096];
             struct sockaddr_in cliaddr;

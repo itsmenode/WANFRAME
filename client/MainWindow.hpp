@@ -36,6 +36,7 @@ namespace net_ops::client
 
     private slots:
         void onScanClicked();
+        void onLogoutClicked();
         void pollData();
         void onDeviceSelected(int row, int col);
         void onFilterLogs(const QString &text);
@@ -53,6 +54,7 @@ namespace net_ops::client
         QTimer *m_dataTimer;
         std::string m_sessionToken;
         QPushButton *m_scanBtn;
+        QPushButton *m_logoutBtn;
 
         std::thread m_scanThread;
         std::atomic<bool> m_isScanning;

@@ -10,6 +10,7 @@
 #include <fstream>
 #include <sstream>
 #include <arpa/inet.h> 
+#include <set>
 
 namespace net_ops::client
 {
@@ -47,6 +48,7 @@ namespace net_ops::client
     std::vector<ScannedHost> NetworkScanner::ScanLocalNetwork()
     {
         std::vector<ScannedHost> foundHosts;
+        std::set<std::string> seenIps;
         std::mutex resultsMutex;
 
         if (!IsRoot()) {
@@ -63,17 +65,19 @@ namespace net_ops::client
                       << " | IP: " << info.ip_addr 
                       << " | Mask: " << info.netmask << "\n";
 
-            foundHosts.push_back({
-                info.ip_addr.to_string(), 
-                info.hw_addr.to_string(), 
-                "Localhost (Me)"
-            });
+            {
+                std::lock_guard<std::mutex> lock(resultsMutex);
+                foundHosts.push_back({info.ip_addr.to_string(), info.hw_addr.to_string(), "Localhost (Me)"});
+                seenIps.insert(info.ip_addr.to_string());
+            }
 
             auto cached = ReadSystemArpTable(iface.name());
             for (const auto& h : cached) {
-                bool exists = false;
-                for (const auto& existing : foundHosts) if (existing.ip == h.ip) exists = true;
-                if (!exists) foundHosts.push_back(h);
+                std::lock_guard<std::mutex> lock(resultsMutex);
+                if (seenIps.find(h.ip) == seenIps.end()) {
+                    foundHosts.push_back(h);
+                    seenIps.insert(h.ip);
+                }
             }
 
             uint32_t ip_val = IpToInt(info.ip_addr);
@@ -85,17 +89,11 @@ namespace net_ops::client
             uint32_t end_scan = broadcast_val;
 
             if ((end_scan - start_scan) > 512) {
-                std::cout << "[Scanner] Large subnet detected. Optimization: Limiting scan to local /24 segment.\n";
-                
-                uint32_t mask24 = 0xFFFFFF00;std::string base = info.ip_addr.to_string();
-                size_t last_dot = base.find_last_of('.');
-                std::string prefix = base.substr(0, last_dot + 1);
-                
+                std::cout << "[Scanner] Large subnet detected. Limiting scan to local /24 segment.\n";
                 start_scan = 0;
             }
 
             std::vector<Tins::IPv4Address> targets;
-
             if (start_scan != 0) {
                 for (uint32_t t = start_scan; t < end_scan; ++t) {
                     if (t == ip_val) continue;
@@ -104,12 +102,9 @@ namespace net_ops::client
             } else {
                 std::string base = info.ip_addr.to_string();
                 std::string prefix = base.substr(0, base.find_last_of('.') + 1);
-                
                 for (int i = 1; i < 255; ++i) {
                     std::string t_str = prefix + std::to_string(i);
-                    if (t_str != base) {
-                        targets.push_back(Tins::IPv4Address(t_str));
-                    }
+                    if (t_str != base) targets.push_back(Tins::IPv4Address(t_str));
                 }
             }
             
@@ -122,7 +117,6 @@ namespace net_ops::client
 
             Tins::Sniffer sniffer(iface.name(), config);
             Tins::PacketSender sender;
-
             std::atomic<bool> stopSniffer(false);
             
             std::thread snifferThread([&]() {
@@ -131,18 +125,18 @@ namespace net_ops::client
                         Tins::PDU* pdu = sniffer.next_packet();
                         if (pdu) {
                             std::string found_ip, found_mac, found_type;
-                            bool is_new = false;
+                            bool valid = false;
 
                             const Tins::ARP* arp = pdu->find_pdu<Tins::ARP>();
                             if (arp && arp->opcode() == Tins::ARP::REPLY) {
                                 found_ip = arp->sender_ip_addr().to_string();
                                 found_mac = arp->sender_hw_addr().to_string();
                                 found_type = "ARP";
-                                is_new = true;
+                                valid = true;
                             }
                             
                             const Tins::IP* ip = pdu->find_pdu<Tins::IP>();
-                            if (!is_new && ip) {
+                            if (!valid && ip) {
                                 const Tins::ICMP* icmp = pdu->find_pdu<Tins::ICMP>();
                                 if (icmp && icmp->type() == Tins::ICMP::ECHO_REPLY) {
                                     found_ip = ip->src_addr().to_string();
@@ -150,17 +144,15 @@ namespace net_ops::client
                                     const Tins::EthernetII* eth = pdu->find_pdu<Tins::EthernetII>();
                                     if (eth) found_mac = eth->src_addr().to_string();
                                     found_type = "ICMP";
-                                    is_new = true;
+                                    valid = true;
                                 }
                             }
 
-                            if (is_new && found_ip != info.ip_addr.to_string()) {
+                            if (valid) {
                                 std::lock_guard<std::mutex> lock(resultsMutex);
-                                bool exists = false;
-                                for(const auto& h : foundHosts) if (h.ip == found_ip) exists = true;
-                                
-                                if (!exists) {
+                                if (seenIps.find(found_ip) == seenIps.end()) {
                                     foundHosts.push_back({found_ip, found_mac, found_type});
+                                    seenIps.insert(found_ip);
                                     std::cout << "[Scanner] Found: " << found_ip << "\n";
                                 }
                             }
@@ -175,18 +167,12 @@ namespace net_ops::client
                     Tins::EthernetII eth = Tins::EthernetII("ff:ff:ff:ff:ff:ff", info.hw_addr) / 
                         Tins::ARP(targetIp, info.ip_addr, Tins::HWAddress<6>("00:00:00:00:00:00"), info.hw_addr);
                     sender.send(eth, iface);
-                    std::this_thread::sleep_for(std::chrono::microseconds(1000));
-                } catch (...) {}
-            }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-            for (const auto& targetIp : targets) {
-                 try {
-                    Tins::EthernetII eth = Tins::EthernetII("ff:ff:ff:ff:ff:ff", info.hw_addr) /
+                    std::this_thread::sleep_for(std::chrono::microseconds(500));
+                    
+                    Tins::EthernetII eth2 = Tins::EthernetII("ff:ff:ff:ff:ff:ff", info.hw_addr) /
                         Tins::IP(targetIp, info.ip_addr) / Tins::ICMP();
-                    sender.send(eth, iface);
-                    std::this_thread::sleep_for(std::chrono::microseconds(1000)); 
+                    sender.send(eth2, iface);
+                    std::this_thread::sleep_for(std::chrono::microseconds(500));
                 } catch (...) {}
             }
 

@@ -5,7 +5,7 @@
 #include <iostream>
 #include <QMessageBox>
 #include <unistd.h>
-
+#include <QApplication>
 namespace net_ops::client
 {
 
@@ -20,6 +20,7 @@ namespace net_ops::client
 
     MainWindow::~MainWindow()
     {
+        if (m_monitor) m_monitor->Stop();
         if (m_syslogCollector) m_syslogCollector->Stop();
         if (m_scanThread.joinable()) m_scanThread.join();
     }
@@ -27,6 +28,7 @@ namespace net_ops::client
     void MainWindow::SetToken(const std::string &token)
     {
         m_sessionToken = token;
+        
         m_syslogCollector->Start(5140, [this](const std::string &ip, const std::string &msg)
         {
             if (m_sessionToken.empty()) return;
@@ -36,6 +38,18 @@ namespace net_ops::client
             net_ops::protocol::PackString(p, msg);
             m_controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, p); 
         });
+
+        if (m_monitor) {
+            m_monitor->Start([this](const std::string &ip, const std::string &status, const std::string &info) {
+                 if (m_sessionToken.empty()) return;
+                 std::vector<uint8_t> p;
+                 net_ops::protocol::PackString(p, m_sessionToken);
+                 net_ops::protocol::PackString(p, ip);
+                 net_ops::protocol::PackString(p, status);
+                 net_ops::protocol::PackString(p, info);
+                 m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceStatusReq, p);
+            });
+        }
     }
 
     void MainWindow::showEvent(QShowEvent *event)
@@ -87,6 +101,12 @@ namespace net_ops::client
                 m_controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload); 
         });
         topLayout->addWidget(testLogBtn);
+        
+        m_logoutBtn = new QPushButton("Logout");
+        m_logoutBtn->setStyleSheet("background-color: #ffcccc;");
+        connect(m_logoutBtn, &QPushButton::clicked, this, &MainWindow::onLogoutClicked);
+        topLayout->addWidget(m_logoutBtn);
+
         mainLayout->addLayout(topLayout);
 
         m_statsLabel = new QLabel("<b>Network Status:</b> Loading...");
@@ -121,8 +141,17 @@ namespace net_ops::client
         resize(950, 750);
     }
 
+    void MainWindow::onLogoutClicked() {
+        if (!m_sessionToken.empty()) {
+            std::vector<uint8_t> p;
+            net_ops::protocol::PackString(p, m_sessionToken);
+            m_controller->QueueRequest(net_ops::protocol::MessageType::LogoutReq, p);
+        }
+        QApplication::quit();
+    }
+
     void MainWindow::updateStats() {
-        QString stats = QString("<b>Devices:</b> %1 | <b>Online:</b> %2 | <b>Total Logs:</b> %3 | <b>Syslog Port:</b> 5140")
+        QString stats = QString("<b>Devices:</b> %1 | <b>Online:</b> %2 | <b>Total Logs:</b> %3")
                         .arg(m_deviceTable->rowCount())
                         .arg(m_onlineCount)
                         .arg(m_logTable->rowCount());
