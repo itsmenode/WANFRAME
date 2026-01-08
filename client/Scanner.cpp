@@ -1,97 +1,113 @@
 #include "Scanner.hpp"
+#include <tins/tins.h>
 #include <iostream>
-#include <string>
-#include <vector>
 #include <thread>
 #include <mutex>
+#include <atomic>
+#include <algorithm>
 #include <chrono>
-#include <tins/tins.h>
+#include <unistd.h>
 
 namespace net_ops::client
 {
-    using namespace Tins;
+    bool IsRoot() {
+        return geteuid() == 0;
+    }
 
-    std::vector<ScannedHost> NetworkScanner::ScanLocalNetwork() {
-        std::vector<ScannedHost> hosts;
-        std::mutex mtx;
+    std::vector<ScannedHost> NetworkScanner::ScanLocalNetwork()
+    {
+        std::vector<ScannedHost> foundHosts;
+        std::mutex resultsMutex;
 
-        try {
-            NetworkInterface iface = NetworkInterface::default_interface();
-            NetworkInterface::Info info = iface.info();
+        if (!IsRoot()) {
+            std::cerr << "[Scanner] ERROR: Not running as root. ARP scan will fail.\n";
+            return foundHosts;
+        }
+
+        try
+        {
+            Tins::NetworkInterface iface = Tins::NetworkInterface::default_interface();
+            Tins::NetworkInterface::Info info = iface.info();
             
-            IPv4Address my_ip = info.ip_addr;
-            IPv4Address netmask = info.netmask;
-            HWAddress<6> my_mac = info.hw_addr;
-
+            Tins::IPv4Address myIp = info.ip_addr;
+            Tins::IPv4Address netmask = info.netmask;
+            
             std::cout << "[Scanner] Interface: " << iface.name() 
-                      << " IP: " << my_ip 
-                      << " MAC: " << my_mac << std::endl;
+                      << " | IP: " << myIp 
+                      << " | Mask: " << netmask 
+                      << " | HW: " << info.hw_addr << "\n";
 
-            IPv4Range range = IPv4Range::from_mask(my_ip, netmask);
+            Tins::SnifferConfiguration config;
+            config.set_promisc_mode(false);
+            config.set_filter("arp and arp[6:2] == 2");
+            config.set_timeout(1);
 
-            std::thread snifferThread([&]() {
-                Sniffer sniffer(iface.name());
-                sniffer.set_filter("arp and arp[6:2] == 2");
-                
-                auto start = std::chrono::steady_clock::now();
-                
-                sniffer.sniff_loop([&](PDU &pdu) {
-                    auto now = std::chrono::steady_clock::now();
-                    if (std::chrono::duration_cast<std::chrono::seconds>(now - start).count() > 2) {
-                        return false;
-                    }
+            Tins::Sniffer sniffer(iface.name(), config);
+            Tins::PacketSender sender;
 
-                    const ARP &arp = pdu.rfind_pdu<ARP>();
-                    std::string ip = arp.sender_ip_addr().to_string();
-                    std::string mac = arp.sender_hw_addr().to_string();
-
-                    if (ip == my_ip.to_string()) return true;
-
-                    std::lock_guard<std::mutex> lock(mtx);
-                    
-                    bool found = false;
-                    for(const auto& h : hosts) if(h.ip == ip) found = true;
-                    
-                    if(!found) {
-                        hosts.push_back({ip, mac, "Discovered Device", true});
-                    }
-                    return true;
-                });
-            });
-
-            PacketSender sender;
-            for (const auto &addr : range) {
-                if (addr == my_ip) continue; 
-
-                EthernetII eth = EthernetII(HWAddress<6>("ff:ff:ff:ff:ff:ff"), my_mac) /
-                                 ARP::make_arp_request(addr, my_ip, my_mac);
-                
-                try {
-                    sender.send(eth, iface);
-                } catch (...) {
-                }
+            uint32_t ipInt = (uint32_t)myIp;
+            uint32_t maskInt = (uint32_t)netmask;
+            uint32_t networkInt = ipInt & maskInt;
+            
+            std::vector<Tins::IPv4Address> targets;
+            for (int i = 1; i < 255; ++i) {
+                uint32_t targetInt = networkInt | Tins::Endian::host_to_be(i); 
+                if (targetInt == ipInt) continue;
+                targets.push_back(Tins::IPv4Address(targetInt));
             }
 
-            if(snifferThread.joinable()) snifferThread.join();
+            std::atomic<bool> stopSniffer(false);
+            
+            std::thread snifferThread([&]() {
+                while (!stopSniffer) {
+                    Tins::PDU* pdu = sniffer.next_packet();
+                    
+                    if (pdu) {
+                        const Tins::ARP& arp = pdu->rfind_pdu<Tins::ARP>();
+                        if (arp.sender_ip_addr() != myIp) {
+                            std::lock_guard<std::mutex> lock(resultsMutex);
+                            
+                            bool exists = false;
+                            for(const auto& h : foundHosts) {
+                                if (h.ip == arp.sender_ip_addr().to_string()) {
+                                    exists = true; break;
+                                }
+                            }
 
-            hosts.push_back({my_ip.to_string(), my_mac.to_string(), "My Computer (Local)", true});
+                            if (!exists) {
+                                ScannedHost host;
+                                host.ip = arp.sender_ip_addr().to_string();
+                                host.mac = arp.sender_hw_addr().to_string();
+                                host.name = "Unknown"; 
+                                foundHosts.push_back(host);
+                                std::cout << "[Scanner] Found Device: " << host.ip << "\n";
+                            }
+                        }
+                        delete pdu;
+                    }
+                }
+            });
 
-        } catch (std::exception &ex) {
-            std::cerr << "[Scanner] Error: " << ex.what() << std::endl;
+            std::cout << "[Scanner] Sending " << targets.size() << " ARP requests...\n";
+            for (const auto& targetIp : targets) {
+                try {
+                    Tins::EthernetII eth = Tins::EthernetII("ff:ff:ff:ff:ff:ff", info.hw_addr) / 
+                                           Tins::ARP(targetIp, myIp, Tins::HWAddress<6>("00:00:00:00:00:00"), info.hw_addr);
+                    sender.send(eth, iface);
+                    std::this_thread::sleep_for(std::chrono::microseconds(200));
+                } catch (...) {}
+            }
+
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            
+            stopSniffer = true;
+            snifferThread.join();
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "[Scanner] Critical Error: " << e.what() << "\n";
         }
 
-        return hosts;
+        return foundHosts;
     }
-    
-    std::string NetworkScanner::GetLocalIPAddress() {
-        try {
-            return NetworkInterface::default_interface().info().ip_addr.to_string();
-        } catch(...) {
-            return "127.0.0.1";
-        }
-    }
-    
-    std::string NetworkScanner::GetSubnetFromIP(const std::string &ip) { return ""; }
-    bool NetworkScanner::Ping(const std::string &ip) { return false; }
-    std::string NetworkScanner::GetMacFromArp(const std::string &target_ip) { return ""; }
 }

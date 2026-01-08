@@ -4,6 +4,7 @@
 #include <QHeaderView>
 #include <iostream>
 #include <QMessageBox>
+#include <unistd.h>
 
 namespace net_ops::client
 {
@@ -61,7 +62,7 @@ namespace net_ops::client
         auto central = new QWidget();
         auto layout = new QVBoxLayout(central);
 
-        m_scanBtn = new QPushButton("Scan Network (Requires Root/Sudo)");
+        m_scanBtn = new QPushButton("Scan Network (Requires Root)");
         connect(m_scanBtn, &QPushButton::clicked, this, &MainWindow::onScanClicked);
         layout->addWidget(m_scanBtn);
 
@@ -69,12 +70,10 @@ namespace net_ops::client
         connect(testLogBtn, &QPushButton::clicked, [this]()
             {
                 if (m_sessionToken.empty()) return;
-
                 std::vector<uint8_t> payload;
                 net_ops::protocol::PackString(payload, m_sessionToken);
                 net_ops::protocol::PackString(payload, "127.0.0.1");
-                net_ops::protocol::PackString(payload, "Manual Test Log Entry from Client UI");
-    
+                net_ops::protocol::PackString(payload, "Manual Test Log");
                 m_controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload);
             });
         layout->addWidget(testLogBtn);
@@ -115,8 +114,14 @@ namespace net_ops::client
         if (m_sessionToken.empty()) return;
         if (m_isScanning) return; 
 
+        if (geteuid() != 0) {
+            QMessageBox::critical(this, "Permission Denied", 
+                "Network scanning requires root privileges.\nPlease run the client with: sudo ./Client");
+            return;
+        }
+
         m_isScanning = true;
-        m_scanBtn->setText("Scanning...");
+        m_scanBtn->setText("Scanning... (Please Wait)");
         m_scanBtn->setEnabled(false);
 
         if (m_scanThread.joinable())
@@ -126,30 +131,22 @@ namespace net_ops::client
 
         m_scanThread = std::thread([this, token]()
         {
-            std::cout << "[Scanner] Starting scan...\n";
-            try {
-                auto hosts = NetworkScanner::ScanLocalNetwork(); 
-                std::cout << "[Scanner] Found " << hosts.size() << " hosts.\n";
+            auto hosts = NetworkScanner::ScanLocalNetwork(); 
 
-                for (const auto& h : hosts) {
-                    std::vector<uint8_t> p;
-                    net_ops::protocol::PackString(p, token);
-                    net_ops::protocol::PackString(p, h.name);
-                    net_ops::protocol::PackString(p, h.ip);
-                    net_ops::protocol::PackString(p, h.mac);
-                    m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
-                } 
-                
-                std::vector<uint8_t> listP;
-                net_ops::protocol::PackString(listP, token);
-                m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP); 
-            }
-            catch (const std::exception& e) {
-                std::cerr << "[Scanner] Error: " << e.what() << ". (Did you run as sudo?)\n";
-            }
-            catch (...) {
-                std::cerr << "[Scanner] Unknown error occurred.\n";
-            }
+            for (const auto& h : hosts) {
+                std::vector<uint8_t> p;
+                net_ops::protocol::PackString(p, token);
+                net_ops::protocol::PackString(p, h.name);
+                net_ops::protocol::PackString(p, h.ip);
+                net_ops::protocol::PackString(p, h.mac);
+                m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
+            } 
+            
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+            std::vector<uint8_t> listP;
+            net_ops::protocol::PackString(listP, token);
+            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP); 
             
             m_isScanning = false;
         });
@@ -158,7 +155,7 @@ namespace net_ops::client
     void MainWindow::pollData()
     {
         if (!m_isScanning && !m_scanBtn->isEnabled()) {
-            m_scanBtn->setText("Scan Network (Requires Root/Sudo)");
+            m_scanBtn->setText("Scan Network (Requires Root)");
             m_scanBtn->setEnabled(true);
         }
         
