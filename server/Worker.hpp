@@ -39,6 +39,8 @@ namespace net_ops::server
         std::optional<int> Authorize(int client_fd, const std::optional<std::string> &token);
         void SendError(int client_fd, const std::string &message);
 
+        void SendPacket(int client_fd, net_ops::protocol::MessageType type, const std::vector<uint8_t>& payload);
+
         void HandleLogin(int client_fd, const std::vector<uint8_t> &payload);
         void HandleRegister(int client_fd, const std::vector<uint8_t> &payload);
         void HandleDeviceAdd(int client_fd, const std::vector<uint8_t> &payload);
