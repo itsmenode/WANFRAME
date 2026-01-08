@@ -40,9 +40,9 @@ namespace net_ops::server
         return std::nullopt;
     }
 
-    void SessionManager::RemoveSession(const std::string &token)
+    bool SessionManager::RemoveSession(const std::string &token)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        m_sessions.erase(token);
+        return m_sessions.erase(token) > 0;
     }
 }

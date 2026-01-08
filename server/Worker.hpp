@@ -41,6 +41,7 @@ namespace net_ops::server
         void HandleLogUpload(int client_fd, const std::vector<uint8_t> &payload);
         void HandleDeviceStatus(int client_fd, const std::vector<uint8_t> &payload);
         void HandleLogQuery(int client_fd, const std::vector<uint8_t> &payload);
+        void HandleLogout(int client_fd, const std::vector<uint8_t> &payload);
 
         NetworkCore *m_networkCore;
         std::thread m_thread;

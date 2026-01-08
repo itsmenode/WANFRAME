@@ -94,6 +94,9 @@ namespace net_ops::server
             case net_ops::protocol::MessageType::LogQueryReq:
                 HandleLogQuery(job.client_fd, job.payload);
                 break;
+            case net_ops::protocol::MessageType::LogoutReq:
+                HandleLogout(job.client_fd, job.payload);
+                break;
             default:
                 std::cerr << "[Worker] Unknown message type: " << (int)job.type << "\n";
                 break;
@@ -304,5 +307,30 @@ namespace net_ops::server
         }
 
         m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::LogQueryResp, response);
+    }
+
+    void Worker::HandleLogout(int client_fd, const std::vector<uint8_t> &payload)
+    {
+        size_t offset = 0;
+        auto token = net_ops::protocol::UnpackString(payload, offset);
+
+        std::vector<uint8_t> response;
+
+        if (!token)
+        {
+            net_ops::protocol::PackString(response, "LOGOUT_FAILED");
+            m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::LogoutResp, response);
+            return;
+        }
+
+        if (!SessionManager::GetInstance().RemoveSession(*token))
+        {
+            net_ops::protocol::PackString(response, "LOGOUT_FAILED");
+            m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::LogoutResp, response);
+            return;
+        }
+
+        net_ops::protocol::PackString(response, "LOGOUT_SUCCESS");
+        m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::LogoutResp, response);
     }
 }
