@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     auto controller = std::make_shared<net_ops::client::NetworkController>("127.0.0.1", 8080);
     controller->Start();
 
-    auto agent = std::make_shared<net_ops::client::SyslogCollector>("/var/log/syslog");
+    auto agent = std::make_shared<net_ops::client::SyslogCollector>(""); 
 
     auto monitor = std::make_shared<net_ops::client::DeviceMonitor>();
 
@@ -25,7 +25,8 @@ int main(int argc, char *argv[])
                      {
                          mainWin.SetToken(token);
 
-                         agent->Start(514, [controller, token](const std::string &source, const std::string &msg)
+                         int syslogPort = 5140; 
+                         agent->Start(syslogPort, [controller, token](const std::string &source, const std::string &msg)
                          {
                             std::vector<uint8_t> payload;
                             net_ops::protocol::PackString(payload, token);

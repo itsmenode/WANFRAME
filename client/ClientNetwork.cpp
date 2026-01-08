@@ -142,6 +142,7 @@ namespace net_ops::client
         }
     }
 
+
     bool ClientNetwork::SendLogin(const std::string &username, const std::string &password)
     {
         std::vector<uint8_t> p;
@@ -160,34 +161,38 @@ namespace net_ops::client
         return true;
     }
 
-    void ClientNetwork::SendAddDevice(const std::string &name, const std::string &ip, const std::string &mac)
+    void ClientNetwork::SendAddDevice(const std::string &token, const std::string &name, const std::string &ip, const std::string &mac)
     {
         std::vector<uint8_t> p;
+        net_ops::protocol::PackString(p, token);
         net_ops::protocol::PackString(p, name);
         net_ops::protocol::PackString(p, ip);
         net_ops::protocol::PackString(p, mac);
         SendRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
     }
 
-    bool ClientNetwork::SendListDevices()
+    bool ClientNetwork::SendListDevices(const std::string &token)
     {
         std::vector<uint8_t> p;
+        net_ops::protocol::PackString(p, token);
         SendRequest(net_ops::protocol::MessageType::DeviceListReq, p);
         return true;
     }
 
-    bool ClientNetwork::SendLogUpload(const std::string &source_ip, const std::string &log_msg)
+    bool ClientNetwork::SendLogUpload(const std::string &token, const std::string &source_ip, const std::string &log_msg)
     {
         std::vector<uint8_t> p;
+        net_ops::protocol::PackString(p, token);
         net_ops::protocol::PackString(p, source_ip);
         net_ops::protocol::PackString(p, log_msg);
         SendRequest(net_ops::protocol::MessageType::LogUploadReq, p);
         return true;
     }
 
-    bool ClientNetwork::SendStatusUpdate(const std::string &ip, const std::string &status, const std::string &info)
+    bool ClientNetwork::SendStatusUpdate(const std::string &token, const std::string &ip, const std::string &status, const std::string &info)
     {
         std::vector<uint8_t> p;
+        net_ops::protocol::PackString(p, token);
         net_ops::protocol::PackString(p, ip);
         net_ops::protocol::PackString(p, status);
         net_ops::protocol::PackString(p, info);
@@ -195,16 +200,18 @@ namespace net_ops::client
         return true;
     }
 
-    void ClientNetwork::SendFetchLogs(int device_id)
+    void ClientNetwork::SendFetchLogs(const std::string &token, int device_id)
     {
         std::vector<uint8_t> p;
         net_ops::protocol::PackUint32(p, static_cast<uint32_t>(device_id));
+        
         SendRequest(net_ops::protocol::MessageType::LogQueryReq, p);
     }
 
-    bool ClientNetwork::SendLogout()
+    bool ClientNetwork::SendLogout(const std::string &token)
     {
         std::vector<uint8_t> p;
+        net_ops::protocol::PackString(p, token);
         SendRequest(net_ops::protocol::MessageType::LogoutReq, p);
         return true;
     }
