@@ -288,6 +288,20 @@ namespace net_ops::server
         return devices;
     }
 
+    bool DatabaseManager::IsUserDeviceOwner(int user_id, int user_device_id)
+    {
+        std::lock_guard<std::mutex> lock(db_mutex_);
+        sqlite3_stmt *stmt;
+        const char *sql = "SELECT 1 FROM user_devices WHERE id = ? AND user_id = ?;";
+        if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK)
+            return false;
+        sqlite3_bind_int(stmt, 1, user_device_id);
+        sqlite3_bind_int(stmt, 2, user_id);
+        bool owns = (sqlite3_step(stmt) == SQLITE_ROW);
+        sqlite3_finalize(stmt);
+        return owns;
+    }
+
     void DatabaseManager::UpdateDeviceStatus(const std::string &ip, const std::string &status, const std::string &info)
     {
         std::lock_guard<std::mutex> lock(db_mutex_);

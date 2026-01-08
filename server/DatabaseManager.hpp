@@ -60,6 +60,7 @@ namespace net_ops::server
 
         bool AddDevice(int user_id, const std::string &name, const std::string &ip, std::string mac);
         std::vector<DeviceRecord> GetAllDevicesForUser(int user_id);
+        bool IsUserDeviceOwner(int user_id, int user_device_id);
         void UpdateDeviceStatus(const std::string &ip, const std::string &status, const std::string &info);
 
         void SaveLog(const std::string &ip_address, const std::string &message);

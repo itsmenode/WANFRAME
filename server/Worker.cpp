@@ -108,7 +108,6 @@ namespace net_ops::server
         }
     }
 
-
     void Worker::HandleLogin(int client_fd, const std::vector<uint8_t> &payload)
     {
         size_t offset = 0;
@@ -185,7 +184,7 @@ namespace net_ops::server
         }
 
         bool success = DatabaseManager::GetInstance().AddDevice(*userId, *name, *ip, *mac);
-        
+
         std::vector<uint8_t> response;
         net_ops::protocol::PackString(response, success ? "DEVICE_ADDED" : "DEVICE_ADD_FAILED");
         m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::DeviceAddResp, response);
@@ -265,8 +264,33 @@ namespace net_ops::server
     void Worker::HandleLogQuery(int client_fd, const std::vector<uint8_t> &payload)
     {
         size_t offset = 0;
+        auto token = net_ops::protocol::UnpackString(payload, offset);
         auto deviceId = net_ops::protocol::UnpackUint32(payload, offset);
-        if (!deviceId) return;
+
+        if (!token || !deviceId)
+        {
+            std::vector<uint8_t> resp;
+            net_ops::protocol::PackString(resp, "INVALID_REQUEST");
+            m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, resp);
+            return;
+        }
+
+        auto userId = SessionManager::GetInstance().GetUserId(*token);
+        if (!userId)
+        {
+            std::vector<uint8_t> resp;
+            net_ops::protocol::PackString(resp, "AUTH_FAILED");
+            m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, resp);
+            return;
+        }
+
+        if (!DatabaseManager::GetInstance().IsUserDeviceOwner(*userId, *deviceId))
+        {
+            std::vector<uint8_t> resp;
+            net_ops::protocol::PackString(resp, "DEVICE_ACCESS_DENIED");
+            m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, resp);
+            return;
+        }
 
         auto logs = DatabaseManager::GetInstance().GetLogsForDevice(*deviceId);
 
