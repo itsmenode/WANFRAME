@@ -3,6 +3,7 @@
   /home/andrew/Documents/GitHub/WANFRAME/client/ClientNetwork.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/client/NetworkController.hpp \
+  /home/andrew/Documents/GitHub/WANFRAME/client/SyslogCollector.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/client/ThreadSafeQueue.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/common/ByteBuffer.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/common/protocol.hpp \

@@ -458,6 +458,12 @@
 			null
 		],
 		[
+			"/home/andrew/Documents/GitHub/WANFRAME/client/SnmpClient.hpp",
+			"MU",
+			"7EM65HM6UG/moc_SnmpClient.cpp",
+			null
+		],
+		[
 			"/home/andrew/Documents/GitHub/WANFRAME/client/SyslogCollector.hpp",
 			"MU",
 			"7EM65HM6UG/moc_SyslogCollector.cpp",
@@ -554,6 +560,11 @@
 		],
 		[
 			"/home/andrew/Documents/GitHub/WANFRAME/client/Scanner.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/andrew/Documents/GitHub/WANFRAME/client/SnmpClient.cpp",
 			"MU",
 			null
 		],

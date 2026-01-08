@@ -71,6 +71,7 @@ add_executable(Client
     client/ClientNetwork.cpp
     client/Scanner.cpp
     client/SyslogCollector.cpp
+    client/SnmpClient.cpp
     client/LoginWindow.cpp
     client/MainWindow.cpp
     client/DeviceMonitor.cpp
