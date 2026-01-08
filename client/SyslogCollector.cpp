@@ -1,135 +1,83 @@
 #include "SyslogCollector.hpp"
 #include <iostream>
-#include <sys/socket.h>
-#include <sys/inotify.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <cstring>
 #include <fstream>
+#include <thread>
+#include <chrono>
+#include <filesystem>
+#include <vector>
 
 namespace net_ops::client
 {
     SyslogCollector::SyslogCollector(const std::string &logPath)
-        : m_path(logPath), m_running(false), m_callback(nullptr),
-          m_udp_fd(-1), m_inotify_fd(-1)
+        : m_logPath(logPath), m_running(false)
     {
     }
 
-    SyslogCollector::~SyslogCollector()
-    {
-        Stop();
-    }
+    SyslogCollector::~SyslogCollector() { Stop(); }
 
     void SyslogCollector::Start(int port, LogCallback callback)
     {
-        if (m_running)
-            return;
+        if (!std::filesystem::exists(m_logPath))
+        {
+            if (std::filesystem::exists("/var/log/messages"))
+            {
+                std::cout << "[Syslog] /var/log/syslog not found, using /var/log/messages\n";
+                m_logPath = "/var/log/messages";
+            }
+            else
+            {
+                std::cerr << "[Syslog] ERROR: No syslog file found at " << m_logPath << " or /var/log/messages.\n";
+            }
+        }
 
-        m_callback = callback;
         m_running = true;
+        m_worker = std::thread([this, callback]()
+                               {
+            std::ifstream file(m_logPath);
+            
+            if (file.is_open()) {
+                file.seekg(0, std::ios::end);
+                std::streampos length = file.tellg();
+                std::streampos startPos = (length > 2048) ? (length - (std::streampos)2048) : 0;
+                file.seekg(startPos);
+                
+                std::string line;
+                if (startPos != 0) std::getline(file, line);
+                
+                while(std::getline(file, line)) {
+                     if (!line.empty() && callback) {
+                         callback("Localhost", line);
+                     }
+                }
+                file.clear(); 
+            }
 
-        m_udp_worker = std::thread(&SyslogCollector::ReceiveLoop, this, port);
-        m_file_worker = std::thread(&SyslogCollector::FileMonitorLoop, this);
+            while (m_running) {
+                if (!file.is_open()) {
+                    file.open(m_logPath);
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                    continue;
+                }
 
-        std::cout << "[SyslogCollector] Agent monitoring UDP:" << port << " and file:" << m_path << "\n";
+                std::string line;
+                while (std::getline(file, line)) {
+                    if (!line.empty() && callback) {
+                         callback("Localhost", line);
+                    }
+                }
+                
+                if (file.eof()) {
+                    file.clear();
+                }
+                
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            } });
     }
 
     void SyslogCollector::Stop()
     {
         m_running = false;
-
-        if (m_udp_fd != -1)
-        {
-            shutdown(m_udp_fd, SHUT_RDWR);
-            close(m_udp_fd);
-            m_udp_fd = -1;
-        }
-
-        if (m_inotify_fd != -1)
-        {
-            close(m_inotify_fd);
-            m_inotify_fd = -1;
-        }
-
-        if (m_udp_worker.joinable())
-            m_udp_worker.join();
-        if (m_file_worker.joinable())
-            m_file_worker.join();
-    }
-
-    void SyslogCollector::ReceiveLoop(int port)
-    {
-        m_udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
-        if (m_udp_fd < 0)
-            return;
-
-        struct sockaddr_in addr;
-        std::memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        addr.sin_addr.s_addr = INADDR_ANY;
-        addr.sin_port = htons(port);
-
-        if (bind(m_udp_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-        {
-            close(m_udp_fd);
-            return;
-        }
-
-        char buffer[4096];
-        struct sockaddr_in client_addr;
-        socklen_t addr_len = sizeof(client_addr);
-
-        while (m_running)
-        {
-            ssize_t received = recvfrom(m_udp_fd, buffer, sizeof(buffer) - 1, 0,
-                                        (struct sockaddr *)&client_addr, &addr_len);
-            if (received > 0 && m_callback)
-            {
-                buffer[received] = '\0';
-                char ip_str[INET_ADDRSTRLEN];
-                inet_ntop(AF_INET, &client_addr.sin_addr, ip_str, INET_ADDRSTRLEN);
-
-                m_callback(std::string(ip_str), std::string(buffer));
-            }
-        }
-    }
-
-    void SyslogCollector::FileMonitorLoop()
-    {
-        m_inotify_fd = inotify_init();
-        if (m_inotify_fd < 0)
-            return;
-
-        int wd = inotify_add_watch(m_inotify_fd, m_path.c_str(), IN_MODIFY);
-        if (wd < 0)
-        {
-            close(m_inotify_fd);
-            return;
-        }
-
-        std::ifstream file(m_path);
-        file.seekg(0, std::ios::end);
-
-        char event_buf[4096];
-        while (m_running)
-        {
-            ssize_t length = read(m_inotify_fd, event_buf, sizeof(event_buf));
-            if (length < 0)
-                break;
-
-            if (m_running)
-            {
-                std::string line;
-                file.clear();
-                while (std::getline(file, line))
-                {
-                    if (!line.empty() && m_callback)
-                    {
-                        m_callback("127.0.0.1", line);
-                    }
-                }
-            }
-        }
-        inotify_rm_watch(m_inotify_fd, wd);
+        if (m_worker.joinable())
+            m_worker.join();
     }
 }

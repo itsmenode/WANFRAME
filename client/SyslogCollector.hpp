@@ -2,36 +2,26 @@
 
 #include <string>
 #include <thread>
-#include <atomic>
 #include <functional>
-#include <vector>
-#include <netinet/in.h>
+#include <atomic>
 
 namespace net_ops::client
 {
+    using LogCallback = std::function<void(const std::string &source, const std::string &message)>;
+
     class SyslogCollector
     {
     public:
-        using LogCallback = std::function<void(const std::string &, const std::string &)>;
-
-        explicit SyslogCollector(const std::string &logPath = "/var/log/syslog");
+        explicit SyslogCollector(const std::string &logPath);
         ~SyslogCollector();
 
         void Start(int port, LogCallback callback);
+
         void Stop();
 
     private:
-        void ReceiveLoop(int port);
-        void FileMonitorLoop();
-
-        std::string m_path;
-        LogCallback m_callback;
+        std::string m_logPath;
         std::atomic<bool> m_running;
-
-        std::thread m_udp_worker;
-        std::thread m_file_worker;
-
-        int m_udp_fd;
-        int m_inotify_fd;
+        std::thread m_worker;
     };
 }
