@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
                      {
                          mainWin.SetToken(token);
 
-                         int syslogPort = 5140; 
+                         int syslogPort = 55555; 
                          agent->Start(syslogPort, [controller, token](const std::string &source, const std::string &msg)
                          {
                             std::vector<uint8_t> payload;
