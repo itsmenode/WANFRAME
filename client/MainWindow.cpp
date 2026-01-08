@@ -15,12 +15,16 @@ namespace net_ops::client
         : QMainWindow(parent), m_controller(controller), m_monitor(monitor), m_isScanning(false), m_selectedDeviceId(-1)
     {
         setupUi();
+        m_syslogCollector = std::make_unique<SyslogCollector>("syslog.txt");
+
         m_dataTimer = new QTimer(this);
         connect(m_dataTimer, &QTimer::timeout, this, &MainWindow::pollData);
     }
 
     MainWindow::~MainWindow()
     {
+        if (m_syslogCollector) m_syslogCollector->Stop();
+
         if (m_scanThread.joinable())
             m_scanThread.join();
     }
@@ -28,6 +32,16 @@ namespace net_ops::client
     void MainWindow::SetToken(const std::string &token)
     {
         m_sessionToken = token;
+        
+        m_syslogCollector->Start(5140, [this](const std::string &ip, const std::string &msg) {
+            if (m_sessionToken.empty()) return;
+
+            std::vector<uint8_t> p;
+            net_ops::protocol::PackString(p, m_sessionToken);
+            net_ops::protocol::PackString(p, ip);
+            net_ops::protocol::PackString(p, msg);
+            m_controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, p);
+        });
     }
 
     void MainWindow::showEvent(QShowEvent *event)
@@ -210,11 +224,8 @@ namespace net_ops::client
         auto count = net_ops::protocol::UnpackUint32(data, offset);
         if (!count) return;
 
-        int savedId = m_selectedDeviceId;
-        m_deviceTable->setRowCount(0);
-
         std::vector<std::string> monitorIPs;
-
+        
         for (uint32_t i = 0; i < *count; ++i)
         {
             auto id = net_ops::protocol::UnpackUint32(data, offset);
@@ -223,18 +234,28 @@ namespace net_ops::client
             auto status = net_ops::protocol::UnpackString(data, offset);
             auto info = net_ops::protocol::UnpackString(data, offset);
 
-            int row = m_deviceTable->rowCount();
-            m_deviceTable->insertRow(row);
-            m_deviceTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(*name)));
-            m_deviceTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(*ip)));
-            m_deviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString("Unknown")));
-            m_deviceTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(*status + " " + *info)));
-            m_deviceTable->setItem(row, 4, new QTableWidgetItem(QString::number(*id)));
-
             if (ip) monitorIPs.push_back(*ip);
-            
-            if (savedId != -1 && (int)*id == savedId) {
-                m_deviceTable->selectRow(row);
+
+            bool found = false;
+            for(int r = 0; r < m_deviceTable->rowCount(); ++r) {
+                auto item = m_deviceTable->item(r, 4);
+                if (item && item->text().toUInt() == *id) {
+                    found = true;
+                    m_deviceTable->item(r, 0)->setText(QString::fromStdString(*name));
+                    m_deviceTable->item(r, 1)->setText(QString::fromStdString(*ip));
+                    m_deviceTable->item(r, 3)->setText(QString::fromStdString(*status + " " + *info));
+                    break;
+                }
+            }
+
+            if (!found) {
+                int row = m_deviceTable->rowCount();
+                m_deviceTable->insertRow(row);
+                m_deviceTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(*name)));
+                m_deviceTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(*ip)));
+                m_deviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString("Unknown")));
+                m_deviceTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(*status + " " + *info)));
+                m_deviceTable->setItem(row, 4, new QTableWidgetItem(QString::number(*id)));
             }
         }
 

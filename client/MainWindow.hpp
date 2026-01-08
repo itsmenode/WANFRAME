@@ -11,6 +11,7 @@
 #include <atomic>
 #include "NetworkController.hpp"
 #include "DeviceMonitor.hpp"
+#include "SyslogCollector.hpp"
 
 namespace net_ops::client
 {
@@ -38,6 +39,7 @@ namespace net_ops::client
     private:
         std::shared_ptr<NetworkController> m_controller;
         std::shared_ptr<DeviceMonitor> m_monitor;
+        std::unique_ptr<SyslogCollector> m_syslogCollector;
         QTableWidget *m_deviceTable;
         QTableWidget *m_logTable;
         QTimer *m_dataTimer;
