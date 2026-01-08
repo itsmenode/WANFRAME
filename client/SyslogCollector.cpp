@@ -1,10 +1,12 @@
 #include "SyslogCollector.hpp"
 #include <iostream>
-#include <fstream>
-#include <thread>
-#include <chrono>
-#include <filesystem>
 #include <vector>
+#include <cstring>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <chrono>
 
 namespace net_ops::client
 {
@@ -17,61 +19,59 @@ namespace net_ops::client
 
     void SyslogCollector::Start(int port, LogCallback callback)
     {
-        if (!std::filesystem::exists(m_logPath))
-        {
-            if (std::filesystem::exists("/var/log/messages"))
-            {
-                std::cout << "[Syslog] /var/log/syslog not found, using /var/log/messages\n";
-                m_logPath = "/var/log/messages";
-            }
-            else
-            {
-                std::cerr << "[Syslog] ERROR: No syslog file found at " << m_logPath << " or /var/log/messages.\n";
-            }
-        }
-
+        if (m_running) return;
         m_running = true;
-        m_worker = std::thread([this, callback]()
-                               {
-            std::ifstream file(m_logPath);
-            
-            if (file.is_open()) {
-                file.seekg(0, std::ios::end);
-                std::streampos length = file.tellg();
-                std::streampos startPos = (length > 2048) ? (length - (std::streampos)2048) : 0;
-                file.seekg(startPos);
-                
-                std::string line;
-                if (startPos != 0) std::getline(file, line);
-                
-                while(std::getline(file, line)) {
-                     if (!line.empty() && callback) {
-                         callback("Localhost", line);
-                     }
-                }
-                file.clear(); 
+
+        m_worker = std::thread([this, port, callback]()
+        {
+            int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+            if (sockfd < 0) {
+                std::cerr << "[Syslog] Failed to create socket\n";
+                m_running = false;
+                return;
             }
+
+            struct sockaddr_in servaddr;
+            std::memset(&servaddr, 0, sizeof(servaddr));
+            servaddr.sin_family = AF_INET;
+            servaddr.sin_addr.s_addr = INADDR_ANY;
+            servaddr.sin_port = htons(port);
+
+            if (bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
+                std::cerr << "[Syslog] Bind failed on port " << port << " (Permission denied?)\n";
+                close(sockfd);
+                m_running = false;
+                return;
+            }
+
+            struct timeval tv;
+            tv.tv_sec = 1;
+            tv.tv_usec = 0;
+            setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+
+            std::cout << "[Syslog] Listening on UDP port " << port << "\n";
+
+            char buffer[4096];
+            struct sockaddr_in cliaddr;
+            socklen_t len = sizeof(cliaddr);
 
             while (m_running) {
-                if (!file.is_open()) {
-                    file.open(m_logPath);
-                    std::this_thread::sleep_for(std::chrono::seconds(1));
-                    continue;
-                }
+                int n = recvfrom(sockfd, buffer, sizeof(buffer) - 1, 0, (struct sockaddr *)&cliaddr, &len);
+                
+                if (n > 0) {
+                    buffer[n] = '\0';
+                    std::string sourceIp = inet_ntoa(cliaddr.sin_addr);
+                    std::string message(buffer);
 
-                std::string line;
-                while (std::getline(file, line)) {
-                    if (!line.empty() && callback) {
-                         callback("Localhost", line);
+                    if (callback) {
+                        callback(sourceIp, message);
                     }
                 }
-                
-                if (file.eof()) {
-                    file.clear();
-                }
-                
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
-            } });
+            }
+
+            close(sockfd);
+            std::cout << "[Syslog] Stopped.\n";
+        });
     }
 
     void SyslogCollector::Stop()

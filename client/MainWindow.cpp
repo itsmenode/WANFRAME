@@ -2,6 +2,7 @@
 #include "Scanner.hpp"
 #include "DeviceMonitor.hpp"
 #include <QHeaderView>
+#include <iostream>
 
 namespace net_ops::client
 {
@@ -9,11 +10,17 @@ namespace net_ops::client
     MainWindow::MainWindow(std::shared_ptr<NetworkController> controller,
                            std::shared_ptr<DeviceMonitor> monitor,
                            QWidget *parent)
-        : QMainWindow(parent), m_controller(controller), m_monitor(monitor)
+        : QMainWindow(parent), m_controller(controller), m_monitor(monitor), m_isScanning(false)
     {
         setupUi();
         m_dataTimer = new QTimer(this);
         connect(m_dataTimer, &QTimer::timeout, this, &MainWindow::pollData);
+    }
+
+    MainWindow::~MainWindow()
+    {
+        if (m_scanThread.joinable())
+            m_scanThread.join();
     }
 
     void MainWindow::SetToken(const std::string &token)
@@ -26,7 +33,7 @@ namespace net_ops::client
         QMainWindow::showEvent(event);
         if (!m_dataTimer->isActive())
         {
-            m_dataTimer->start(200);
+            m_dataTimer->start(1000);
             sendDeviceListRequest();
         }
     }
@@ -45,9 +52,9 @@ namespace net_ops::client
         auto central = new QWidget();
         auto layout = new QVBoxLayout(central);
 
-        auto scanBtn = new QPushButton("Scan Network");
-        connect(scanBtn, &QPushButton::clicked, this, &MainWindow::onScanClicked);
-        layout->addWidget(scanBtn);
+        m_scanBtn = new QPushButton("Scan Network");
+        connect(m_scanBtn, &QPushButton::clicked, this, &MainWindow::onScanClicked);
+        layout->addWidget(m_scanBtn);
 
         auto testLogBtn = new QPushButton("Send Test Log");
         connect(testLogBtn, &QPushButton::clicked, [this]()
@@ -62,8 +69,6 @@ namespace net_ops::client
                 m_controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload);
             });
         layout->addWidget(testLogBtn);
-
-        m_deviceTable = new QTableWidget(0, 4);
 
         m_deviceTable = new QTableWidget(0, 4);
         m_deviceTable->setHorizontalHeaderLabels({"Name", "IP", "MAC", "Status"});
@@ -82,14 +87,24 @@ namespace net_ops::client
 
     void MainWindow::onScanClicked()
     {
-        if (m_sessionToken.empty())
-            return;
+        if (m_sessionToken.empty()) return;
+        if (m_isScanning) return;
+
+        m_isScanning = true;
+        m_scanBtn->setText("Scanning...");
+        m_scanBtn->setEnabled(false);
+
+        if (m_scanThread.joinable())
+            m_scanThread.join();
 
         std::string token = m_sessionToken;
 
-        std::thread([this, token]()
-                    {
+        m_scanThread = std::thread([this, token]()
+        {
+            std::cout << "[MainWindow] Starting Network Scan...\n";
             auto hosts = NetworkScanner::ScanLocalNetwork(); 
+            std::cout << "[MainWindow] Scan complete. Found " << hosts.size() << " hosts.\n";
+
             for (const auto& h : hosts) {
                 std::vector<uint8_t> p;
                 net_ops::protocol::PackString(p, token);
@@ -101,12 +116,19 @@ namespace net_ops::client
             
             std::vector<uint8_t> listP;
             net_ops::protocol::PackString(listP, token);
-            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP); })
-            .detach();
+            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP); 
+            
+            m_isScanning = false;
+        });
     }
 
     void MainWindow::pollData()
     {
+        if (!m_isScanning && !m_scanBtn->isEnabled()) {
+            m_scanBtn->setText("Scan Network");
+            m_scanBtn->setEnabled(true);
+        }
+
         while (auto resp = m_controller->GetNextResponse())
         {
             if (resp->type == net_ops::protocol::MessageType::DeviceListResp)
@@ -164,7 +186,7 @@ namespace net_ops::client
             m_deviceTable->insertRow(row);
             m_deviceTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(*name)));
             m_deviceTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(*ip)));
-            m_deviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString("00:00:00:00:00:00")));
+            m_deviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString("Unknown MAC")));
             m_deviceTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(*status + " " + *info)));
 
             if (ip)

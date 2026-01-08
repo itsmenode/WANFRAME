@@ -7,6 +7,8 @@
 #include <QTimer>
 #include <QShowEvent>
 #include <memory>
+#include <thread>
+#include <atomic>
 #include "NetworkController.hpp"
 #include "DeviceMonitor.hpp"
 
@@ -21,6 +23,7 @@ namespace net_ops::client
         explicit MainWindow(std::shared_ptr<NetworkController> controller,
                             std::shared_ptr<DeviceMonitor> monitor,
                             QWidget *parent = nullptr);
+        ~MainWindow();
 
         void SetToken(const std::string &token);
 
@@ -38,6 +41,10 @@ namespace net_ops::client
         QTableWidget *m_logTable;
         QTimer *m_dataTimer;
         std::string m_sessionToken;
+        QPushButton* m_scanBtn;
+
+        std::thread m_scanThread;
+        std::atomic<bool> m_isScanning;
 
         void setupUi();
         void updateDeviceList(const std::vector<uint8_t> &data);
