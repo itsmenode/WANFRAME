@@ -5,6 +5,7 @@
 #include <cstring>
 #include <vector>
 #include <fcntl.h>
+#include <openssl/x509v3.h>
 
 namespace net_ops::client
 {
@@ -31,7 +32,14 @@ namespace net_ops::client
             return;
         }
 
-        SSL_CTX_set_verify(m_ssl_ctx, SSL_VERIFY_NONE, nullptr);
+        SSL_CTX_set_verify(m_ssl_ctx, SSL_VERIFY_PEER, nullptr);
+        if (SSL_CTX_load_verify_locations(m_ssl_ctx, "certs/server.crt", "certs") != 1) {
+            std::cerr << "[ClientNetwork] Failed to load trusted certificates.\n";
+            ERR_print_errors_fp(stderr);
+            SSL_CTX_free(m_ssl_ctx);
+            m_ssl_ctx = nullptr;
+            return;
+        }
     }
 
     void ClientNetwork::CleanupSSL()
@@ -42,6 +50,7 @@ namespace net_ops::client
     bool ClientNetwork::Connect()
     {
         if (m_socket_fd != -1) return true;
+        if (!m_ssl_ctx) return false;
 
         m_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (m_socket_fd < 0) return false;
@@ -66,11 +75,34 @@ namespace net_ops::client
         m_ssl_handle = SSL_new(m_ssl_ctx);
         if (!m_ssl_handle) { close(m_socket_fd); m_socket_fd = -1; return false; }
         SSL_set_fd(m_ssl_handle, m_socket_fd);
+        struct in_addr addr4;
+        struct in6_addr addr6;
+        bool is_ipv4 = inet_pton(AF_INET, m_host.c_str(), &addr4) == 1;
+        bool is_ipv6 = inet_pton(AF_INET6, m_host.c_str(), &addr6) == 1;
+
+        if (!is_ipv4 && !is_ipv6) {
+            SSL_set_tlsext_host_name(m_ssl_handle, m_host.c_str());
+            SSL_set_hostflags(m_ssl_handle, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+            if (SSL_set1_host(m_ssl_handle, m_host.c_str()) != 1) {
+                std::cerr << "[ClientNetwork] Failed to set expected host for verification.\n";
+                Disconnect();
+                return false;
+            }
+        } else if (SSL_set1_ip_asc(m_ssl_handle, m_host.c_str()) != 1) {
+            std::cerr << "[ClientNetwork] Failed to set expected IP for verification.\n";
+            Disconnect();
+            return false;
+        }
 
         if (SSL_connect(m_ssl_handle) <= 0) { 
             ERR_print_errors_fp(stderr); 
             Disconnect(); 
             return false; 
+        }
+        if (SSL_get_verify_result(m_ssl_handle) != X509_V_OK) {
+            std::cerr << "[ClientNetwork] Server certificate verification failed.\n";
+            Disconnect();
+            return false;
         }
 
         int flags = fcntl(m_socket_fd, F_GETFL, 0);
