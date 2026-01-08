@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # --- 1. Dependencies ---
 find_package(OpenSSL REQUIRED)
+find_package(PkgConfig REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -16,6 +17,7 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
+# Database
 find_path(SQLITE3_INCLUDE_DIR sqlite3.h)
 find_library(SQLITE3_LIBRARY sqlite3)
 
@@ -23,10 +25,18 @@ if(NOT SQLITE3_INCLUDE_DIR OR NOT SQLITE3_LIBRARY)
     message(FATAL_ERROR "SQLite3 not found!")
 endif()
 
+pkg_check_modules(TINS REQUIRED libtins) 
+
+find_library(PCAP_LIBRARY pcap)
+if(NOT PCAP_LIBRARY)
+    message(FATAL_ERROR "libpcap not found! Install libpcap-dev")
+endif()
+
 # --- 2. Include Directories ---
 include_directories(
     ${OPENSSL_INCLUDE_DIR}
     ${SQLITE3_INCLUDE_DIR}
+    ${TINS_INCLUDE_DIRS} 
     server
     client
     common
@@ -73,6 +83,8 @@ target_link_libraries(Client
     OpenSSL::SSL
     OpenSSL::Crypto
     Threads::Threads
+    ${TINS_LIBRARIES}
+    ${PCAP_LIBRARY}
 )
 
 # ==========================

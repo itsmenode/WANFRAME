@@ -255,6 +255,7 @@ Client: CMakeFiles/Client.dir/build.make
 Client: /usr/lib/x86_64-linux-gnu/libQt6Widgets.so.6.2.4
 Client: /usr/lib/x86_64-linux-gnu/libssl.so
 Client: /usr/lib/x86_64-linux-gnu/libcrypto.so
+Client: /usr/lib/x86_64-linux-gnu/libpcap.so
 Client: /usr/lib/x86_64-linux-gnu/libQt6Gui.so.6.2.4
 Client: /usr/lib/x86_64-linux-gnu/libQt6Core.so.6.2.4
 Client: /usr/lib/x86_64-linux-gnu/libGLX.so

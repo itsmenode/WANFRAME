@@ -26,19 +26,19 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 58,
+				"line" : 68,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 71,
+				"line" : 81,
 				"parent" : 0
 			},
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 27,
+				"line" : 36,
 				"parent" : 0
 			}
 		]
@@ -80,6 +80,10 @@
 				{
 					"backtrace" : 0,
 					"path" : "/home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/include"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/usr/include/tins"
 				},
 				{
 					"backtrace" : 3,
@@ -174,6 +178,16 @@
 			{
 				"backtrace" : 2,
 				"fragment" : "/usr/lib/x86_64-linux-gnu/libcrypto.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-ltins",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "/usr/lib/x86_64-linux-gnu/libpcap.so",
 				"role" : "libraries"
 			},
 			{
