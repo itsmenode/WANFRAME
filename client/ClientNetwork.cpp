@@ -97,42 +97,7 @@ namespace net_ops::client
         bool is_ipv6 = inet_pton(AF_INET6, m_host.c_str(), &addr6) == 1;
 
         if (!is_ipv4 && !is_ipv6)
-        {
             SSL_set_tlsext_host_name(m_ssl_handle, m_host.c_str());
-            SSL_set_hostflags(m_ssl_handle, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
-            if (SSL_set1_host(m_ssl_handle, m_host.c_str()) != 1)
-            {
-                std::cerr << "[ClientNetwork] Failed to set expected host for verification.\n";
-                Disconnect();
-                return false;
-            }
-        }
-        else
-        {
-            X509_VERIFY_PARAM *param = SSL_get0_param(m_ssl_handle);
-            int ip_set = 0;
-            if (is_ipv4)
-            {
-
-                ip_set = X509_VERIFY_PARAM_set1_ip(
-                    param,
-                    reinterpret_cast<const unsigned char *>(&addr4),
-                    sizeof(addr4));
-            }
-            else if (is_ipv6)
-            {
-                ip_set = X509_VERIFY_PARAM_set1_ip(
-                    param,
-                    reinterpret_cast<const unsigned char *>(&addr6),
-                    sizeof(addr6));
-            }
-            if (ip_set != 1)
-            {
-                std::cerr << "[ClientNetwork] Failed to set expected IP for verification.\n";
-                Disconnect();
-                return false;
-            }
-        }
 
         if (SSL_connect(m_ssl_handle) <= 0)
         {
@@ -143,6 +108,40 @@ namespace net_ops::client
         if (SSL_get_verify_result(m_ssl_handle) != X509_V_OK)
         {
             std::cerr << "[ClientNetwork] Server certificate verification failed.\n";
+            Disconnect();
+            return false;
+        }
+
+        X509 *peer_cert = SSL_get_peer_certificate(m_ssl_handle);
+        if (!peer_cert)
+        {
+            std::cerr << "[ClientNetwork] Server did not present a certificate.\n";
+            Disconnect();
+            return false;
+        }
+
+        bool host_ok = false;
+        if (is_ipv4 || is_ipv6)
+        {
+            if (X509_check_ip_asc(peer_cert, m_host.c_str(), 0) == 1)
+            {
+                host_ok = true;
+            }
+            else if (X509_check_host(peer_cert, m_host.c_str(), 0, 0, nullptr) == 1)
+            {
+                std::cerr << "[ClientNetwork] Warning: falling back to CN match for IP certificate.\n";
+                host_ok = true;
+            }
+        }
+        else
+        {
+            if (X509_check_host(peer_cert, m_host.c_str(), 0, 0, nullptr) == 1)
+                host_ok = true;
+        }
+        X509_free(peer_cert);
+        if (!host_ok)
+        {
+            std::cerr << "[ClientNetwork] Server certificate hostname verification failed.\n";
             Disconnect();
             return false;
         }
