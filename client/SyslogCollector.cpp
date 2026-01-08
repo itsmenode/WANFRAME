@@ -24,7 +24,8 @@ namespace net_ops::client
 
     void SyslogCollector::Start(DataCallback callback)
     {
-        if (m_running) return;
+        if (m_running)
+            return;
         if (m_port <= 0)
         {
             std::cerr << "[Syslog] Invalid port configured.\n";
@@ -33,7 +34,7 @@ namespace net_ops::client
         m_running = true;
 
         m_worker = std::thread([this, callback]()
-        {
+                               {
             int port = m_port;
             int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
             if (sockfd < 0) {
@@ -71,16 +72,25 @@ namespace net_ops::client
                 
                 if (n > 0) {
                     buffer[n] = '\0';
-                    std::string sourceIp = inet_ntoa(cliaddr.sin_addr);
-                    std::string message(buffer);
+                    std::string raw(buffer);
+                    DataRecord record;
+                    record.type = DataRecordType::Syslog;
+                    record.ip = inet_ntoa(cliaddr.sin_addr);
 
-                    if (callback) {
-                        DataRecord record;
-                        record.type = DataRecordType::Syslog;
-                        record.ip = sourceIp;
-                        record.message = message;
-                        callback(record);
+                    if (raw[0] == '<') {
+                        size_t endPri = raw.find('>');
+                        if (endPri != std::string::npos) {
+                            record.priority = std::stoi(raw.substr(1, endPri - 1));
+                            record.facility = record.priority / 8;
+                            record.severity = record.priority % 8;
+            
+                            record.message = raw.substr(endPri + 1);
+                        }
+                    } else {
+                        record.message = raw;
                     }
+
+                    if (callback) callback(record);
                 }
             }
 

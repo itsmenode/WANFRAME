@@ -19,12 +19,20 @@ namespace net_ops::client
 
     void DataSourceRegistry::StartAll(const DataCallback &callback)
     {
+        auto filteredCallback = [this, callback](const DataRecord &record)
+        {
+            for (auto &filter : m_filters)
+            {
+                if (!filter->IsMatch(record))
+                    return;
+            }
+            callback(record);
+        };
+
         for (const auto &pair : m_sources)
         {
             if (pair.second)
-            {
-                pair.second->Start(callback);
-            }
+                pair.second->Start(filteredCallback);
         }
     }
 

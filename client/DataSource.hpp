@@ -17,8 +17,12 @@ namespace net_ops::client
         DataRecordType type;
         std::string ip;
         std::string message;
-        std::string status;
-        std::string info;
+
+        int priority = -1;
+        int facility = -1;
+        int severity = -1;
+        std::string timestamp;
+        std::string hostname;
     };
 
     using DataCallback = std::function<void(const DataRecord &record)>;
