@@ -393,7 +393,6 @@ CMakeFiles/Client.dir/Client_autogen/mocs_compilation.cpp.o: Client_autogen/mocs
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qlayoutitem.h \
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qboxlayout.h \
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qgridlayout.h \
-  /usr/include/x86_64-linux-gnu/qt6/QtWidgets/QHBoxLayout \
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/QLabel \
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qlabel.h \
   /usr/include/x86_64-linux-gnu/qt6/QtGui/qpicture.h \
@@ -1488,7 +1487,6 @@ CMakeFiles/Client.dir/client/LoginWindow.cpp.o: ../client/LoginWindow.cpp \
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qlayoutitem.h \
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qboxlayout.h \
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qgridlayout.h \
-  /usr/include/x86_64-linux-gnu/qt6/QtWidgets/QHBoxLayout \
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/QLabel \
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qlabel.h \
   /usr/include/x86_64-linux-gnu/qt6/QtGui/qpicture.h \
@@ -1604,7 +1602,22 @@ CMakeFiles/Client.dir/client/LoginWindow.cpp.o: ../client/LoginWindow.cpp \
   /usr/include/c++/11/mutex \
   /usr/include/c++/11/bits/std_mutex.h \
   /usr/include/c++/11/bits/unique_lock.h \
-  /usr/include/c++/11/condition_variable
+  /usr/include/c++/11/condition_variable \
+  /usr/include/c++/11/iostream \
+  /usr/include/c++/11/ostream \
+  /usr/include/c++/11/ios \
+  /usr/include/c++/11/bits/basic_ios.h \
+  /usr/include/c++/11/bits/locale_facets.h \
+  /usr/include/c++/11/cwctype \
+  /usr/include/wctype.h \
+  /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h \
+  /usr/include/x86_64-linux-gnu/c++/11/bits/ctype_base.h \
+  /usr/include/x86_64-linux-gnu/c++/11/bits/ctype_inline.h \
+  /usr/include/c++/11/bits/locale_facets.tcc \
+  /usr/include/c++/11/bits/basic_ios.tcc \
+  /usr/include/c++/11/bits/ostream.tcc \
+  /usr/include/c++/11/istream \
+  /usr/include/c++/11/bits/istream.tcc
 
 CMakeFiles/Client.dir/client/MainWindow.cpp.o: ../client/MainWindow.cpp \
   /usr/include/stdc-predef.h \
@@ -2745,7 +2758,9 @@ CMakeFiles/Client.dir/client/Scanner.cpp.o: ../client/Scanner.cpp \
   /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
   /usr/include/arpa/inet.h \
   /usr/include/netinet/in.h \
-  /usr/include/x86_64-linux-gnu/bits/in.h
+  /usr/include/x86_64-linux-gnu/bits/in.h \
+  /usr/include/c++/11/thread \
+  /usr/include/c++/11/bits/this_thread_sleep.h
 
 CMakeFiles/Client.dir/client/SnmpClient.cpp.o: ../client/SnmpClient.cpp \
   /usr/include/stdc-predef.h \
@@ -3733,7 +3748,6 @@ CMakeFiles/Client.dir/client/main.cpp.o: ../client/main.cpp \
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qlayoutitem.h \
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qboxlayout.h \
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qgridlayout.h \
-  /usr/include/x86_64-linux-gnu/qt6/QtWidgets/QHBoxLayout \
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/QLabel \
   /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qlabel.h \
   /usr/include/x86_64-linux-gnu/qt6/QtGui/qpicture.h \
@@ -4088,8 +4102,6 @@ CMakeFiles/Client.dir/common/ByteBuffer.cpp.o: ../common/ByteBuffer.cpp \
 /usr/include/x86_64-linux-gnu/qt6/QtGui/QTransform:
 
 /usr/include/x86_64-linux-gnu/qt6/QtCore/QRect:
-
-/usr/include/x86_64-linux-gnu/qt6/QtCore/QObject:
 
 /usr/include/c++/11/pstl/glue_numeric_defs.h:
 
@@ -4885,8 +4897,6 @@ Client_autogen/7EM65HM6UG/moc_LoginWindow.cpp:
 
 /usr/include/c++/11/map:
 
-/usr/include/x86_64-linux-gnu/qt6/QtWidgets/QHBoxLayout:
-
 /usr/include/c++/11/bits/stl_tree.h:
 
 /usr/include/openssl/dherr.h:
@@ -4900,6 +4910,8 @@ Client_autogen/7EM65HM6UG/moc_LoginWindow.cpp:
 /usr/include/c++/11/optional:
 
 /usr/include/c++/11/condition_variable:
+
+/usr/include/x86_64-linux-gnu/qt6/QtCore/QObject:
 
 /usr/include/c++/11/ctime:
 

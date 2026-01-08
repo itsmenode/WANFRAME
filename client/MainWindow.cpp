@@ -6,8 +6,8 @@
 namespace net_ops::client
 {
 
-    MainWindow::MainWindow(std::shared_ptr<NetworkController> controller, 
-                           std::shared_ptr<DeviceMonitor> monitor, 
+    MainWindow::MainWindow(std::shared_ptr<NetworkController> controller,
+                           std::shared_ptr<DeviceMonitor> monitor,
                            QWidget *parent)
         : QMainWindow(parent), m_controller(controller), m_monitor(monitor)
     {
@@ -16,21 +16,25 @@ namespace net_ops::client
         connect(m_dataTimer, &QTimer::timeout, this, &MainWindow::pollData);
     }
 
-    void MainWindow::SetToken(const std::string& token) {
+    void MainWindow::SetToken(const std::string &token)
+    {
         m_sessionToken = token;
     }
 
     void MainWindow::showEvent(QShowEvent *event)
     {
         QMainWindow::showEvent(event);
-        if (!m_dataTimer->isActive()) {
+        if (!m_dataTimer->isActive())
+        {
             m_dataTimer->start(200);
             sendDeviceListRequest();
         }
     }
 
-    void MainWindow::sendDeviceListRequest() {
-        if (m_sessionToken.empty()) return;
+    void MainWindow::sendDeviceListRequest()
+    {
+        if (m_sessionToken.empty())
+            return;
         std::vector<uint8_t> p;
         net_ops::protocol::PackString(p, m_sessionToken);
         m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, p);
@@ -44,6 +48,22 @@ namespace net_ops::client
         auto scanBtn = new QPushButton("Scan Network");
         connect(scanBtn, &QPushButton::clicked, this, &MainWindow::onScanClicked);
         layout->addWidget(scanBtn);
+
+        auto testLogBtn = new QPushButton("Send Test Log");
+        connect(testLogBtn, &QPushButton::clicked, [this]()
+            {
+                if (m_sessionToken.empty()) return;
+
+                std::vector<uint8_t> payload;
+                net_ops::protocol::PackString(payload, m_sessionToken);
+                net_ops::protocol::PackString(payload, "127.0.0.1");
+                net_ops::protocol::PackString(payload, "Manual Test Log Entry from Client UI");
+    
+                m_controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload);
+            });
+        layout->addWidget(testLogBtn);
+
+        m_deviceTable = new QTableWidget(0, 4);
 
         m_deviceTable = new QTableWidget(0, 4);
         m_deviceTable->setHorizontalHeaderLabels({"Name", "IP", "MAC", "Status"});
@@ -62,7 +82,8 @@ namespace net_ops::client
 
     void MainWindow::onScanClicked()
     {
-        if (m_sessionToken.empty()) return;
+        if (m_sessionToken.empty())
+            return;
 
         std::string token = m_sessionToken;
 
@@ -80,8 +101,7 @@ namespace net_ops::client
             
             std::vector<uint8_t> listP;
             net_ops::protocol::PackString(listP, token);
-            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP);
-            })
+            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP); })
             .detach();
     }
 
@@ -129,8 +149,8 @@ namespace net_ops::client
             return;
 
         m_deviceTable->setRowCount(0);
-        
-        std::vector<std::string> monitorIPs; 
+
+        std::vector<std::string> monitorIPs;
 
         for (uint32_t i = 0; i < *count; ++i)
         {
@@ -147,10 +167,12 @@ namespace net_ops::client
             m_deviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString("00:00:00:00:00:00")));
             m_deviceTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(*status + " " + *info)));
 
-            if (ip) monitorIPs.push_back(*ip);
+            if (ip)
+                monitorIPs.push_back(*ip);
         }
 
-        if (m_monitor) {
+        if (m_monitor)
+        {
             m_monitor->SetTargets(monitorIPs);
         }
     }

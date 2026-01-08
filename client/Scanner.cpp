@@ -8,6 +8,8 @@
 #include <arpa/inet.h>
 #include <vector>
 #include <cstdlib>
+#include <thread>
+#include <chrono>
 
 namespace net_ops::client
 {
@@ -36,7 +38,7 @@ namespace net_ops::client
 
     bool NetworkScanner::Ping(const std::string &ip) {
         if (ip.empty()) return false;
-        std::string command = "ping -c 1 -W 0.2 " + ip + " > /dev/null 2>&1";
+        std::string command = "ping -c 1 -W 0.1 -n " + ip + " > /dev/null 2>&1";
         return (std::system(command.c_str()) == 0);
     }
 
@@ -49,8 +51,11 @@ namespace net_ops::client
         while (std::getline(arpFile, line)) {
             std::stringstream ss(line);
             std::string ip, hw, fl, mac, msk, dev;
-            if (ss >> ip >> hw >> fl >> mac >> msk >> dev && ip == target_ip) {
-                return mac;
+            if (ss >> ip >> hw >> fl >> mac >> msk >> dev) {
+                if (ip == target_ip) {
+                    if (fl == "0x0") return "00:00:00:00:00:00";
+                    return mac;
+                }
             }
         }
         return "00:00:00:00:00:00";
@@ -75,6 +80,8 @@ namespace net_ops::client
             
             tasks.push_back(std::async(std::launch::async, [target, &hosts, &mtx]() {
                 if (Ping(target)) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200)); 
+                    
                     std::string mac = GetMacFromArp(target);
                     std::lock_guard<std::mutex> lock(mtx);
                     hosts.push_back({target, mac, "Discovered Device", true});
