@@ -81,9 +81,11 @@ namespace net_ops::server
             "CREATE TABLE IF NOT EXISTS logs ("
             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
             "physical_id INTEGER, "
+            "user_device_id INTEGER, "
             "received_at DATETIME DEFAULT CURRENT_TIMESTAMP, "
             "message TEXT, "
-            "FOREIGN KEY(physical_id) REFERENCES physical_devices(id) ON DELETE CASCADE"
+            "FOREIGN KEY(physical_id) REFERENCES physical_devices(id) ON DELETE CASCADE, "
+            "FOREIGN KEY(user_device_id) REFERENCES user_devices(id) ON DELETE CASCADE"
             ");";
 
         char *err_msg = nullptr;
@@ -112,6 +114,26 @@ namespace net_ops::server
         if (!has_info)
         {
             sqlite3_exec(db_, "ALTER TABLE physical_devices ADD COLUMN info TEXT DEFAULT '';", nullptr, nullptr, nullptr);
+        }
+        sqlite3_stmt *log_stmt = nullptr;
+        bool has_user_device_id = false;
+        if (sqlite3_prepare_v2(db_, "PRAGMA table_info(logs);", -1, &log_stmt, nullptr) == SQLITE_OK)
+        {
+            while (sqlite3_step(log_stmt) == SQLITE_ROW)
+            {
+                const char *col_name = reinterpret_cast<const char *>(sqlite3_column_text(log_stmt, 1));
+                if (col_name && std::strcmp(col_name, "user_device_id") == 0)
+                {
+                    has_user_device_id = true;
+                    break;
+                }
+            }
+        }
+        if (log_stmt)
+            sqlite3_finalize(log_stmt);
+        if (!has_user_device_id)
+        {
+            sqlite3_exec(db_, "ALTER TABLE logs ADD COLUMN user_device_id INTEGER;", nullptr, nullptr, nullptr);
         }
         return true;
     }
@@ -368,13 +390,42 @@ namespace net_ops::server
 
         if (phys_id != -1)
         {
-            const char *log_sql = "INSERT INTO logs (physical_id, message) VALUES (?, ?);";
-            if (sqlite3_prepare_v2(db_, log_sql, -1, &stmt, nullptr) == SQLITE_OK)
+            std::vector<int> user_device_ids;
+            const char *user_device_sql = "SELECT id FROM user_devices WHERE physical_id = ?;";
+            if (sqlite3_prepare_v2(db_, user_device_sql, -1, &stmt, nullptr) == SQLITE_OK)
             {
                 sqlite3_bind_int(stmt, 1, phys_id);
-                sqlite3_bind_text(stmt, 2, message.c_str(), -1, SQLITE_STATIC);
-                sqlite3_step(stmt);
+                while (sqlite3_step(stmt) == SQLITE_ROW)
+                {
+                    user_device_ids.push_back(sqlite3_column_int(stmt, 0));
+                }
                 sqlite3_finalize(stmt);
+            }
+            if (user_device_ids.empty())
+            {
+                const char *log_sql = "INSERT INTO logs (physical_id, message) VALUES (?, ?);";
+                if (sqlite3_prepare_v2(db_, log_sql, -1, &stmt, nullptr) == SQLITE_OK)
+                {
+                    sqlite3_bind_int(stmt, 1, phys_id);
+                    sqlite3_bind_text(stmt, 2, message.c_str(), -1, SQLITE_STATIC);
+                    sqlite3_step(stmt);
+                    sqlite3_finalize(stmt);
+                }
+            }
+            else
+            {
+                const char *log_sql = "INSERT INTO logs (physical_id, user_device_id, message) VALUES (?, ?, ?);";
+                for (int user_device_id : user_device_ids)
+                {
+                    if (sqlite3_prepare_v2(db_, log_sql, -1, &stmt, nullptr) == SQLITE_OK)
+                    {
+                        sqlite3_bind_int(stmt, 1, phys_id);
+                        sqlite3_bind_int(stmt, 2, user_device_id);
+                        sqlite3_bind_text(stmt, 3, message.c_str(), -1, SQLITE_STATIC);
+                        sqlite3_step(stmt);
+                        sqlite3_finalize(stmt);
+                    }
+                }
             }
         }
     }
@@ -384,8 +435,10 @@ namespace net_ops::server
         std::lock_guard<std::mutex> lock(db_mutex_);
         std::vector<LogEntry> logs;
         const char *sql = "SELECT l.received_at, l.message FROM logs l "
-                          "JOIN user_devices ud ON l.physical_id = ud.physical_id "
-                          "WHERE ud.id = ? ORDER BY l.id DESC LIMIT ?;";
+                          "JOIN user_devices ud ON ud.id = ? "
+                          "WHERE l.user_device_id = ud.id "
+                          "OR (l.user_device_id IS NULL AND l.physical_id = ud.physical_id) "
+                          "ORDER BY l.id DESC LIMIT ?;";
         sqlite3_stmt *stmt;
         if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK)
             return logs;
