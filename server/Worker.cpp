@@ -249,9 +249,10 @@ namespace net_ops::server
 
         DatabaseManager::GetInstance().SaveLog(*sourceIp, *msg);
 
-        std::vector<uint8_t> response;
-        net_ops::protocol::PackString(response, "LOG_SAVED");
-        m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::LogUploadResp, response);
+        std::vector<uint8_t> pushData;
+        net_ops::protocol::PackString(pushData, *sourceIp);
+        net_ops::protocol::PackString(pushData, *msg);
+        m_networkCore->BroadcastUpdate(net_ops::protocol::MessageType::LogQueryResp, pushData);
     }
 
     void Worker::HandleDeviceStatus(int client_fd, const std::vector<uint8_t> &payload)

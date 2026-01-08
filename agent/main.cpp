@@ -5,7 +5,7 @@
 int main(int argc, char* argv[])
 {
     if (argc < 3) {
-        std::cout << "Usage: ./Agent <ServerIP> <ServerPort> [SyslogPort]\n"; // Added CLI usage
+        std::cout << "Usage: ./Agent <ServerIP> <ServerPort> [SyslogPort]\n";
         return 1;
     }
 
@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
     int serverPort = std::stoi(argv[2]);
     int syslogPort = (argc > 3) ? std::stoi(argv[3]) : 514;
 
-    auto controller = std::make_shared<net_ops::client::NetworkController>(serverIp, serverPort); // Use CLI IP/Port
+    auto controller = std::make_shared<net_ops::client::NetworkController>(serverIp, serverPort);
     auto collector = std::make_shared<net_ops::client::SyslogCollector>("/var/log/syslog", syslogPort);
 
     collector->Start([controller](const net_ops::client::DataRecord &record)

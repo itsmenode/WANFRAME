@@ -4,7 +4,8 @@
 #include <QHeaderView>
 #include <iostream>
 #include <QMessageBox>
-#include <unistd.h> 
+#include <unistd.h>
+#include <QStatusBar>
 
 namespace net_ops::client
 {
@@ -41,27 +42,29 @@ namespace net_ops::client
         QMainWindow::showEvent(event);
         if (!m_dataTimer->isActive())
         {
-            m_dataTimer->start(1000); 
+            m_dataTimer->start(1000);
             sendDeviceListRequest();
         }
     }
 
     void MainWindow::sendDeviceListRequest()
     {
-        if (m_sessionToken.empty()) return;
+        if (m_sessionToken.empty())
+            return;
         std::vector<uint8_t> p;
         net_ops::protocol::PackString(p, m_sessionToken);
         m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, p);
     }
-    
+
     void MainWindow::sendLogQueryRequest()
     {
-        if (m_selectedDeviceId == -1 || m_sessionToken.empty()) return;
-        
+        if (m_selectedDeviceId == -1 || m_sessionToken.empty())
+            return;
+
         std::vector<uint8_t> p;
-        net_ops::protocol::PackString(p, m_sessionToken); 
+        net_ops::protocol::PackString(p, m_sessionToken);
         net_ops::protocol::PackUint32(p, static_cast<uint32_t>(m_selectedDeviceId));
-        
+
         m_controller->QueueRequest(net_ops::protocol::MessageType::LogQueryReq, p);
     }
 
@@ -76,23 +79,22 @@ namespace net_ops::client
 
         auto testLogBtn = new QPushButton("Send Test Log");
         connect(testLogBtn, &QPushButton::clicked, [this]()
-            {
+                {
                 if (m_sessionToken.empty()) return;
                 std::vector<uint8_t> payload;
                 net_ops::protocol::PackString(payload, m_sessionToken);
                 net_ops::protocol::PackString(payload, "127.0.0.1");
                 net_ops::protocol::PackString(payload, "Manual Test Log");
-                m_controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload);
-            });
+                m_controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload); });
         layout->addWidget(testLogBtn);
 
-        m_deviceTable = new QTableWidget(0, 5); 
+        m_deviceTable = new QTableWidget(0, 5);
         m_deviceTable->setHorizontalHeaderLabels({"Name", "IP", "MAC", "Status", "ID"});
         m_deviceTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
         m_deviceTable->setSelectionBehavior(QAbstractItemView::SelectRows);
         m_deviceTable->setSelectionMode(QAbstractItemView::SingleSelection);
-        m_deviceTable->hideColumn(4); 
-        
+        m_deviceTable->hideColumn(4);
+
         connect(m_deviceTable, &QTableWidget::cellClicked, this, &MainWindow::onDeviceSelected);
 
         layout->addWidget(m_deviceTable);
@@ -105,26 +107,32 @@ namespace net_ops::client
         setCentralWidget(central);
         setWindowTitle("WANFRAME Dashboard");
         resize(900, 700);
+
+        statusBar()->showMessage("Connected - Real-time Updates Active");
     }
 
     void MainWindow::onDeviceSelected(int row, int col)
     {
         auto idItem = m_deviceTable->item(row, 4);
-        if (idItem) {
+        if (idItem)
+        {
             m_selectedDeviceId = idItem->text().toInt();
             m_logTable->setRowCount(0);
-            sendLogQueryRequest(); 
+            sendLogQueryRequest();
         }
     }
 
     void MainWindow::onScanClicked()
     {
-        if (m_sessionToken.empty()) return;
-        if (m_isScanning) return; 
+        if (m_sessionToken.empty())
+            return;
+        if (m_isScanning)
+            return;
 
-        if (geteuid() != 0) {
-            QMessageBox::critical(this, "Permission Denied", 
-                "Network scanning requires root privileges.\nPlease run: sudo ./Client");
+        if (geteuid() != 0)
+        {
+            QMessageBox::critical(this, "Permission Denied",
+                                  "Network scanning requires root privileges.\nPlease run: sudo ./Client");
             return;
         }
 
@@ -138,7 +146,7 @@ namespace net_ops::client
         std::string token = m_sessionToken;
 
         m_scanThread = std::thread([this, token]()
-        {
+                                   {
             try {
                 auto hosts = NetworkScanner::ScanLocalNetwork(); 
 
@@ -160,27 +168,21 @@ namespace net_ops::client
                 std::cerr << "[MainWindow] Scan thread crashed.\n";
             }
             
-            m_isScanning = false;
-        });
+            m_isScanning = false; });
     }
 
     void MainWindow::pollData()
     {
-        if (!m_isScanning && !m_scanBtn->isEnabled()) {
-            m_scanBtn->setText("Scan Network (Requires Root)");
-            m_scanBtn->setEnabled(true);
-        }
-        
-        static int counter = 0;
-        if (++counter % 2 == 0) { 
-             sendLogQueryRequest();
-        }
 
         while (auto resp = m_controller->GetNextResponse())
         {
-            if (resp->type == net_ops::protocol::MessageType::DeviceListResp)
+            if (resp->type == net_ops::protocol::MessageType::LogQueryResp)
             {
-                updateDeviceList(resp->data);
+                size_t offset = 0;
+                auto ip = net_ops::protocol::UnpackString(resp->data, offset);
+                auto msg = net_ops::protocol::UnpackString(resp->data, offset);
+                if (ip && msg)
+                    addLogEntry("NOW", "[" + *ip + "] " + *msg);
             }
             else if (resp->type == net_ops::protocol::MessageType::LogQueryResp)
             {
@@ -214,7 +216,8 @@ namespace net_ops::client
     {
         size_t offset = 0;
         auto count = net_ops::protocol::UnpackUint32(data, offset);
-        if (!count) return;
+        if (!count)
+            return;
 
         int savedId = m_selectedDeviceId;
         m_deviceTable->setRowCount(0);
@@ -237,9 +240,11 @@ namespace net_ops::client
             m_deviceTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(*status + " " + *info)));
             m_deviceTable->setItem(row, 4, new QTableWidgetItem(QString::number(*id)));
 
-            if (ip) monitorIPs.push_back(*ip);
-            
-            if (savedId != -1 && (int)*id == savedId) {
+            if (ip)
+                monitorIPs.push_back(*ip);
+
+            if (savedId != -1 && (int)*id == savedId)
+            {
                 m_deviceTable->selectRow(row);
             }
         }

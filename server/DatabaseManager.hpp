@@ -34,6 +34,13 @@ namespace net_ops::server
         std::string message;
     };
 
+    struct DeviceMetrics
+    {
+        int device_id;
+        int log_count;
+        std::string last_status;
+    };
+
     class DatabaseManager
     {
     private:
@@ -45,6 +52,8 @@ namespace net_ops::server
 
     public:
         static DatabaseManager &GetInstance();
+
+        std::vector<DeviceMetrics> GetGlobalMetrics();
 
         DatabaseManager(const DatabaseManager &) = delete;
         DatabaseManager &operator=(const DatabaseManager &) = delete;

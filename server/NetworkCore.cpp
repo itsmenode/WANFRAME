@@ -291,4 +291,13 @@ namespace net_ops::server
         std::lock_guard<std::mutex> lock(m_response_mutex);
         m_response_queue.push({client_fd, header, payload});
     }
+
+    void NetworkCore::BroadcastUpdate(net_ops::protocol::MessageType type, const std::vector<uint8_t> &payload) {
+    std::lock_guard<std::mutex> lock(m_registry_mutex);
+    for (auto const& [fd, ctx] : registry) {
+        if (ctx.is_handshake_complete) {
+            QueueResponse(fd, type, payload);
+        }
+    }
+}
 }

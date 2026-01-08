@@ -138,6 +138,30 @@ namespace net_ops::server
         return true;
     }
 
+    std::vector<DeviceMetrics> DatabaseManager::GetGlobalMetrics()
+    {
+        std::lock_guard<std::mutex> lock(db_mutex_);
+        std::vector<DeviceMetrics> metrics;
+
+        const char *sql = "SELECT pd.id, COUNT(l.id), pd.status "
+                          "FROM physical_devices pd "
+                          "LEFT JOIN logs l ON pd.id = l.physical_id "
+                          "GROUP BY pd.id;";
+
+        sqlite3_stmt *stmt;
+        if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            while (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                metrics.push_back({sqlite3_column_int(stmt, 0),
+                                   sqlite3_column_int(stmt, 1),
+                                   reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2))});
+            }
+        }
+        sqlite3_finalize(stmt);
+        return metrics;
+    }
+
     void DatabaseManager::Shutdown()
     {
         std::lock_guard<std::mutex> lock(db_mutex_);
