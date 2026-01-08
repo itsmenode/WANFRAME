@@ -26,7 +26,7 @@ namespace net_ops::server
         ~Worker();
 
         void SetNetworkCore(NetworkCore *core);
-        void Start();
+        void Start(size_t threadCount = 4);
         void Stop();
         void AddJob(int client_fd, net_ops::protocol::MessageType type, std::vector<uint8_t> payload);
 
@@ -44,7 +44,7 @@ namespace net_ops::server
         void HandleLogout(int client_fd, const std::vector<uint8_t> &payload);
 
         NetworkCore *m_networkCore;
-        std::thread m_thread;
+        std::vector<std::thread> m_threads;
         std::atomic<bool> m_running;
 
         std::queue<Job> m_jobQueue;

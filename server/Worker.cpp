@@ -20,18 +20,25 @@ namespace net_ops::server
         m_networkCore = core;
     }
 
-    void Worker::Start()
+    void Worker::Start(size_t threadCount)
     {
         m_running = true;
-        m_thread = std::thread(&Worker::Run, this);
+        for (size_t i = 0; i < threadCount; ++i)
+        {
+            m_threads.emplace_back(&Worker::Run, this);
+        }
     }
 
     void Worker::Stop()
     {
         m_running = false;
         m_cv.notify_all();
-        if (m_thread.joinable())
-            m_thread.join();
+        for (auto &t : m_threads)
+        {
+            if (t.joinable())
+                t.join();
+        }
+        m_threads.clear();
     }
 
     void Worker::AddJob(int client_fd, net_ops::protocol::MessageType type, std::vector<uint8_t> payload)

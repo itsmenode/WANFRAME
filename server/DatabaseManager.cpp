@@ -376,56 +376,20 @@ namespace net_ops::server
 
         if (phys_id == -1)
         {
-            const char *insert_phys = "INSERT OR IGNORE INTO physical_devices (mac_address, ip_address, status) VALUES (?, ?, 'Online');";
-            if (sqlite3_prepare_v2(db_, insert_phys, -1, &stmt, nullptr) == SQLITE_OK)
-            {
-                std::string placeholder_mac = "AUTO_" + ip_address;
-                sqlite3_bind_text(stmt, 1, placeholder_mac.c_str(), -1, SQLITE_TRANSIENT);
-                sqlite3_bind_text(stmt, 2, ip_address.c_str(), -1, SQLITE_TRANSIENT);
-                if (sqlite3_step(stmt) == SQLITE_DONE)
-                    phys_id = static_cast<int>(sqlite3_last_insert_rowid(db_));
-                sqlite3_finalize(stmt);
-            }
+            std::cerr << "[DB] Rejecting log from unknown IP: " << ip_address << std::endl;
+            return;
         }
 
         if (phys_id != -1)
         {
-            std::vector<int> user_device_ids;
-            const char *user_device_sql = "SELECT id FROM user_devices WHERE physical_id = ?;";
-            if (sqlite3_prepare_v2(db_, user_device_sql, -1, &stmt, nullptr) == SQLITE_OK)
+            const char *log_sql = "INSERT INTO logs (physical_id, message) VALUES (?, ?);";
+            sqlite3_stmt *stmt;
+            if (sqlite3_prepare_v2(db_, log_sql, -1, &stmt, nullptr) == SQLITE_OK)
             {
                 sqlite3_bind_int(stmt, 1, phys_id);
-                while (sqlite3_step(stmt) == SQLITE_ROW)
-                {
-                    user_device_ids.push_back(sqlite3_column_int(stmt, 0));
-                }
+                sqlite3_bind_text(stmt, 2, message.c_str(), -1, SQLITE_STATIC);
+                sqlite3_step(stmt);
                 sqlite3_finalize(stmt);
-            }
-            if (user_device_ids.empty())
-            {
-                const char *log_sql = "INSERT INTO logs (physical_id, message) VALUES (?, ?);";
-                if (sqlite3_prepare_v2(db_, log_sql, -1, &stmt, nullptr) == SQLITE_OK)
-                {
-                    sqlite3_bind_int(stmt, 1, phys_id);
-                    sqlite3_bind_text(stmt, 2, message.c_str(), -1, SQLITE_STATIC);
-                    sqlite3_step(stmt);
-                    sqlite3_finalize(stmt);
-                }
-            }
-            else
-            {
-                const char *log_sql = "INSERT INTO logs (physical_id, user_device_id, message) VALUES (?, ?, ?);";
-                for (int user_device_id : user_device_ids)
-                {
-                    if (sqlite3_prepare_v2(db_, log_sql, -1, &stmt, nullptr) == SQLITE_OK)
-                    {
-                        sqlite3_bind_int(stmt, 1, phys_id);
-                        sqlite3_bind_int(stmt, 2, user_device_id);
-                        sqlite3_bind_text(stmt, 3, message.c_str(), -1, SQLITE_STATIC);
-                        sqlite3_step(stmt);
-                        sqlite3_finalize(stmt);
-                    }
-                }
             }
         }
     }

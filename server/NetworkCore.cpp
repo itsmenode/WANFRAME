@@ -12,6 +12,7 @@
 #include "Worker.hpp"
 #include "../common/ByteBuffer.hpp"
 #include "../common/protocol.hpp"
+#include <set>
 
 namespace net_ops::server
 {
@@ -190,6 +191,8 @@ namespace net_ops::server
     {
         std::lock_guard<std::mutex> lock(m_response_mutex);
 
+        std::set<int> dirty_fds;
+
         while (!m_response_queue.empty())
         {
             OutgoingMessage msg = m_response_queue.front();
@@ -204,34 +207,16 @@ namespace net_ops::server
             std::memcpy(fullPacket.data() + net_ops::protocol::HEADER_SIZE, msg.payload.data(), msg.payload.size());
 
             ctx.out_buffer.insert(ctx.out_buffer.end(), fullPacket.begin(), fullPacket.end());
+            dirty_fds.insert(msg.client_fd);
         }
 
-        for (auto &[fd, ctx] : registry)
+        for (int fd : dirty_fds)
         {
+            ClientContext &ctx = registry[fd];
             if (ctx.out_buffer.empty() || !ctx.is_handshake_complete)
                 continue;
 
-            int written = SSL_write(ctx.ssl_handle, ctx.out_buffer.data(), ctx.out_buffer.size());
-            if (written > 0)
-            {
-                ctx.out_buffer.erase(ctx.out_buffer.begin(), ctx.out_buffer.begin() + written);
-                
-                if (ctx.out_buffer.empty()) {
-                    EpollControlMod(fd, EPOLLIN | EPOLLET);
-                }
-            }
-            else
-            {
-                int err = SSL_get_error(ctx.ssl_handle, written);
-                if (err == SSL_ERROR_WANT_WRITE)
-                {
-                    EpollControlMod(fd, EPOLLIN | EPOLLOUT | EPOLLET);
-                }
-                else if (err != SSL_ERROR_WANT_READ)
-                {
-                    DisconnectClient(fd);
-                }
-            }
+            EpollControlMod(fd, EPOLLIN | EPOLLOUT | EPOLLET);
         }
     }
 
@@ -274,13 +259,18 @@ namespace net_ops::server
             int count = epoll_wait(m_epoll_fd, ev, 128, 100);
             for (int i = 0; i < count; i++)
             {
-                if (ev[i].data.fd == m_server_fd) {
+                if (ev[i].data.fd == m_server_fd)
+                {
                     HandleNewConnection();
-                } else {
-                    if (ev[i].events & EPOLLOUT) {
+                }
+                else
+                {
+                    if (ev[i].events & EPOLLOUT)
+                    {
                         SendPendingResponses();
                     }
-                    if (ev[i].events & EPOLLIN) {
+                    if (ev[i].events & EPOLLIN)
+                    {
                         HandleClientData(ev[i].data.fd);
                     }
                 }
