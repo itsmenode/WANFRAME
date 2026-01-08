@@ -67,18 +67,19 @@ namespace net_ops::client
 
             if (poll_ret > 0)
             {
-                if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+                if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
+                {
                     std::cerr << "[NetworkController] Socket error.\n";
                     break;
                 }
-                
-                if (pfd.revents & POLLIN) {
+
+                if (pfd.revents & POLLIN)
+                {
                     auto resp = m_network->ReceiveResponseAsObject();
-                    if (resp) {
+                    if (resp)
+                    {
                         m_responseQueue.Push(*resp);
-                    } else if (!m_network->IsConnected()) {
-                        std::cerr << "[NetworkController] Connection lost.\n";
-                        break;
+                        emit responseReceived();
                     }
                 }
             }

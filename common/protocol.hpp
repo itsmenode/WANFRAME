@@ -47,6 +47,9 @@ namespace net_ops::protocol
         LogoutReq = 0x17,
         LogoutResp = 0x18,
 
+        MetricsReq = 0x19,
+        MetricsResp = 0x20,
+
         ErrorResp = 0xFF
     };
 

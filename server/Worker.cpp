@@ -104,6 +104,9 @@ namespace net_ops::server
             case net_ops::protocol::MessageType::LogoutReq:
                 HandleLogout(job.client_fd, job.payload);
                 break;
+            case net_ops::protocol::MessageType::MetricsReq:
+                HandleMetricsRequest(job.client_fd, job.payload);
+                break;
             default:
                 std::cerr << "[Worker] Unknown message type: " << (int)job.type << "\n";
                 break;
@@ -340,5 +343,20 @@ namespace net_ops::server
 
         net_ops::protocol::PackString(response, "LOGOUT_SUCCESS");
         m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::LogoutResp, response);
+    }
+
+    void Worker::HandleMetricsRequest(int client_fd, const std::vector<uint8_t> &payload)
+    {
+        auto metrics = DatabaseManager::GetInstance().GetGlobalMetrics();
+
+        std::vector<uint8_t> response;
+        net_ops::protocol::PackUint32(response, static_cast<uint32_t>(metrics.size()));
+        for (const auto &m : metrics)
+        {
+            net_ops::protocol::PackUint32(response, m.device_id);
+            net_ops::protocol::PackUint32(response, m.log_count);
+            net_ops::protocol::PackString(response, m.last_status);
+        }
+        m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::MetricsResp, response);
     }
 }

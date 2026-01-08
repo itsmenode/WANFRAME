@@ -21,9 +21,11 @@ namespace net_ops::client
           m_isScanning(false),
           m_selectedDeviceId(-1)
     {
-        setupUi();
         m_dataTimer = new QTimer(this);
-        connect(m_dataTimer, &QTimer::timeout, this, &MainWindow::pollData);
+
+        connect(m_controller.get(), &NetworkController::responseReceived, this, &MainWindow::pollData);
+
+        setupUi();
     }
 
     MainWindow::~MainWindow()
