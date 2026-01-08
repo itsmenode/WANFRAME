@@ -49,7 +49,22 @@
 			"compileCommandFragments" : 
 			[
 				{
+					"backtrace" : 2,
+					"fragment" : "-fPIC"
+				},
+				{
 					"fragment" : "-std=gnu++17"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 2,
+					"define" : "QT_CORE_LIB"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "QT_NO_DEBUG"
 				}
 			],
 			"includes" : 
@@ -73,6 +88,21 @@
 				{
 					"backtrace" : 3,
 					"path" : "/home/andrew/Documents/GitHub/WANFRAME/common"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/usr/include/x86_64-linux-gnu/qt6/QtCore"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/usr/include/x86_64-linux-gnu/qt6"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++"
 				}
 			],
 			"language" : "CXX",
@@ -80,7 +110,8 @@
 			{
 				"backtraces" : 
 				[
-					1
+					2,
+					2
 				],
 				"standard" : "17"
 			},
@@ -110,6 +141,11 @@
 			{
 				"fragment" : "",
 				"role" : "flags"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "/usr/lib/x86_64-linux-gnu/libQt6Core.so.6.2.4",
+				"role" : "libraries"
 			},
 			{
 				"backtrace" : 2,

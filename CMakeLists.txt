@@ -102,6 +102,7 @@ add_executable(Agent
 )
 
 target_link_libraries(Agent
+    Qt6::Core
     OpenSSL::SSL
     OpenSSL::Crypto
     Threads::Threads

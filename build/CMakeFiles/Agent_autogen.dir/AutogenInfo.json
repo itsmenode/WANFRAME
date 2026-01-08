@@ -449,7 +449,7 @@
 	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
 	"INCLUDE_DIR" : "/home/andrew/Documents/GitHub/WANFRAME/build/Agent_autogen/include",
 	"MOC_COMPILATION_FILE" : "/home/andrew/Documents/GitHub/WANFRAME/build/Agent_autogen/mocs_compilation.cpp",
-	"MOC_DEFINITIONS" : [],
+	"MOC_DEFINITIONS" : [ "QT_CORE_LIB", "QT_NO_DEBUG" ],
 	"MOC_DEPEND_FILTERS" : 
 	[
 		[
@@ -463,6 +463,9 @@
 		"/home/andrew/Documents/GitHub/WANFRAME/server",
 		"/home/andrew/Documents/GitHub/WANFRAME/client",
 		"/home/andrew/Documents/GitHub/WANFRAME/common",
+		"/usr/include/x86_64-linux-gnu/qt6/QtCore",
+		"/usr/include/x86_64-linux-gnu/qt6",
+		"/usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++",
 		"/usr/include",
 		"/usr/include/c++/11",
 		"/usr/include/x86_64-linux-gnu/c++/11",
