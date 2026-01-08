@@ -63,6 +63,7 @@ namespace net_ops::server
             "mac_address TEXT UNIQUE NOT NULL, "
             "ip_address TEXT NOT NULL, "
             "status TEXT DEFAULT 'UNKNOWN', "
+            "info TEXT DEFAULT '', "
             "last_seen DATETIME DEFAULT CURRENT_TIMESTAMP"
             ");"
 
@@ -91,6 +92,26 @@ namespace net_ops::server
             std::cerr << "[DB] Schema error: " << err_msg << std::endl;
             sqlite3_free(err_msg);
             return false;
+        }
+        sqlite3_stmt *stmt = nullptr;
+        bool has_info = false;
+        if (sqlite3_prepare_v2(db_, "PRAGMA table_info(physical_devices);", -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            while (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                const char *col_name = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
+                if (col_name && std::strcmp(col_name, "info") == 0)
+                {
+                    has_info = true;
+                    break;
+                }
+            }
+        }
+        if (stmt)
+            sqlite3_finalize(stmt);
+        if (!has_info)
+        {
+            sqlite3_exec(db_, "ALTER TABLE physical_devices ADD COLUMN info TEXT DEFAULT '';", nullptr, nullptr, nullptr);
         }
         return true;
     }
@@ -262,7 +283,7 @@ namespace net_ops::server
     {
         std::lock_guard<std::mutex> lock(db_mutex_);
         std::vector<DeviceRecord> devices;
-        const char *sql = "SELECT ud.id, ud.user_id, ud.custom_name, pd.ip_address, pd.mac_address, pd.status, ud.custom_info "
+        const char *sql = "SELECT ud.id, ud.user_id, ud.custom_name, pd.ip_address, pd.mac_address, pd.status, pd.info "
                           "FROM user_devices ud "
                           "JOIN physical_devices pd ON ud.physical_id = pd.id "
                           "WHERE ud.user_id = ?;";
@@ -306,10 +327,11 @@ namespace net_ops::server
     {
         std::lock_guard<std::mutex> lock(db_mutex_);
         sqlite3_stmt *stmt;
-        if (sqlite3_prepare_v2(db_, "UPDATE physical_devices SET status = ?, last_seen = CURRENT_TIMESTAMP WHERE ip_address = ?;", -1, &stmt, nullptr) == SQLITE_OK)
+        if (sqlite3_prepare_v2(db_, "UPDATE physical_devices SET status = ?, info = ?, last_seen = CURRENT_TIMESTAMP WHERE ip_address = ?;", -1, &stmt, nullptr) == SQLITE_OK)
         {
             sqlite3_bind_text(stmt, 1, status.c_str(), -1, SQLITE_STATIC);
-            sqlite3_bind_text(stmt, 2, ip.c_str(), -1, SQLITE_STATIC);
+            sqlite3_bind_text(stmt, 2, info.c_str(), -1, SQLITE_STATIC);
+            sqlite3_bind_text(stmt, 3, ip.c_str(), -1, SQLITE_STATIC);
             sqlite3_step(stmt);
             sqlite3_finalize(stmt);
         }
