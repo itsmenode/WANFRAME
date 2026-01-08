@@ -88,10 +88,19 @@ namespace net_ops::client
                 Disconnect();
                 return false;
             }
-        } else if (SSL_set1_ip_asc(m_ssl_handle, m_host.c_str()) != 1) {
-            std::cerr << "[ClientNetwork] Failed to set expected IP for verification.\n";
-            Disconnect();
-            return false;
+        } else {
+            X509_VERIFY_PARAM *param = SSL_get0_param(m_ssl_handle);
+            int ip_set = 0;
+            if (is_ipv4) {
+                ip_set = X509_VERIFY_PARAM_set1_ip(param, &addr4, sizeof(addr4));
+            } else if (is_ipv6) {
+                ip_set = X509_VERIFY_PARAM_set1_ip(param, &addr6, sizeof(addr6));
+            }
+            if (ip_set != 1) {
+                std::cerr << "[ClientNetwork] Failed to set expected IP for verification.\n";
+                Disconnect();
+                return false;
+            }
         }
 
         if (SSL_connect(m_ssl_handle) <= 0) { 
