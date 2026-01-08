@@ -292,9 +292,15 @@ namespace net_ops::server
     {
         std::lock_guard<std::mutex> lock(db_mutex_);
         sqlite3_stmt *stmt;
+        
+        std::string combinedStatus = status;
+        if (!info.empty()) {
+            combinedStatus += " " + info;
+        }
+
         if (sqlite3_prepare_v2(db_, "UPDATE physical_devices SET status = ?, last_seen = CURRENT_TIMESTAMP WHERE ip_address = ?;", -1, &stmt, nullptr) == SQLITE_OK)
         {
-            sqlite3_bind_text(stmt, 1, status.c_str(), -1, SQLITE_STATIC);
+            sqlite3_bind_text(stmt, 1, combinedStatus.c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt, 2, ip.c_str(), -1, SQLITE_STATIC);
             sqlite3_step(stmt);
             sqlite3_finalize(stmt);

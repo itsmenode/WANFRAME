@@ -13,7 +13,8 @@ namespace net_ops::client {
     struct MonitoredDevice {
         std::string ip;
         bool is_online;
-        std::chrono::steady_clock::time_point last_snmp_check; 
+        std::chrono::steady_clock::time_point last_snmp_check;
+        std::string cached_uptime;
     };
 
     using StatusCallback = std::function<void(const std::string&, const std::string&, const std::string&)>;

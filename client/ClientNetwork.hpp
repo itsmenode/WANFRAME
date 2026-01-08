@@ -24,7 +24,7 @@ namespace net_ops::client
         std::string m_host;
         int m_port;
         int m_socket_fd;
-
+        
         std::mutex m_sendMutex;
 
         SSL_CTX *m_ssl_ctx;

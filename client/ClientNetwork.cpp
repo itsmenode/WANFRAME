@@ -30,7 +30,6 @@ namespace net_ops::client
             std::cerr << "[ClientNetwork] Failed to create SSL Context\n";
             return;
         }
-
         SSL_CTX_set_verify(m_ssl_ctx, SSL_VERIFY_NONE, nullptr);
     }
 
@@ -52,7 +51,7 @@ namespace net_ops::client
         serv_addr.sin_port = htons(m_port);
         
         if (inet_pton(AF_INET, m_host.c_str(), &serv_addr.sin_addr) <= 0) { 
-            std::cerr << "[ClientNetwork] Invalid address/Address not supported: " << m_host << "\n";
+            std::cerr << "[ClientNetwork] Invalid address: " << m_host << "\n";
             close(m_socket_fd); 
             return false; 
         }
@@ -112,7 +111,6 @@ namespace net_ops::client
             if (ret <= 0) {
                 int err = SSL_get_error(m_ssl_handle, ret);
                 if (err != SSL_ERROR_WANT_WRITE && err != SSL_ERROR_WANT_READ) {
-                    std::cerr << "[ClientNetwork] Write error, disconnecting.\n";
                     Disconnect();
                     return;
                 }
@@ -123,9 +121,7 @@ namespace net_ops::client
         }
     }
 
-
-    bool ClientNetwork::SendLogin(const std::string &username, const std::string &password)
-    {
+    bool ClientNetwork::SendLogin(const std::string &username, const std::string &password) {
         std::vector<uint8_t> p;
         net_ops::protocol::PackString(p, username);
         net_ops::protocol::PackString(p, password);
@@ -133,8 +129,7 @@ namespace net_ops::client
         return true;
     }
 
-    bool ClientNetwork::SendRegister(const std::string &username, const std::string &password)
-    {
+    bool ClientNetwork::SendRegister(const std::string &username, const std::string &password) {
         std::vector<uint8_t> p;
         net_ops::protocol::PackString(p, username);
         net_ops::protocol::PackString(p, password);
@@ -142,8 +137,7 @@ namespace net_ops::client
         return true;
     }
 
-    void ClientNetwork::SendAddDevice(const std::string &token, const std::string &name, const std::string &ip, const std::string &mac)
-    {
+    void ClientNetwork::SendAddDevice(const std::string &token, const std::string &name, const std::string &ip, const std::string &mac) {
         std::vector<uint8_t> p;
         net_ops::protocol::PackString(p, token);
         net_ops::protocol::PackString(p, name);
@@ -152,16 +146,14 @@ namespace net_ops::client
         SendRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
     }
 
-    bool ClientNetwork::SendListDevices(const std::string &token)
-    {
+    bool ClientNetwork::SendListDevices(const std::string &token) {
         std::vector<uint8_t> p;
         net_ops::protocol::PackString(p, token);
         SendRequest(net_ops::protocol::MessageType::DeviceListReq, p);
         return true;
     }
 
-    bool ClientNetwork::SendLogUpload(const std::string &token, const std::string &source_ip, const std::string &log_msg)
-    {
+    bool ClientNetwork::SendLogUpload(const std::string &token, const std::string &source_ip, const std::string &log_msg) {
         std::vector<uint8_t> p;
         net_ops::protocol::PackString(p, token);
         net_ops::protocol::PackString(p, source_ip);
@@ -170,8 +162,7 @@ namespace net_ops::client
         return true;
     }
 
-    bool ClientNetwork::SendStatusUpdate(const std::string &token, const std::string &ip, const std::string &status, const std::string &info)
-    {
+    bool ClientNetwork::SendStatusUpdate(const std::string &token, const std::string &ip, const std::string &status, const std::string &info) {
         std::vector<uint8_t> p;
         net_ops::protocol::PackString(p, token);
         net_ops::protocol::PackString(p, ip);
@@ -181,24 +172,21 @@ namespace net_ops::client
         return true;
     }
 
-    void ClientNetwork::SendFetchLogs(const std::string &token, int device_id)
-    {
+    void ClientNetwork::SendFetchLogs(const std::string &token, int device_id) {
         std::vector<uint8_t> p;
         net_ops::protocol::PackString(p, token);
         net_ops::protocol::PackUint32(p, static_cast<uint32_t>(device_id));
         SendRequest(net_ops::protocol::MessageType::LogQueryReq, p);
     }
 
-    bool ClientNetwork::SendLogout(const std::string &token)
-    {
+    bool ClientNetwork::SendLogout(const std::string &token) {
         std::vector<uint8_t> p;
         net_ops::protocol::PackString(p, token);
         SendRequest(net_ops::protocol::MessageType::LogoutReq, p);
         return true;
     }
 
-    bool ClientNetwork::ReceiveResponse()
-    {
+    bool ClientNetwork::ReceiveResponse() {
         auto resp = ReceiveResponseAsObject();
         return resp.has_value();
     }
