@@ -4,8 +4,6 @@
 #include <atomic>
 #include <memory>
 #include <functional>
-#include <QObject>
-
 #include "ClientNetwork.hpp"
 #include "ThreadSafeQueue.hpp"
 #include "../common/protocol.hpp"
@@ -18,9 +16,8 @@ namespace net_ops::client
         std::vector<uint8_t> payload;
     };
 
-    class NetworkController : public QObject
+    class NetworkController
     {
-        Q_OBJECT
     public:
         NetworkController(const std::string &host, int port);
         ~NetworkController();
@@ -31,9 +28,6 @@ namespace net_ops::client
         void QueueRequest(net_ops::protocol::MessageType type, std::vector<uint8_t> payload);
         std::optional<NetworkResponse> GetNextResponse();
         bool IsConnected() const { return m_connected; }
-
-    signals:
-        void responseReceived();
 
     private:
         void Run();

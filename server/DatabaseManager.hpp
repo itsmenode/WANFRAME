@@ -34,13 +34,6 @@ namespace net_ops::server
         std::string message;
     };
 
-    struct DeviceMetrics
-    {
-        int device_id;
-        int log_count;
-        std::string last_status;
-    };
-
     class DatabaseManager
     {
     private:
@@ -52,8 +45,6 @@ namespace net_ops::server
 
     public:
         static DatabaseManager &GetInstance();
-
-        std::vector<DeviceMetrics> GetGlobalMetrics();
 
         DatabaseManager(const DatabaseManager &) = delete;
         DatabaseManager &operator=(const DatabaseManager &) = delete;
@@ -69,13 +60,9 @@ namespace net_ops::server
 
         bool AddDevice(int user_id, const std::string &name, const std::string &ip, std::string mac);
         std::vector<DeviceRecord> GetAllDevicesForUser(int user_id);
-        bool IsUserDeviceOwner(int user_id, int user_device_id);
         void UpdateDeviceStatus(const std::string &ip, const std::string &status, const std::string &info);
 
         void SaveLog(const std::string &ip_address, const std::string &message);
         std::vector<LogEntry> GetLogsForDevice(int user_device_id, int limit = 50);
-
-        std::optional<std::string> GetDashboardConfig(int user_id);
-        bool SetDashboardConfig(int user_id, const std::string &config);
     };
 }

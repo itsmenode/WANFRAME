@@ -381,7 +381,6 @@ CMakeFiles/Client.dir/client/MainWindow.cpp.o: \
  /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
  /usr/include/c++/11/bits/this_thread_sleep.h \
  /home/andrew/Documents/GitHub/WANFRAME/client/NetworkController.hpp \
- /usr/include/x86_64-linux-gnu/qt6/QtCore/QObject \
  /home/andrew/Documents/GitHub/WANFRAME/client/ClientNetwork.hpp \
  /usr/include/openssl/ssl.h /usr/include/openssl/macros.h \
  /usr/include/x86_64-linux-gnu/openssl/opensslconf.h \
@@ -447,9 +446,6 @@ CMakeFiles/Client.dir/client/MainWindow.cpp.o: \
  /usr/include/c++/11/bits/unique_lock.h \
  /usr/include/c++/11/condition_variable \
  /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.hpp \
- /home/andrew/Documents/GitHub/WANFRAME/client/DataSource.hpp \
- /home/andrew/Documents/GitHub/WANFRAME/client/SnmpMonitor.hpp \
- /home/andrew/Documents/GitHub/WANFRAME/client/SnmpClient.hpp \
  /home/andrew/Documents/GitHub/WANFRAME/client/Scanner.hpp \
  /usr/include/x86_64-linux-gnu/qt6/QtWidgets/QHeaderView \
  /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qheaderview.h \
@@ -472,10 +468,4 @@ CMakeFiles/Client.dir/client/MainWindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/bits/getopt_posix.h \
  /usr/include/x86_64-linux-gnu/bits/getopt_core.h \
  /usr/include/x86_64-linux-gnu/bits/unistd_ext.h \
- /usr/include/linux/close_range.h \
- /usr/include/x86_64-linux-gnu/qt6/QtWidgets/QStatusBar \
- /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qstatusbar.h \
- /usr/include/x86_64-linux-gnu/qt6/QtWidgets/QLabel \
- /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qlabel.h \
- /usr/include/x86_64-linux-gnu/qt6/QtGui/qpicture.h \
- /usr/include/x86_64-linux-gnu/qt6/QtGui/qtextdocument.h
+ /usr/include/linux/close_range.h

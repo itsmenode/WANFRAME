@@ -143,19 +143,6 @@ Client/fast:
 .PHONY : Client/fast
 
 #=============================================================================
-# Target rules for targets named Agent
-
-# Build rule for target.
-Agent: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Agent
-.PHONY : Agent
-
-# fast build rule for target.
-Agent/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/build
-.PHONY : Agent/fast
-
-#=============================================================================
 # Target rules for targets named Server_autogen
 
 # Build rule for target.
@@ -180,43 +167,6 @@ Client_autogen: cmake_check_build_system
 Client_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client_autogen.dir/build.make CMakeFiles/Client_autogen.dir/build
 .PHONY : Client_autogen/fast
-
-#=============================================================================
-# Target rules for targets named Agent_autogen
-
-# Build rule for target.
-Agent_autogen: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Agent_autogen
-.PHONY : Agent_autogen
-
-# fast build rule for target.
-Agent_autogen/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent_autogen.dir/build.make CMakeFiles/Agent_autogen.dir/build
-.PHONY : Agent_autogen/fast
-
-Agent_autogen/mocs_compilation.o: Agent_autogen/mocs_compilation.cpp.o
-.PHONY : Agent_autogen/mocs_compilation.o
-
-# target to build an object file
-Agent_autogen/mocs_compilation.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/Agent_autogen/mocs_compilation.cpp.o
-.PHONY : Agent_autogen/mocs_compilation.cpp.o
-
-Agent_autogen/mocs_compilation.i: Agent_autogen/mocs_compilation.cpp.i
-.PHONY : Agent_autogen/mocs_compilation.i
-
-# target to preprocess a source file
-Agent_autogen/mocs_compilation.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/Agent_autogen/mocs_compilation.cpp.i
-.PHONY : Agent_autogen/mocs_compilation.cpp.i
-
-Agent_autogen/mocs_compilation.s: Agent_autogen/mocs_compilation.cpp.s
-.PHONY : Agent_autogen/mocs_compilation.s
-
-# target to generate assembly for a file
-Agent_autogen/mocs_compilation.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/Agent_autogen/mocs_compilation.cpp.s
-.PHONY : Agent_autogen/mocs_compilation.cpp.s
 
 Client_autogen/mocs_compilation.o: Client_autogen/mocs_compilation.cpp.o
 .PHONY : Client_autogen/mocs_compilation.o
@@ -266,37 +216,12 @@ Server_autogen/mocs_compilation.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/Server_autogen/mocs_compilation.cpp.s
 .PHONY : Server_autogen/mocs_compilation.cpp.s
 
-agent/main.o: agent/main.cpp.o
-.PHONY : agent/main.o
-
-# target to build an object file
-agent/main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/agent/main.cpp.o
-.PHONY : agent/main.cpp.o
-
-agent/main.i: agent/main.cpp.i
-.PHONY : agent/main.i
-
-# target to preprocess a source file
-agent/main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/agent/main.cpp.i
-.PHONY : agent/main.cpp.i
-
-agent/main.s: agent/main.cpp.s
-.PHONY : agent/main.s
-
-# target to generate assembly for a file
-agent/main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/agent/main.cpp.s
-.PHONY : agent/main.cpp.s
-
 client/ClientNetwork.o: client/ClientNetwork.cpp.o
 .PHONY : client/ClientNetwork.o
 
 # target to build an object file
 client/ClientNetwork.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/ClientNetwork.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/client/ClientNetwork.cpp.o
 .PHONY : client/ClientNetwork.cpp.o
 
 client/ClientNetwork.i: client/ClientNetwork.cpp.i
@@ -305,7 +230,6 @@ client/ClientNetwork.i: client/ClientNetwork.cpp.i
 # target to preprocess a source file
 client/ClientNetwork.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/ClientNetwork.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/client/ClientNetwork.cpp.i
 .PHONY : client/ClientNetwork.cpp.i
 
 client/ClientNetwork.s: client/ClientNetwork.cpp.s
@@ -314,32 +238,7 @@ client/ClientNetwork.s: client/ClientNetwork.cpp.s
 # target to generate assembly for a file
 client/ClientNetwork.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/ClientNetwork.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/client/ClientNetwork.cpp.s
 .PHONY : client/ClientNetwork.cpp.s
-
-client/DataSourceRegistry.o: client/DataSourceRegistry.cpp.o
-.PHONY : client/DataSourceRegistry.o
-
-# target to build an object file
-client/DataSourceRegistry.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.o
-.PHONY : client/DataSourceRegistry.cpp.o
-
-client/DataSourceRegistry.i: client/DataSourceRegistry.cpp.i
-.PHONY : client/DataSourceRegistry.i
-
-# target to preprocess a source file
-client/DataSourceRegistry.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.i
-.PHONY : client/DataSourceRegistry.cpp.i
-
-client/DataSourceRegistry.s: client/DataSourceRegistry.cpp.s
-.PHONY : client/DataSourceRegistry.s
-
-# target to generate assembly for a file
-client/DataSourceRegistry.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.s
-.PHONY : client/DataSourceRegistry.cpp.s
 
 client/DeviceMonitor.o: client/DeviceMonitor.cpp.o
 .PHONY : client/DeviceMonitor.o
@@ -419,7 +318,6 @@ client/NetworkController.o: client/NetworkController.cpp.o
 # target to build an object file
 client/NetworkController.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/NetworkController.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/client/NetworkController.cpp.o
 .PHONY : client/NetworkController.cpp.o
 
 client/NetworkController.i: client/NetworkController.cpp.i
@@ -428,7 +326,6 @@ client/NetworkController.i: client/NetworkController.cpp.i
 # target to preprocess a source file
 client/NetworkController.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/NetworkController.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/client/NetworkController.cpp.i
 .PHONY : client/NetworkController.cpp.i
 
 client/NetworkController.s: client/NetworkController.cpp.s
@@ -437,7 +334,6 @@ client/NetworkController.s: client/NetworkController.cpp.s
 # target to generate assembly for a file
 client/NetworkController.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/NetworkController.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/client/NetworkController.cpp.s
 .PHONY : client/NetworkController.cpp.s
 
 client/Scanner.o: client/Scanner.cpp.o
@@ -464,61 +360,12 @@ client/Scanner.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/Scanner.cpp.s
 .PHONY : client/Scanner.cpp.s
 
-client/SnmpClient.o: client/SnmpClient.cpp.o
-.PHONY : client/SnmpClient.o
-
-# target to build an object file
-client/SnmpClient.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SnmpClient.cpp.o
-.PHONY : client/SnmpClient.cpp.o
-
-client/SnmpClient.i: client/SnmpClient.cpp.i
-.PHONY : client/SnmpClient.i
-
-# target to preprocess a source file
-client/SnmpClient.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SnmpClient.cpp.i
-.PHONY : client/SnmpClient.cpp.i
-
-client/SnmpClient.s: client/SnmpClient.cpp.s
-.PHONY : client/SnmpClient.s
-
-# target to generate assembly for a file
-client/SnmpClient.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SnmpClient.cpp.s
-.PHONY : client/SnmpClient.cpp.s
-
-client/SnmpMonitor.o: client/SnmpMonitor.cpp.o
-.PHONY : client/SnmpMonitor.o
-
-# target to build an object file
-client/SnmpMonitor.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SnmpMonitor.cpp.o
-.PHONY : client/SnmpMonitor.cpp.o
-
-client/SnmpMonitor.i: client/SnmpMonitor.cpp.i
-.PHONY : client/SnmpMonitor.i
-
-# target to preprocess a source file
-client/SnmpMonitor.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SnmpMonitor.cpp.i
-.PHONY : client/SnmpMonitor.cpp.i
-
-client/SnmpMonitor.s: client/SnmpMonitor.cpp.s
-.PHONY : client/SnmpMonitor.s
-
-# target to generate assembly for a file
-client/SnmpMonitor.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SnmpMonitor.cpp.s
-.PHONY : client/SnmpMonitor.cpp.s
-
 client/SyslogCollector.o: client/SyslogCollector.cpp.o
 .PHONY : client/SyslogCollector.o
 
 # target to build an object file
 client/SyslogCollector.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SyslogCollector.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/client/SyslogCollector.cpp.o
 .PHONY : client/SyslogCollector.cpp.o
 
 client/SyslogCollector.i: client/SyslogCollector.cpp.i
@@ -527,7 +374,6 @@ client/SyslogCollector.i: client/SyslogCollector.cpp.i
 # target to preprocess a source file
 client/SyslogCollector.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SyslogCollector.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/client/SyslogCollector.cpp.i
 .PHONY : client/SyslogCollector.cpp.i
 
 client/SyslogCollector.s: client/SyslogCollector.cpp.s
@@ -536,7 +382,6 @@ client/SyslogCollector.s: client/SyslogCollector.cpp.s
 # target to generate assembly for a file
 client/SyslogCollector.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SyslogCollector.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/client/SyslogCollector.cpp.s
 .PHONY : client/SyslogCollector.cpp.s
 
 client/main.o: client/main.cpp.o
@@ -570,7 +415,6 @@ common/ByteBuffer.o: common/ByteBuffer.cpp.o
 common/ByteBuffer.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/common/ByteBuffer.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/common/ByteBuffer.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/common/ByteBuffer.cpp.o
 .PHONY : common/ByteBuffer.cpp.o
 
 common/ByteBuffer.i: common/ByteBuffer.cpp.i
@@ -580,7 +424,6 @@ common/ByteBuffer.i: common/ByteBuffer.cpp.i
 common/ByteBuffer.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/common/ByteBuffer.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/common/ByteBuffer.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/common/ByteBuffer.cpp.i
 .PHONY : common/ByteBuffer.cpp.i
 
 common/ByteBuffer.s: common/ByteBuffer.cpp.s
@@ -590,7 +433,6 @@ common/ByteBuffer.s: common/ByteBuffer.cpp.s
 common/ByteBuffer.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/common/ByteBuffer.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/common/ByteBuffer.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Agent.dir/build.make CMakeFiles/Agent.dir/common/ByteBuffer.cpp.s
 .PHONY : common/ByteBuffer.cpp.s
 
 server/DatabaseManager.o: server/DatabaseManager.cpp.o
@@ -721,30 +563,19 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... Agent_autogen"
 	@echo "... Client_autogen"
 	@echo "... Server_autogen"
-	@echo "... Agent"
 	@echo "... Client"
 	@echo "... Server"
-	@echo "... Agent_autogen/mocs_compilation.o"
-	@echo "... Agent_autogen/mocs_compilation.i"
-	@echo "... Agent_autogen/mocs_compilation.s"
 	@echo "... Client_autogen/mocs_compilation.o"
 	@echo "... Client_autogen/mocs_compilation.i"
 	@echo "... Client_autogen/mocs_compilation.s"
 	@echo "... Server_autogen/mocs_compilation.o"
 	@echo "... Server_autogen/mocs_compilation.i"
 	@echo "... Server_autogen/mocs_compilation.s"
-	@echo "... agent/main.o"
-	@echo "... agent/main.i"
-	@echo "... agent/main.s"
 	@echo "... client/ClientNetwork.o"
 	@echo "... client/ClientNetwork.i"
 	@echo "... client/ClientNetwork.s"
-	@echo "... client/DataSourceRegistry.o"
-	@echo "... client/DataSourceRegistry.i"
-	@echo "... client/DataSourceRegistry.s"
 	@echo "... client/DeviceMonitor.o"
 	@echo "... client/DeviceMonitor.i"
 	@echo "... client/DeviceMonitor.s"
@@ -760,12 +591,6 @@ help:
 	@echo "... client/Scanner.o"
 	@echo "... client/Scanner.i"
 	@echo "... client/Scanner.s"
-	@echo "... client/SnmpClient.o"
-	@echo "... client/SnmpClient.i"
-	@echo "... client/SnmpClient.s"
-	@echo "... client/SnmpMonitor.o"
-	@echo "... client/SnmpMonitor.i"
-	@echo "... client/SnmpMonitor.s"
 	@echo "... client/SyslogCollector.o"
 	@echo "... client/SyslogCollector.i"
 	@echo "... client/SyslogCollector.s"

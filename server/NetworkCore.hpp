@@ -59,8 +59,8 @@ namespace net_ops::server
         void NonBlockingMode(int fd);
         void EpollControlAdd(int fd);
         void EpollControlRemove(int fd);
-
-        void EpollControlMod(int fd, uint32_t events);
+        
+        void EpollControlMod(int fd, uint32_t events); 
 
         void DisconnectClient(int fd);
 
@@ -68,8 +68,6 @@ namespace net_ops::server
         void HandleClientData(int fd);
 
         void SendPendingResponses();
-
-        std::mutex m_registry_mutex;
 
     public:
         explicit NetworkCore(int port, Worker *worker);
@@ -81,6 +79,5 @@ namespace net_ops::server
         void Stop() { m_running = false; }
 
         void QueueResponse(int client_fd, net_ops::protocol::MessageType type, const std::vector<uint8_t> &payload);
-        void BroadcastUpdate(net_ops::protocol::MessageType type, const std::vector<uint8_t> &payload);
     };
 }

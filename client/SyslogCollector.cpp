@@ -10,32 +10,20 @@
 
 namespace net_ops::client
 {
-    SyslogCollector::SyslogCollector(const std::string &logPath, int port)
-        : m_logPath(logPath), m_port(port), m_running(false)
+    SyslogCollector::SyslogCollector(const std::string &logPath)
+        : m_logPath(logPath), m_running(false)
     {
     }
 
     SyslogCollector::~SyslogCollector() { Stop(); }
 
-    void SyslogCollector::SetPort(int port)
+    void SyslogCollector::Start(int port, LogCallback callback)
     {
-        m_port = port;
-    }
-
-    void SyslogCollector::Start(DataCallback callback)
-    {
-        if (m_running)
-            return;
-        if (m_port <= 0)
-        {
-            std::cerr << "[Syslog] Invalid port configured.\n";
-            return;
-        }
+        if (m_running) return;
         m_running = true;
 
-        m_worker = std::thread([this, callback]()
-                               {
-            int port = m_port;
+        m_worker = std::thread([this, port, callback]()
+        {
             int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
             if (sockfd < 0) {
                 std::cerr << "[Syslog] Failed to create socket\n";
@@ -71,43 +59,19 @@ namespace net_ops::client
                 int n = recvfrom(sockfd, buffer, sizeof(buffer) - 1, 0, (struct sockaddr *)&cliaddr, &len);
                 
                 if (n > 0) {
-    buffer[n] = '\0';
-    std::string raw(buffer);
-    DataRecord record;
-    record.type = DataRecordType::Syslog;
-    record.ip = inet_ntoa(cliaddr.sin_addr);
+                    buffer[n] = '\0';
+                    std::string sourceIp = inet_ntoa(cliaddr.sin_addr);
+                    std::string message(buffer);
 
-    if (raw[0] == '<') {
-        size_t endPri = raw.find('>');
-        if (endPri != std::string::npos) {
-            record.priority = std::stoi(raw.substr(1, endPri - 1));
-            record.facility = record.priority / 8;
-            record.severity = record.priority % 8;
-
-            std::string remaining = raw.substr(endPri + 1);
-            if (remaining.length() > 16) {
-                record.timestamp = remaining.substr(0, 15);
-                size_t hostEnd = remaining.find(' ', 16);
-                if (hostEnd != std::string::npos) {
-                    record.hostname = remaining.substr(16, hostEnd - 16);
-                    record.message = remaining.substr(hostEnd + 1);
-                } else {
-                    record.message = remaining.substr(16);
+                    if (callback) {
+                        callback(sourceIp, message);
+                    }
                 }
-            } else {
-                record.message = remaining;
-            }
-        }
-    } else {
-        record.message = raw;
-    }
-
-    if (callback) callback(record);
-}
             }
 
             close(sockfd);
-            std::cout << "[Syslog] Stopped.\n"; });
+            std::cout << "[Syslog] Stopped.\n";
+        });
     }
 
     void SyslogCollector::Stop()

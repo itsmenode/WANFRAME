@@ -1,11 +1,8 @@
 /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/moc_MainWindow.cpp: /home/andrew/Documents/GitHub/WANFRAME/client/MainWindow.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/moc_predefs.h \
   /home/andrew/Documents/GitHub/WANFRAME/client/ClientNetwork.hpp \
-  /home/andrew/Documents/GitHub/WANFRAME/client/DataSource.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/client/NetworkController.hpp \
-  /home/andrew/Documents/GitHub/WANFRAME/client/SnmpClient.hpp \
-  /home/andrew/Documents/GitHub/WANFRAME/client/SnmpMonitor.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/client/ThreadSafeQueue.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/common/ByteBuffer.hpp \
   /home/andrew/Documents/GitHub/WANFRAME/common/protocol.hpp \

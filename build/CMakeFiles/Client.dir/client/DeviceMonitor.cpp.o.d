@@ -150,9 +150,8 @@ CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o: \
  /usr/include/c++/11/mutex /usr/include/c++/11/system_error \
  /usr/include/x86_64-linux-gnu/c++/11/bits/error_constants.h \
  /usr/include/c++/11/stdexcept /usr/include/c++/11/bits/std_mutex.h \
- /usr/include/c++/11/bits/unique_lock.h \
- /home/andrew/Documents/GitHub/WANFRAME/client/DataSource.hpp \
- /usr/include/c++/11/functional /usr/include/c++/11/bits/std_function.h \
+ /usr/include/c++/11/bits/unique_lock.h /usr/include/c++/11/functional \
+ /usr/include/c++/11/bits/std_function.h \
  /usr/include/c++/11/unordered_map \
  /usr/include/c++/11/ext/aligned_buffer.h \
  /usr/include/c++/11/bits/hashtable.h \

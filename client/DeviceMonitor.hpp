@@ -5,8 +5,8 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <functional>
 #include <chrono>
-#include "DataSource.hpp"
 
 namespace net_ops::client {
 
@@ -16,19 +16,21 @@ namespace net_ops::client {
         std::chrono::steady_clock::time_point last_snmp_check; 
     };
 
-    class DeviceMonitor : public DataSource {
+    using StatusCallback = std::function<void(const std::string&, const std::string&, const std::string&)>;
+
+    class DeviceMonitor {
     public:
         DeviceMonitor();
         ~DeviceMonitor();
 
-        void Start(DataCallback callback) override;
-        void Stop() override;
+        void Start(StatusCallback callback);
+        void Stop();
         void SetTargets(const std::vector<std::string>& ips);
 
     private:
         void MonitorLoop();
 
-        DataCallback m_callback;
+        StatusCallback m_callback;
         std::atomic<bool> m_running;
         std::thread m_thread;
         

@@ -22,6 +22,6 @@ namespace net_ops::server
 
         std::optional<int> GetUserId(const std::string &token);
 
-        bool RemoveSession(const std::string &token);
+        void RemoveSession(const std::string &token);
     };
 }

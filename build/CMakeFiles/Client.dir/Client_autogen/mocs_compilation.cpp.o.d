@@ -354,8 +354,6 @@ CMakeFiles/Client.dir/Client_autogen/mocs_compilation.cpp.o: \
  /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/../../../client/NetworkController.hpp \
  /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
  /usr/include/c++/11/bits/this_thread_sleep.h \
- /usr/include/x86_64-linux-gnu/qt6/QtCore/QObject \
- /usr/include/x86_64-linux-gnu/qt6/QtCore/qobject.h \
  /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/../../../client/ClientNetwork.hpp \
  /usr/include/openssl/ssl.h /usr/include/openssl/macros.h \
  /usr/include/x86_64-linux-gnu/openssl/opensslconf.h \
@@ -456,6 +454,7 @@ CMakeFiles/Client.dir/Client_autogen/mocs_compilation.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt6/QtCore/QList \
  /usr/include/x86_64-linux-gnu/qt6/QtCore/qlist.h \
  /usr/include/x86_64-linux-gnu/qt6/QtCore/QObject \
+ /usr/include/x86_64-linux-gnu/qt6/QtCore/qobject.h \
  /usr/include/x86_64-linux-gnu/qt6/QtCore/QRect \
  /usr/include/x86_64-linux-gnu/qt6/QtCore/qrect.h \
  /usr/include/x86_64-linux-gnu/qt6/QtCore/QSize \
@@ -464,8 +463,4 @@ CMakeFiles/Client.dir/Client_autogen/mocs_compilation.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt6/QtGui/QTransform \
  /usr/include/x86_64-linux-gnu/qt6/QtGui/qtransform.h \
  /usr/include/x86_64-linux-gnu/qt6/QtCore/qnativeinterface.h \
- /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/../../../client/DeviceMonitor.hpp \
- /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/../../../client/DataSource.hpp \
- /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/../../../client/SnmpMonitor.hpp \
- /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/../../../client/SnmpClient.hpp \
- /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/moc_NetworkController.cpp
+ /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/../../../client/DeviceMonitor.hpp

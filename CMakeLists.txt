@@ -71,12 +71,9 @@ add_executable(Client
     client/ClientNetwork.cpp
     client/Scanner.cpp
     client/SyslogCollector.cpp
-    client/DataSourceRegistry.cpp
     client/LoginWindow.cpp
     client/MainWindow.cpp
     client/DeviceMonitor.cpp
-    client/SnmpMonitor.cpp
-    client/SnmpClient.cpp
     common/ByteBuffer.cpp
 )
 
@@ -87,25 +84,6 @@ target_link_libraries(Client
     Threads::Threads
     ${TINS_LIBRARIES}
     ${PCAP_LIBRARY}
-)
-
-# ==========================
-#        AGENT BUILD
-# ==========================
-# Standalone CLI agent for log collection
-add_executable(Agent
-    agent/main.cpp
-    client/SyslogCollector.cpp
-    client/NetworkController.cpp
-    client/ClientNetwork.cpp
-    common/ByteBuffer.cpp
-)
-
-target_link_libraries(Agent
-    Qt6::Core
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    Threads::Threads
 )
 
 # ==========================

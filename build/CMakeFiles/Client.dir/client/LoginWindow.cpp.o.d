@@ -350,8 +350,6 @@ CMakeFiles/Client.dir/client/LoginWindow.cpp.o: \
  /home/andrew/Documents/GitHub/WANFRAME/client/NetworkController.hpp \
  /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
  /usr/include/c++/11/bits/this_thread_sleep.h \
- /usr/include/x86_64-linux-gnu/qt6/QtCore/QObject \
- /usr/include/x86_64-linux-gnu/qt6/QtCore/qobject.h \
  /home/andrew/Documents/GitHub/WANFRAME/client/ClientNetwork.hpp \
  /usr/include/openssl/ssl.h /usr/include/openssl/macros.h \
  /usr/include/x86_64-linux-gnu/openssl/opensslconf.h \

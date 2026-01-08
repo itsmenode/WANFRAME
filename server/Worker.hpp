@@ -26,7 +26,7 @@ namespace net_ops::server
         ~Worker();
 
         void SetNetworkCore(NetworkCore *core);
-        void Start(size_t threadCount = 4);
+        void Start();
         void Stop();
         void AddJob(int client_fd, net_ops::protocol::MessageType type, std::vector<uint8_t> payload);
 
@@ -41,12 +41,9 @@ namespace net_ops::server
         void HandleLogUpload(int client_fd, const std::vector<uint8_t> &payload);
         void HandleDeviceStatus(int client_fd, const std::vector<uint8_t> &payload);
         void HandleLogQuery(int client_fd, const std::vector<uint8_t> &payload);
-        void HandleLogout(int client_fd, const std::vector<uint8_t> &payload);
-        void HandleMetricsRequest(int client_fd, const std::vector<uint8_t> &payload);
-        void HandleDashboardConfig(int client_fd, const std::vector<uint8_t> &payload);
 
         NetworkCore *m_networkCore;
-        std::vector<std::thread> m_threads;
+        std::thread m_thread;
         std::atomic<bool> m_running;
 
         std::queue<Job> m_jobQueue;
