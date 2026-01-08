@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <csignal>
+#include <cerrno>
 #include <unistd.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
@@ -76,7 +77,7 @@ std::thread StartSyslogListener(std::atomic<bool> &running, int port)
 {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0)
-        throw std::runtime_error("Failed to create syslog UDP socket");
+        throw std::runtime_error("Failed to create syslog UDP socket: " + std::string(std::strerror(errno)));
 
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
@@ -85,8 +86,10 @@ std::thread StartSyslogListener(std::atomic<bool> &running, int port)
 
     if (bind(sock, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0)
     {
+        int err = errno;
         close(sock);
-        throw std::runtime_error("Failed to bind syslog UDP socket");
+        throw std::runtime_error("Failed to bind syslog UDP socket on port " + std::to_string(port) + ": " +
+                                 std::string(std::strerror(err)));
     }
 
     int flags = fcntl(sock, F_GETFL, 0);
@@ -158,7 +161,16 @@ int main(int argc, char *argv[])
         signal(SIGTERM, SignalHandler);
         server.Init();
 
-        syslogThread = StartSyslogListener(syslogRunning, syslogPort);
+        try
+        {
+            syslogThread = StartSyslogListener(syslogRunning, syslogPort);
+        }
+        catch (const std::exception &e)
+        {
+            syslogRunning.store(false);
+            std::cerr << "[Warning] " << e.what()
+                      << ". Syslog listener disabled. Set WANFRAME_SYSLOG_PORT to a higher port if needed.\n";
+        }
 
         server.Run();
         syslogRunning.store(false);
