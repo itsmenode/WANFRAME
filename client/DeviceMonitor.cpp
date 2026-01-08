@@ -4,6 +4,7 @@
 #include <thread>
 #include <vector>
 #include <tins/tins.h>
+#include <utility>
 
 
 namespace net_ops::client
@@ -33,12 +34,12 @@ namespace net_ops::client
         }
     }
 
-    void DeviceMonitor::Start(StatusCallback callback)
+    void DeviceMonitor::Start(DataCallback callback)
     {
         if (m_running)
             return;
         m_running = true;
-        m_callback = callback;
+        m_callback = std::move(callback);
         m_thread = std::thread(&DeviceMonitor::MonitorLoop, this);
     }
 
@@ -104,7 +105,12 @@ namespace net_ops::client
 
                 if (m_callback)
                 {
-                    m_callback(dev.ip, status, desc);
+                    DataRecord record;
+                    record.type = DataRecordType::DeviceStatus;
+                    record.ip = dev.ip;
+                    record.status = status;
+                    record.info = desc;
+                    m_callback(record);
                 }
             }
 

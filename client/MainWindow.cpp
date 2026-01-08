@@ -11,8 +11,14 @@ namespace net_ops::client
 
     MainWindow::MainWindow(std::shared_ptr<NetworkController> controller,
                            std::shared_ptr<DeviceMonitor> monitor,
+                           std::shared_ptr<SnmpMonitor> snmpMonitor,
                            QWidget *parent)
-        : QMainWindow(parent), m_controller(controller), m_monitor(monitor), m_isScanning(false), m_selectedDeviceId(-1)
+        : QMainWindow(parent),
+          m_controller(controller),
+          m_monitor(monitor),
+          m_snmpMonitor(snmpMonitor),
+          m_isScanning(false),
+          m_selectedDeviceId(-1)
     {
         setupUi();
         m_dataTimer = new QTimer(this);
@@ -238,8 +244,9 @@ namespace net_ops::client
             }
         }
 
-        if (m_monitor) {
+        if (m_monitor)
             m_monitor->SetTargets(monitorIPs);
-        }
+        if (m_snmpMonitor)
+            m_snmpMonitor->SetTargets(monitorIPs);
     }
 }

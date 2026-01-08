@@ -10,20 +10,31 @@
 
 namespace net_ops::client
 {
-    SyslogCollector::SyslogCollector(const std::string &logPath)
-        : m_logPath(logPath), m_running(false)
+    SyslogCollector::SyslogCollector(const std::string &logPath, int port)
+        : m_logPath(logPath), m_port(port), m_running(false)
     {
     }
 
     SyslogCollector::~SyslogCollector() { Stop(); }
 
-    void SyslogCollector::Start(int port, LogCallback callback)
+    void SyslogCollector::SetPort(int port)
+    {
+        m_port = port;
+    }
+
+    void SyslogCollector::Start(DataCallback callback)
     {
         if (m_running) return;
+        if (m_port <= 0)
+        {
+            std::cerr << "[Syslog] Invalid port configured.\n";
+            return;
+        }
         m_running = true;
 
-        m_worker = std::thread([this, port, callback]()
+        m_worker = std::thread([this, callback]()
         {
+            int port = m_port;
             int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
             if (sockfd < 0) {
                 std::cerr << "[Syslog] Failed to create socket\n";
@@ -64,7 +75,11 @@ namespace net_ops::client
                     std::string message(buffer);
 
                     if (callback) {
-                        callback(sourceIp, message);
+                        DataRecord record;
+                        record.type = DataRecordType::Syslog;
+                        record.ip = sourceIp;
+                        record.message = message;
+                        callback(record);
                     }
                 }
             }

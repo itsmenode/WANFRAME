@@ -11,6 +11,7 @@
 #include <atomic>
 #include "NetworkController.hpp"
 #include "DeviceMonitor.hpp"
+#include "SnmpMonitor.hpp"
 
 namespace net_ops::client
 {
@@ -22,6 +23,7 @@ namespace net_ops::client
     public:
         explicit MainWindow(std::shared_ptr<NetworkController> controller,
                             std::shared_ptr<DeviceMonitor> monitor,
+                            std::shared_ptr<SnmpMonitor> snmpMonitor,
                             QWidget *parent = nullptr);
         ~MainWindow();
 
@@ -38,6 +40,7 @@ namespace net_ops::client
     private:
         std::shared_ptr<NetworkController> m_controller;
         std::shared_ptr<DeviceMonitor> m_monitor;
+        std::shared_ptr<SnmpMonitor> m_snmpMonitor;
         QTableWidget *m_deviceTable;
         QTableWidget *m_logTable;
         QTimer *m_dataTimer;

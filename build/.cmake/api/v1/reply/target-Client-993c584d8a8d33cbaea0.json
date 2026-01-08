@@ -32,7 +32,7 @@
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 80,
+				"line" : 82,
 				"parent" : 0
 			},
 			{
@@ -144,7 +144,9 @@
 				6,
 				7,
 				8,
-				9
+				9,
+				10,
+				11
 			]
 		}
 	],
@@ -230,7 +232,9 @@
 				6,
 				7,
 				8,
-				9
+				9,
+				10,
+				11
 			]
 		}
 	],
@@ -276,6 +280,12 @@
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
+			"path" : "client/DataSourceRegistry.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
 			"path" : "client/LoginWindow.cpp",
 			"sourceGroupIndex" : 0
 		},
@@ -289,6 +299,12 @@
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
 			"path" : "client/DeviceMonitor.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "client/SnmpMonitor.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{

@@ -6,6 +6,8 @@
 #include "MainWindow.hpp"
 #include "SyslogCollector.hpp"
 #include "DeviceMonitor.hpp"
+#include "SnmpMonitor.hpp"
+#include "DataSourceRegistry.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -14,40 +16,46 @@ int main(int argc, char *argv[])
     auto controller = std::make_shared<net_ops::client::NetworkController>("127.0.0.1", 8080);
     controller->Start();
 
-    auto agent = std::make_shared<net_ops::client::SyslogCollector>(""); 
+    int syslogPort = 55555;
+    auto agent = std::make_shared<net_ops::client::SyslogCollector>("", syslogPort);
     const bool syslogAgentEnabled = std::getenv("WANFRAME_SYSLOG_AGENT") != nullptr;
 
     auto monitor = std::make_shared<net_ops::client::DeviceMonitor>();
+    auto snmpMonitor = std::make_shared<net_ops::client::SnmpMonitor>();
+    net_ops::client::DataSourceRegistry registry;
+    if (syslogAgentEnabled)
+        registry.RegisterSource("syslog", agent);
+    registry.RegisterSource("monitor", monitor);
+    registry.RegisterSource("snmp", snmpMonitor);
 
     net_ops::client::LoginWindow loginWin(controller);
-    net_ops::client::MainWindow mainWin(controller, monitor);
+    net_ops::client::MainWindow mainWin(controller, monitor, snmpMonitor);
 
     QObject::connect(&loginWin, &net_ops::client::LoginWindow::loginSuccessful,
                      [&](const std::string &token)
                      {
                          mainWin.SetToken(token);
 
-                         if (syslogAgentEnabled)
+                         registry.StartAll([controller, token](const net_ops::client::DataRecord &record)
                          {
-                             int syslogPort = 55555; 
-                             agent->Start(syslogPort, [controller, token](const std::string &source, const std::string &msg)
+                             std::vector<uint8_t> payload;
+                             switch (record.type)
                              {
-                                std::vector<uint8_t> payload;
-                                net_ops::protocol::PackString(payload, token);
-                                net_ops::protocol::PackString(payload, source);
-                                net_ops::protocol::PackString(payload, msg);
-                                controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload); 
-                             });
-                         }
-
-                         monitor->Start([controller, token](const std::string &ip, const std::string &status, const std::string &desc)
-                         {
-                            std::vector<uint8_t> payload;
-                            net_ops::protocol::PackString(payload, token);
-                            net_ops::protocol::PackString(payload, ip);
-                            net_ops::protocol::PackString(payload, status);
-                            net_ops::protocol::PackString(payload, desc);
-                            controller->QueueRequest(net_ops::protocol::MessageType::DeviceStatusReq, payload); 
+                             case net_ops::client::DataRecordType::Syslog:
+                                 net_ops::protocol::PackString(payload, token);
+                                 net_ops::protocol::PackString(payload, record.ip);
+                                 net_ops::protocol::PackString(payload, record.message);
+                                 controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload);
+                                 break;
+                             case net_ops::client::DataRecordType::DeviceStatus:
+                             case net_ops::client::DataRecordType::SnmpStatus:
+                                 net_ops::protocol::PackString(payload, token);
+                                 net_ops::protocol::PackString(payload, record.ip);
+                                 net_ops::protocol::PackString(payload, record.status);
+                                 net_ops::protocol::PackString(payload, record.info);
+                                 controller->QueueRequest(net_ops::protocol::MessageType::DeviceStatusReq, payload);
+                                 break;
+                             }
                          });
 
                          loginWin.hide();
@@ -59,9 +67,7 @@ int main(int argc, char *argv[])
     int ret = app.exec();
 
     std::cout << "[Main] Shutting down...\n";
-    monitor->Stop();
-    if (syslogAgentEnabled)
-        agent->Stop();
+    registry.StopAll();
     controller->Stop();
     
     return ret;

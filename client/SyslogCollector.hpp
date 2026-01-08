@@ -2,25 +2,25 @@
 
 #include <string>
 #include <thread>
-#include <functional>
 #include <atomic>
+#include "DataSource.hpp"
 
 namespace net_ops::client
 {
-    using LogCallback = std::function<void(const std::string &source, const std::string &message)>;
-
-    class SyslogCollector
+    class SyslogCollector : public DataSource
     {
     public:
-        explicit SyslogCollector(const std::string &logPath);
+        explicit SyslogCollector(const std::string &logPath, int port = 0);
         ~SyslogCollector();
 
-        void Start(int port, LogCallback callback);
+        void SetPort(int port);
+        void Start(DataCallback callback) override;
 
-        void Stop();
+        void Stop() override;
 
     private:
         std::string m_logPath;
+        int m_port;
         std::atomic<bool> m_running;
         std::thread m_worker;
     };

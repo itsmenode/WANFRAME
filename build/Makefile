@@ -240,6 +240,30 @@ client/ClientNetwork.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/ClientNetwork.cpp.s
 .PHONY : client/ClientNetwork.cpp.s
 
+client/DataSourceRegistry.o: client/DataSourceRegistry.cpp.o
+.PHONY : client/DataSourceRegistry.o
+
+# target to build an object file
+client/DataSourceRegistry.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.o
+.PHONY : client/DataSourceRegistry.cpp.o
+
+client/DataSourceRegistry.i: client/DataSourceRegistry.cpp.i
+.PHONY : client/DataSourceRegistry.i
+
+# target to preprocess a source file
+client/DataSourceRegistry.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.i
+.PHONY : client/DataSourceRegistry.cpp.i
+
+client/DataSourceRegistry.s: client/DataSourceRegistry.cpp.s
+.PHONY : client/DataSourceRegistry.s
+
+# target to generate assembly for a file
+client/DataSourceRegistry.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.s
+.PHONY : client/DataSourceRegistry.cpp.s
+
 client/DeviceMonitor.o: client/DeviceMonitor.cpp.o
 .PHONY : client/DeviceMonitor.o
 
@@ -359,6 +383,30 @@ client/Scanner.s: client/Scanner.cpp.s
 client/Scanner.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/Scanner.cpp.s
 .PHONY : client/Scanner.cpp.s
+
+client/SnmpMonitor.o: client/SnmpMonitor.cpp.o
+.PHONY : client/SnmpMonitor.o
+
+# target to build an object file
+client/SnmpMonitor.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SnmpMonitor.cpp.o
+.PHONY : client/SnmpMonitor.cpp.o
+
+client/SnmpMonitor.i: client/SnmpMonitor.cpp.i
+.PHONY : client/SnmpMonitor.i
+
+# target to preprocess a source file
+client/SnmpMonitor.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SnmpMonitor.cpp.i
+.PHONY : client/SnmpMonitor.cpp.i
+
+client/SnmpMonitor.s: client/SnmpMonitor.cpp.s
+.PHONY : client/SnmpMonitor.s
+
+# target to generate assembly for a file
+client/SnmpMonitor.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SnmpMonitor.cpp.s
+.PHONY : client/SnmpMonitor.cpp.s
 
 client/SyslogCollector.o: client/SyslogCollector.cpp.o
 .PHONY : client/SyslogCollector.o
@@ -576,6 +624,9 @@ help:
 	@echo "... client/ClientNetwork.o"
 	@echo "... client/ClientNetwork.i"
 	@echo "... client/ClientNetwork.s"
+	@echo "... client/DataSourceRegistry.o"
+	@echo "... client/DataSourceRegistry.i"
+	@echo "... client/DataSourceRegistry.s"
 	@echo "... client/DeviceMonitor.o"
 	@echo "... client/DeviceMonitor.i"
 	@echo "... client/DeviceMonitor.s"
@@ -591,6 +642,9 @@ help:
 	@echo "... client/Scanner.o"
 	@echo "... client/Scanner.i"
 	@echo "... client/Scanner.s"
+	@echo "... client/SnmpMonitor.o"
+	@echo "... client/SnmpMonitor.i"
+	@echo "... client/SnmpMonitor.s"
 	@echo "... client/SyslogCollector.o"
 	@echo "... client/SyslogCollector.i"
 	@echo "... client/SyslogCollector.s"

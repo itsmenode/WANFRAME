@@ -446,6 +446,9 @@ CMakeFiles/Client.dir/client/MainWindow.cpp.o: \
  /usr/include/c++/11/bits/unique_lock.h \
  /usr/include/c++/11/condition_variable \
  /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.hpp \
+ /home/andrew/Documents/GitHub/WANFRAME/client/DataSource.hpp \
+ /home/andrew/Documents/GitHub/WANFRAME/client/SnmpMonitor.hpp \
+ /home/andrew/Documents/GitHub/WANFRAME/client/SnmpClient.hpp \
  /home/andrew/Documents/GitHub/WANFRAME/client/Scanner.hpp \
  /usr/include/x86_64-linux-gnu/qt6/QtWidgets/QHeaderView \
  /usr/include/x86_64-linux-gnu/qt6/QtWidgets/qheaderview.h \

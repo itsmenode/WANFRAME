@@ -153,10 +153,24 @@ CMakeFiles/Client.dir/client/SyslogCollector.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Client.dir/client/SyslogCollector.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/andrew/Documents/GitHub/WANFRAME/client/SyslogCollector.cpp -o CMakeFiles/Client.dir/client/SyslogCollector.cpp.s
 
+CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.o: CMakeFiles/Client.dir/flags.make
+CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.o: ../client/DataSourceRegistry.cpp
+CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.o: CMakeFiles/Client.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.o -MF CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.o.d -o CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.o -c /home/andrew/Documents/GitHub/WANFRAME/client/DataSourceRegistry.cpp
+
+CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/andrew/Documents/GitHub/WANFRAME/client/DataSourceRegistry.cpp > CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.i
+
+CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/andrew/Documents/GitHub/WANFRAME/client/DataSourceRegistry.cpp -o CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.s
+
 CMakeFiles/Client.dir/client/LoginWindow.cpp.o: CMakeFiles/Client.dir/flags.make
 CMakeFiles/Client.dir/client/LoginWindow.cpp.o: ../client/LoginWindow.cpp
 CMakeFiles/Client.dir/client/LoginWindow.cpp.o: CMakeFiles/Client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/Client.dir/client/LoginWindow.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/Client.dir/client/LoginWindow.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Client.dir/client/LoginWindow.cpp.o -MF CMakeFiles/Client.dir/client/LoginWindow.cpp.o.d -o CMakeFiles/Client.dir/client/LoginWindow.cpp.o -c /home/andrew/Documents/GitHub/WANFRAME/client/LoginWindow.cpp
 
 CMakeFiles/Client.dir/client/LoginWindow.cpp.i: cmake_force
@@ -170,7 +184,7 @@ CMakeFiles/Client.dir/client/LoginWindow.cpp.s: cmake_force
 CMakeFiles/Client.dir/client/MainWindow.cpp.o: CMakeFiles/Client.dir/flags.make
 CMakeFiles/Client.dir/client/MainWindow.cpp.o: ../client/MainWindow.cpp
 CMakeFiles/Client.dir/client/MainWindow.cpp.o: CMakeFiles/Client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/Client.dir/client/MainWindow.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/Client.dir/client/MainWindow.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Client.dir/client/MainWindow.cpp.o -MF CMakeFiles/Client.dir/client/MainWindow.cpp.o.d -o CMakeFiles/Client.dir/client/MainWindow.cpp.o -c /home/andrew/Documents/GitHub/WANFRAME/client/MainWindow.cpp
 
 CMakeFiles/Client.dir/client/MainWindow.cpp.i: cmake_force
@@ -184,7 +198,7 @@ CMakeFiles/Client.dir/client/MainWindow.cpp.s: cmake_force
 CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o: CMakeFiles/Client.dir/flags.make
 CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o: ../client/DeviceMonitor.cpp
 CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o: CMakeFiles/Client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o -MF CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o.d -o CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o -c /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.cpp
 
 CMakeFiles/Client.dir/client/DeviceMonitor.cpp.i: cmake_force
@@ -195,10 +209,24 @@ CMakeFiles/Client.dir/client/DeviceMonitor.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Client.dir/client/DeviceMonitor.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/andrew/Documents/GitHub/WANFRAME/client/DeviceMonitor.cpp -o CMakeFiles/Client.dir/client/DeviceMonitor.cpp.s
 
+CMakeFiles/Client.dir/client/SnmpMonitor.cpp.o: CMakeFiles/Client.dir/flags.make
+CMakeFiles/Client.dir/client/SnmpMonitor.cpp.o: ../client/SnmpMonitor.cpp
+CMakeFiles/Client.dir/client/SnmpMonitor.cpp.o: CMakeFiles/Client.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/Client.dir/client/SnmpMonitor.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Client.dir/client/SnmpMonitor.cpp.o -MF CMakeFiles/Client.dir/client/SnmpMonitor.cpp.o.d -o CMakeFiles/Client.dir/client/SnmpMonitor.cpp.o -c /home/andrew/Documents/GitHub/WANFRAME/client/SnmpMonitor.cpp
+
+CMakeFiles/Client.dir/client/SnmpMonitor.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Client.dir/client/SnmpMonitor.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/andrew/Documents/GitHub/WANFRAME/client/SnmpMonitor.cpp > CMakeFiles/Client.dir/client/SnmpMonitor.cpp.i
+
+CMakeFiles/Client.dir/client/SnmpMonitor.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Client.dir/client/SnmpMonitor.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/andrew/Documents/GitHub/WANFRAME/client/SnmpMonitor.cpp -o CMakeFiles/Client.dir/client/SnmpMonitor.cpp.s
+
 CMakeFiles/Client.dir/common/ByteBuffer.cpp.o: CMakeFiles/Client.dir/flags.make
 CMakeFiles/Client.dir/common/ByteBuffer.cpp.o: ../common/ByteBuffer.cpp
 CMakeFiles/Client.dir/common/ByteBuffer.cpp.o: CMakeFiles/Client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/Client.dir/common/ByteBuffer.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/Client.dir/common/ByteBuffer.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Client.dir/common/ByteBuffer.cpp.o -MF CMakeFiles/Client.dir/common/ByteBuffer.cpp.o.d -o CMakeFiles/Client.dir/common/ByteBuffer.cpp.o -c /home/andrew/Documents/GitHub/WANFRAME/common/ByteBuffer.cpp
 
 CMakeFiles/Client.dir/common/ByteBuffer.cpp.i: cmake_force
@@ -217,9 +245,11 @@ Client_OBJECTS = \
 "CMakeFiles/Client.dir/client/ClientNetwork.cpp.o" \
 "CMakeFiles/Client.dir/client/Scanner.cpp.o" \
 "CMakeFiles/Client.dir/client/SyslogCollector.cpp.o" \
+"CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.o" \
 "CMakeFiles/Client.dir/client/LoginWindow.cpp.o" \
 "CMakeFiles/Client.dir/client/MainWindow.cpp.o" \
 "CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o" \
+"CMakeFiles/Client.dir/client/SnmpMonitor.cpp.o" \
 "CMakeFiles/Client.dir/common/ByteBuffer.cpp.o"
 
 # External object files for target Client
@@ -231,9 +261,11 @@ Client: CMakeFiles/Client.dir/client/NetworkController.cpp.o
 Client: CMakeFiles/Client.dir/client/ClientNetwork.cpp.o
 Client: CMakeFiles/Client.dir/client/Scanner.cpp.o
 Client: CMakeFiles/Client.dir/client/SyslogCollector.cpp.o
+Client: CMakeFiles/Client.dir/client/DataSourceRegistry.cpp.o
 Client: CMakeFiles/Client.dir/client/LoginWindow.cpp.o
 Client: CMakeFiles/Client.dir/client/MainWindow.cpp.o
 Client: CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o
+Client: CMakeFiles/Client.dir/client/SnmpMonitor.cpp.o
 Client: CMakeFiles/Client.dir/common/ByteBuffer.cpp.o
 Client: CMakeFiles/Client.dir/build.make
 Client: /usr/lib/x86_64-linux-gnu/libQt6Widgets.so.6.2.4
@@ -245,7 +277,7 @@ Client: /usr/lib/x86_64-linux-gnu/libQt6Core.so.6.2.4
 Client: /usr/lib/x86_64-linux-gnu/libGLX.so
 Client: /usr/lib/x86_64-linux-gnu/libOpenGL.so
 Client: CMakeFiles/Client.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Linking CXX executable Client"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/andrew/Documents/GitHub/WANFRAME/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Linking CXX executable Client"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/Client.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

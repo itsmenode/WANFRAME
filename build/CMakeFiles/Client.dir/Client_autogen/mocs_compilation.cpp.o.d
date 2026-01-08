@@ -463,4 +463,7 @@ CMakeFiles/Client.dir/Client_autogen/mocs_compilation.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt6/QtGui/QTransform \
  /usr/include/x86_64-linux-gnu/qt6/QtGui/qtransform.h \
  /usr/include/x86_64-linux-gnu/qt6/QtCore/qnativeinterface.h \
- /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/../../../client/DeviceMonitor.hpp
+ /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/../../../client/DeviceMonitor.hpp \
+ /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/../../../client/DataSource.hpp \
+ /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/../../../client/SnmpMonitor.hpp \
+ /home/andrew/Documents/GitHub/WANFRAME/build/Client_autogen/7EM65HM6UG/../../../client/SnmpClient.hpp
