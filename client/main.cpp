@@ -4,7 +4,6 @@
 #include "MainWindow.hpp"
 #include "SyslogCollector.hpp"
 #include "DeviceMonitor.hpp"
-#include "Scanner.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -14,11 +13,8 @@ int main(int argc, char *argv[])
     controller->Start();
 
     auto agent = std::make_shared<net_ops::client::SyslogCollector>("/var/log/syslog");
-    auto monitor = std::make_shared<net_ops::client::DeviceMonitor>();
 
-    std::string localIP = net_ops::client::NetworkScanner::GetLocalIPAddress();
-    if (localIP.empty())
-        localIP = "127.0.0.1";
+    auto monitor = std::make_shared<net_ops::client::DeviceMonitor>();
 
     net_ops::client::LoginWindow loginWin(controller);
     net_ops::client::MainWindow mainWin(controller, monitor);
@@ -28,11 +24,11 @@ int main(int argc, char *argv[])
                      {
                          mainWin.SetToken(token);
 
-                         agent->Start(514, [controller, token, localIP](const std::string &source, const std::string &msg)
+                         agent->Start(514, [controller, token](const std::string &source, const std::string &msg)
                                       {
             std::vector<uint8_t> payload;
             net_ops::protocol::PackString(payload, token);
-            net_ops::protocol::PackString(payload, localIP);
+            net_ops::protocol::PackString(payload, source);
             net_ops::protocol::PackString(payload, msg);
             controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload); });
 
