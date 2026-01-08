@@ -4,7 +4,7 @@
 #include <QHeaderView>
 #include <iostream>
 #include <QMessageBox>
-#include <unistd.h>
+#include <unistd.h> 
 
 namespace net_ops::client
 {
@@ -53,7 +53,9 @@ namespace net_ops::client
         if (m_selectedDeviceId == -1 || m_sessionToken.empty()) return;
         
         std::vector<uint8_t> p;
+        net_ops::protocol::PackString(p, m_sessionToken); 
         net_ops::protocol::PackUint32(p, static_cast<uint32_t>(m_selectedDeviceId));
+        
         m_controller->QueueRequest(net_ops::protocol::MessageType::LogQueryReq, p);
     }
 
@@ -116,7 +118,7 @@ namespace net_ops::client
 
         if (geteuid() != 0) {
             QMessageBox::critical(this, "Permission Denied", 
-                "Network scanning requires root privileges.\nPlease run the client with: sudo ./Client");
+                "Network scanning requires root privileges.\nPlease run: sudo ./Client");
             return;
         }
 
@@ -131,22 +133,26 @@ namespace net_ops::client
 
         m_scanThread = std::thread([this, token]()
         {
-            auto hosts = NetworkScanner::ScanLocalNetwork(); 
+            try {
+                auto hosts = NetworkScanner::ScanLocalNetwork(); 
 
-            for (const auto& h : hosts) {
-                std::vector<uint8_t> p;
-                net_ops::protocol::PackString(p, token);
-                net_ops::protocol::PackString(p, h.name);
-                net_ops::protocol::PackString(p, h.ip);
-                net_ops::protocol::PackString(p, h.mac);
-                m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
-            } 
-            
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                for (const auto& h : hosts) {
+                    std::vector<uint8_t> p;
+                    net_ops::protocol::PackString(p, token);
+                    net_ops::protocol::PackString(p, h.name);
+                    net_ops::protocol::PackString(p, h.ip);
+                    net_ops::protocol::PackString(p, h.mac);
+                    m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
+                } 
+                
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-            std::vector<uint8_t> listP;
-            net_ops::protocol::PackString(listP, token);
-            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP); 
+                std::vector<uint8_t> listP;
+                net_ops::protocol::PackString(listP, token);
+                m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP); 
+            } catch(...) {
+                std::cerr << "[MainWindow] Scan thread crashed.\n";
+            }
             
             m_isScanning = false;
         });

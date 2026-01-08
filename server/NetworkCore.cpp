@@ -57,6 +57,15 @@ namespace net_ops::server
             throw std::runtime_error("Failed to add FD to epoll");
     }
 
+    void NetworkCore::EpollControlMod(int fd, uint32_t events)
+    {
+        struct epoll_event event;
+        std::memset(&event, 0, sizeof(event));
+        event.events = events;
+        event.data.fd = fd;
+        epoll_ctl(m_epoll_fd, EPOLL_CTL_MOD, fd, &event);
+    }
+
     void NetworkCore::EpollControlRemove(int fd)
     {
         epoll_ctl(m_epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
@@ -206,12 +215,22 @@ namespace net_ops::server
             if (written > 0)
             {
                 ctx.out_buffer.erase(ctx.out_buffer.begin(), ctx.out_buffer.begin() + written);
+                
+                if (ctx.out_buffer.empty()) {
+                    EpollControlMod(fd, EPOLLIN | EPOLLET);
+                }
             }
             else
             {
                 int err = SSL_get_error(ctx.ssl_handle, written);
-                if (err != SSL_ERROR_WANT_WRITE && err != SSL_ERROR_WANT_READ)
+                if (err == SSL_ERROR_WANT_WRITE)
+                {
+                    EpollControlMod(fd, EPOLLIN | EPOLLOUT | EPOLLET);
+                }
+                else if (err != SSL_ERROR_WANT_READ)
+                {
                     DisconnectClient(fd);
+                }
             }
         }
     }
@@ -255,10 +274,16 @@ namespace net_ops::server
             int count = epoll_wait(m_epoll_fd, ev, 128, 100);
             for (int i = 0; i < count; i++)
             {
-                if (ev[i].data.fd == m_server_fd)
+                if (ev[i].data.fd == m_server_fd) {
                     HandleNewConnection();
-                else
-                    HandleClientData(ev[i].data.fd);
+                } else {
+                    if (ev[i].events & EPOLLOUT) {
+                        SendPendingResponses();
+                    }
+                    if (ev[i].events & EPOLLIN) {
+                        HandleClientData(ev[i].data.fd);
+                    }
+                }
             }
             SendPendingResponses();
         }

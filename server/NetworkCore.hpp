@@ -59,6 +59,9 @@ namespace net_ops::server
         void NonBlockingMode(int fd);
         void EpollControlAdd(int fd);
         void EpollControlRemove(int fd);
+        
+        void EpollControlMod(int fd, uint32_t events); 
+
         void DisconnectClient(int fd);
 
         void HandleNewConnection();
