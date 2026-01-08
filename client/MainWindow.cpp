@@ -24,8 +24,7 @@ namespace net_ops::client
     {
         m_dataTimer = new QTimer(this);
 
-        m_controller->SetOnResponseReceived([this]()
-                                            { QMetaObject::invokeMethod(this, "pollData", Qt::QueuedConnection); });
+        connect(m_controller.get(), &NetworkController::responseReceived, this, &MainWindow::pollData);
 
         setupUi();
     }
