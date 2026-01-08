@@ -3,6 +3,7 @@
 #include "DeviceMonitor.hpp"
 #include <QHeaderView>
 #include <iostream>
+#include <QMessageBox>
 
 namespace net_ops::client
 {
@@ -60,7 +61,7 @@ namespace net_ops::client
         auto central = new QWidget();
         auto layout = new QVBoxLayout(central);
 
-        m_scanBtn = new QPushButton("Scan Network");
+        m_scanBtn = new QPushButton("Scan Network (Requires Root/Sudo)");
         connect(m_scanBtn, &QPushButton::clicked, this, &MainWindow::onScanClicked);
         layout->addWidget(m_scanBtn);
 
@@ -78,12 +79,12 @@ namespace net_ops::client
             });
         layout->addWidget(testLogBtn);
 
-        m_deviceTable = new QTableWidget(0, 5);
+        m_deviceTable = new QTableWidget(0, 5); 
         m_deviceTable->setHorizontalHeaderLabels({"Name", "IP", "MAC", "Status", "ID"});
         m_deviceTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
         m_deviceTable->setSelectionBehavior(QAbstractItemView::SelectRows);
         m_deviceTable->setSelectionMode(QAbstractItemView::SingleSelection);
-        m_deviceTable->hideColumn(4);
+        m_deviceTable->hideColumn(4); 
         
         connect(m_deviceTable, &QTableWidget::cellClicked, this, &MainWindow::onDeviceSelected);
 
@@ -105,7 +106,7 @@ namespace net_ops::client
         if (idItem) {
             m_selectedDeviceId = idItem->text().toInt();
             m_logTable->setRowCount(0);
-            sendLogQueryRequest();
+            sendLogQueryRequest(); 
         }
     }
 
@@ -125,19 +126,30 @@ namespace net_ops::client
 
         m_scanThread = std::thread([this, token]()
         {
-            auto hosts = NetworkScanner::ScanLocalNetwork(); 
-            for (const auto& h : hosts) {
-                std::vector<uint8_t> p;
-                net_ops::protocol::PackString(p, token);
-                net_ops::protocol::PackString(p, h.name);
-                net_ops::protocol::PackString(p, h.ip);
-                net_ops::protocol::PackString(p, h.mac);
-                m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
-            } 
-            
-            std::vector<uint8_t> listP;
-            net_ops::protocol::PackString(listP, token);
-            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP); 
+            std::cout << "[Scanner] Starting scan...\n";
+            try {
+                auto hosts = NetworkScanner::ScanLocalNetwork(); 
+                std::cout << "[Scanner] Found " << hosts.size() << " hosts.\n";
+
+                for (const auto& h : hosts) {
+                    std::vector<uint8_t> p;
+                    net_ops::protocol::PackString(p, token);
+                    net_ops::protocol::PackString(p, h.name);
+                    net_ops::protocol::PackString(p, h.ip);
+                    net_ops::protocol::PackString(p, h.mac);
+                    m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
+                } 
+                
+                std::vector<uint8_t> listP;
+                net_ops::protocol::PackString(listP, token);
+                m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP); 
+            }
+            catch (const std::exception& e) {
+                std::cerr << "[Scanner] Error: " << e.what() << ". (Did you run as sudo?)\n";
+            }
+            catch (...) {
+                std::cerr << "[Scanner] Unknown error occurred.\n";
+            }
             
             m_isScanning = false;
         });
@@ -146,12 +158,12 @@ namespace net_ops::client
     void MainWindow::pollData()
     {
         if (!m_isScanning && !m_scanBtn->isEnabled()) {
-            m_scanBtn->setText("Scan Network");
+            m_scanBtn->setText("Scan Network (Requires Root/Sudo)");
             m_scanBtn->setEnabled(true);
         }
         
         static int counter = 0;
-        if (++counter % 2 == 0) {
+        if (++counter % 2 == 0) { 
              sendLogQueryRequest();
         }
 
@@ -212,9 +224,8 @@ namespace net_ops::client
             m_deviceTable->insertRow(row);
             m_deviceTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(*name)));
             m_deviceTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(*ip)));
-            m_deviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString("Unknown MAC")));
+            m_deviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString("Unknown")));
             m_deviceTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(*status + " " + *info)));
-            
             m_deviceTable->setItem(row, 4, new QTableWidgetItem(QString::number(*id)));
 
             if (ip) monitorIPs.push_back(*ip);

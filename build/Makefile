@@ -360,30 +360,6 @@ client/Scanner.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/Scanner.cpp.s
 .PHONY : client/Scanner.cpp.s
 
-client/SnmpClient.o: client/SnmpClient.cpp.o
-.PHONY : client/SnmpClient.o
-
-# target to build an object file
-client/SnmpClient.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SnmpClient.cpp.o
-.PHONY : client/SnmpClient.cpp.o
-
-client/SnmpClient.i: client/SnmpClient.cpp.i
-.PHONY : client/SnmpClient.i
-
-# target to preprocess a source file
-client/SnmpClient.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SnmpClient.cpp.i
-.PHONY : client/SnmpClient.cpp.i
-
-client/SnmpClient.s: client/SnmpClient.cpp.s
-.PHONY : client/SnmpClient.s
-
-# target to generate assembly for a file
-client/SnmpClient.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Client.dir/build.make CMakeFiles/Client.dir/client/SnmpClient.cpp.s
-.PHONY : client/SnmpClient.cpp.s
-
 client/SyslogCollector.o: client/SyslogCollector.cpp.o
 .PHONY : client/SyslogCollector.o
 
@@ -615,9 +591,6 @@ help:
 	@echo "... client/Scanner.o"
 	@echo "... client/Scanner.i"
 	@echo "... client/Scanner.s"
-	@echo "... client/SnmpClient.o"
-	@echo "... client/SnmpClient.i"
-	@echo "... client/SnmpClient.s"
 	@echo "... client/SyslogCollector.o"
 	@echo "... client/SyslogCollector.i"
 	@echo "... client/SyslogCollector.s"

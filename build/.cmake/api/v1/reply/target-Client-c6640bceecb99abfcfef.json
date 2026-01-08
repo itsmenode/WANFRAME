@@ -32,7 +32,7 @@
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 81,
+				"line" : 80,
 				"parent" : 0
 			},
 			{
@@ -144,8 +144,7 @@
 				6,
 				7,
 				8,
-				9,
-				10
+				9
 			]
 		}
 	],
@@ -231,8 +230,7 @@
 				6,
 				7,
 				8,
-				9,
-				10
+				9
 			]
 		}
 	],
@@ -291,12 +289,6 @@
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
 			"path" : "client/DeviceMonitor.cpp",
-			"sourceGroupIndex" : 0
-		},
-		{
-			"backtrace" : 1,
-			"compileGroupIndex" : 0,
-			"path" : "client/SnmpClient.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{
