@@ -33,6 +33,7 @@ namespace net_ops::client
     private slots:
         void onScanClicked();
         void pollData();
+        void onDeviceSelected(int row, int col);
 
     private:
         std::shared_ptr<NetworkController> m_controller;
@@ -41,14 +42,17 @@ namespace net_ops::client
         QTableWidget *m_logTable;
         QTimer *m_dataTimer;
         std::string m_sessionToken;
-        QPushButton* m_scanBtn;
+        QPushButton *m_scanBtn;
 
         std::thread m_scanThread;
         std::atomic<bool> m_isScanning;
+
+        int m_selectedDeviceId = -1;
 
         void setupUi();
         void updateDeviceList(const std::vector<uint8_t> &data);
         void addLogEntry(const std::string &timestamp, const std::string &msg);
         void sendDeviceListRequest();
+        void sendLogQueryRequest();
     };
 }

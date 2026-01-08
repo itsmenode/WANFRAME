@@ -15,6 +15,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/andrew/Documents/GitHub/WANFRAME/client/MainWindow.cpp" "CMakeFiles/Client.dir/client/MainWindow.cpp.o" "gcc" "CMakeFiles/Client.dir/client/MainWindow.cpp.o.d"
   "/home/andrew/Documents/GitHub/WANFRAME/client/NetworkController.cpp" "CMakeFiles/Client.dir/client/NetworkController.cpp.o" "gcc" "CMakeFiles/Client.dir/client/NetworkController.cpp.o.d"
   "/home/andrew/Documents/GitHub/WANFRAME/client/Scanner.cpp" "CMakeFiles/Client.dir/client/Scanner.cpp.o" "gcc" "CMakeFiles/Client.dir/client/Scanner.cpp.o.d"
+  "/home/andrew/Documents/GitHub/WANFRAME/client/SnmpClient.cpp" "CMakeFiles/Client.dir/client/SnmpClient.cpp.o" "gcc" "CMakeFiles/Client.dir/client/SnmpClient.cpp.o.d"
   "/home/andrew/Documents/GitHub/WANFRAME/client/SyslogCollector.cpp" "CMakeFiles/Client.dir/client/SyslogCollector.cpp.o" "gcc" "CMakeFiles/Client.dir/client/SyslogCollector.cpp.o.d"
   "/home/andrew/Documents/GitHub/WANFRAME/client/main.cpp" "CMakeFiles/Client.dir/client/main.cpp.o" "gcc" "CMakeFiles/Client.dir/client/main.cpp.o.d"
   "/home/andrew/Documents/GitHub/WANFRAME/common/ByteBuffer.cpp" "CMakeFiles/Client.dir/common/ByteBuffer.cpp.o" "gcc" "CMakeFiles/Client.dir/common/ByteBuffer.cpp.o.d"

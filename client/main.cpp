@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <iostream>
 #include "NetworkController.hpp"
 #include "LoginWindow.hpp"
 #include "MainWindow.hpp"
@@ -25,21 +26,23 @@ int main(int argc, char *argv[])
                          mainWin.SetToken(token);
 
                          agent->Start(514, [controller, token](const std::string &source, const std::string &msg)
-                                      {
-            std::vector<uint8_t> payload;
-            net_ops::protocol::PackString(payload, token);
-            net_ops::protocol::PackString(payload, source);
-            net_ops::protocol::PackString(payload, msg);
-            controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload); });
+                         {
+                            std::vector<uint8_t> payload;
+                            net_ops::protocol::PackString(payload, token);
+                            net_ops::protocol::PackString(payload, source);
+                            net_ops::protocol::PackString(payload, msg);
+                            controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload); 
+                         });
 
                          monitor->Start([controller, token](const std::string &ip, const std::string &status, const std::string &desc)
-                                        {
-            std::vector<uint8_t> payload;
-            net_ops::protocol::PackString(payload, token);
-            net_ops::protocol::PackString(payload, ip);
-            net_ops::protocol::PackString(payload, status);
-            net_ops::protocol::PackString(payload, desc);
-            controller->QueueRequest(net_ops::protocol::MessageType::DeviceStatusReq, payload); });
+                         {
+                            std::vector<uint8_t> payload;
+                            net_ops::protocol::PackString(payload, token);
+                            net_ops::protocol::PackString(payload, ip);
+                            net_ops::protocol::PackString(payload, status);
+                            net_ops::protocol::PackString(payload, desc);
+                            controller->QueueRequest(net_ops::protocol::MessageType::DeviceStatusReq, payload); 
+                         });
 
                          loginWin.hide();
                          mainWin.show();
@@ -49,8 +52,10 @@ int main(int argc, char *argv[])
 
     int ret = app.exec();
 
+    std::cout << "[Main] Shutting down...\n";
     monitor->Stop();
     agent->Stop();
     controller->Stop();
+    
     return ret;
 }

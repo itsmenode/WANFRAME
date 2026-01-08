@@ -10,7 +10,7 @@ namespace net_ops::client
     MainWindow::MainWindow(std::shared_ptr<NetworkController> controller,
                            std::shared_ptr<DeviceMonitor> monitor,
                            QWidget *parent)
-        : QMainWindow(parent), m_controller(controller), m_monitor(monitor), m_isScanning(false)
+        : QMainWindow(parent), m_controller(controller), m_monitor(monitor), m_isScanning(false), m_selectedDeviceId(-1)
     {
         setupUi();
         m_dataTimer = new QTimer(this);
@@ -33,18 +33,26 @@ namespace net_ops::client
         QMainWindow::showEvent(event);
         if (!m_dataTimer->isActive())
         {
-            m_dataTimer->start(1000);
+            m_dataTimer->start(1000); 
             sendDeviceListRequest();
         }
     }
 
     void MainWindow::sendDeviceListRequest()
     {
-        if (m_sessionToken.empty())
-            return;
+        if (m_sessionToken.empty()) return;
         std::vector<uint8_t> p;
         net_ops::protocol::PackString(p, m_sessionToken);
         m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, p);
+    }
+    
+    void MainWindow::sendLogQueryRequest()
+    {
+        if (m_selectedDeviceId == -1 || m_sessionToken.empty()) return;
+        
+        std::vector<uint8_t> p;
+        net_ops::protocol::PackUint32(p, static_cast<uint32_t>(m_selectedDeviceId));
+        m_controller->QueueRequest(net_ops::protocol::MessageType::LogQueryReq, p);
     }
 
     void MainWindow::setupUi()
@@ -70,9 +78,15 @@ namespace net_ops::client
             });
         layout->addWidget(testLogBtn);
 
-        m_deviceTable = new QTableWidget(0, 4);
-        m_deviceTable->setHorizontalHeaderLabels({"Name", "IP", "MAC", "Status"});
+        m_deviceTable = new QTableWidget(0, 5);
+        m_deviceTable->setHorizontalHeaderLabels({"Name", "IP", "MAC", "Status", "ID"});
         m_deviceTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+        m_deviceTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+        m_deviceTable->setSelectionMode(QAbstractItemView::SingleSelection);
+        m_deviceTable->hideColumn(4);
+        
+        connect(m_deviceTable, &QTableWidget::cellClicked, this, &MainWindow::onDeviceSelected);
+
         layout->addWidget(m_deviceTable);
 
         m_logTable = new QTableWidget(0, 2);
@@ -85,10 +99,20 @@ namespace net_ops::client
         resize(900, 700);
     }
 
+    void MainWindow::onDeviceSelected(int row, int col)
+    {
+        auto idItem = m_deviceTable->item(row, 4);
+        if (idItem) {
+            m_selectedDeviceId = idItem->text().toInt();
+            m_logTable->setRowCount(0);
+            sendLogQueryRequest();
+        }
+    }
+
     void MainWindow::onScanClicked()
     {
         if (m_sessionToken.empty()) return;
-        if (m_isScanning) return;
+        if (m_isScanning) return; 
 
         m_isScanning = true;
         m_scanBtn->setText("Scanning...");
@@ -101,10 +125,7 @@ namespace net_ops::client
 
         m_scanThread = std::thread([this, token]()
         {
-            std::cout << "[MainWindow] Starting Network Scan...\n";
             auto hosts = NetworkScanner::ScanLocalNetwork(); 
-            std::cout << "[MainWindow] Scan complete. Found " << hosts.size() << " hosts.\n";
-
             for (const auto& h : hosts) {
                 std::vector<uint8_t> p;
                 net_ops::protocol::PackString(p, token);
@@ -127,6 +148,11 @@ namespace net_ops::client
         if (!m_isScanning && !m_scanBtn->isEnabled()) {
             m_scanBtn->setText("Scan Network");
             m_scanBtn->setEnabled(true);
+        }
+        
+        static int counter = 0;
+        if (++counter % 2 == 0) {
+             sendLogQueryRequest();
         }
 
         while (auto resp = m_controller->GetNextResponse())
@@ -167,9 +193,9 @@ namespace net_ops::client
     {
         size_t offset = 0;
         auto count = net_ops::protocol::UnpackUint32(data, offset);
-        if (!count)
-            return;
+        if (!count) return;
 
+        int savedId = m_selectedDeviceId;
         m_deviceTable->setRowCount(0);
 
         std::vector<std::string> monitorIPs;
@@ -188,13 +214,17 @@ namespace net_ops::client
             m_deviceTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(*ip)));
             m_deviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString("Unknown MAC")));
             m_deviceTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(*status + " " + *info)));
+            
+            m_deviceTable->setItem(row, 4, new QTableWidgetItem(QString::number(*id)));
 
-            if (ip)
-                monitorIPs.push_back(*ip);
+            if (ip) monitorIPs.push_back(*ip);
+            
+            if (savedId != -1 && (int)*id == savedId) {
+                m_deviceTable->selectRow(row);
+            }
         }
 
-        if (m_monitor)
-        {
+        if (m_monitor) {
             m_monitor->SetTargets(monitorIPs);
         }
     }

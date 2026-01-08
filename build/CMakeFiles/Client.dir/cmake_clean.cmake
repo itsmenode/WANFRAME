@@ -16,6 +16,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/Client.dir/client/NetworkController.cpp.o.d"
   "CMakeFiles/Client.dir/client/Scanner.cpp.o"
   "CMakeFiles/Client.dir/client/Scanner.cpp.o.d"
+  "CMakeFiles/Client.dir/client/SnmpClient.cpp.o"
+  "CMakeFiles/Client.dir/client/SnmpClient.cpp.o.d"
   "CMakeFiles/Client.dir/client/SyslogCollector.cpp.o"
   "CMakeFiles/Client.dir/client/SyslogCollector.cpp.o.d"
   "CMakeFiles/Client.dir/client/main.cpp.o"
