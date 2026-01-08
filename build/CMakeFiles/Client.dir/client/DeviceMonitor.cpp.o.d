@@ -163,11 +163,9 @@ CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o: \
  /usr/include/c++/11/bits/algorithmfwd.h \
  /usr/include/c++/11/bits/stl_heap.h \
  /usr/include/c++/11/bits/stl_tempbuf.h \
- /usr/include/c++/11/bits/uniform_int_dist.h \
- /home/andrew/Documents/GitHub/WANFRAME/client/Scanner.hpp \
- /home/andrew/Documents/GitHub/WANFRAME/client/SnmpClient.hpp \
- /usr/include/c++/11/iostream /usr/include/c++/11/ostream \
- /usr/include/c++/11/ios /usr/include/c++/11/bits/ios_base.h \
+ /usr/include/c++/11/bits/uniform_int_dist.h /usr/include/c++/11/iostream \
+ /usr/include/c++/11/ostream /usr/include/c++/11/ios \
+ /usr/include/c++/11/bits/ios_base.h \
  /usr/include/c++/11/bits/locale_classes.h \
  /usr/include/c++/11/bits/locale_classes.tcc \
  /usr/include/c++/11/streambuf /usr/include/c++/11/bits/streambuf.tcc \
@@ -180,6 +178,129 @@ CMakeFiles/Client.dir/client/DeviceMonitor.cpp.o: \
  /usr/include/c++/11/bits/locale_facets.tcc \
  /usr/include/c++/11/bits/basic_ios.tcc \
  /usr/include/c++/11/bits/ostream.tcc /usr/include/c++/11/istream \
- /usr/include/c++/11/bits/istream.tcc /usr/include/c++/11/algorithm \
+ /usr/include/c++/11/bits/istream.tcc /usr/include/tins/tins.h \
+ /usr/include/tins/dns.h /usr/include/c++/11/cstring \
+ /usr/include/string.h /usr/include/strings.h /usr/include/c++/11/map \
+ /usr/include/c++/11/bits/stl_tree.h /usr/include/c++/11/bits/stl_map.h \
+ /usr/include/c++/11/bits/stl_multimap.h /usr/include/tins/macros.h \
+ /usr/include/x86_64-linux-gnu/sys/param.h \
+ /usr/lib/gcc/x86_64-linux-gnu/11/include/limits.h \
+ /usr/lib/gcc/x86_64-linux-gnu/11/include/syslimits.h \
+ /usr/include/limits.h /usr/include/x86_64-linux-gnu/bits/posix1_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/local_lim.h \
+ /usr/include/linux/limits.h \
+ /usr/include/x86_64-linux-gnu/bits/posix2_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/xopen_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/uio_lim.h /usr/include/signal.h \
+ /usr/include/x86_64-linux-gnu/bits/signum-generic.h \
+ /usr/include/x86_64-linux-gnu/bits/signum-arch.h \
+ /usr/include/x86_64-linux-gnu/bits/types/sig_atomic_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__sigval_t.h \
+ /usr/include/x86_64-linux-gnu/bits/siginfo-arch.h \
+ /usr/include/x86_64-linux-gnu/bits/siginfo-consts.h \
+ /usr/include/x86_64-linux-gnu/bits/siginfo-consts-arch.h \
+ /usr/include/x86_64-linux-gnu/bits/types/sigval_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/sigevent_t.h \
+ /usr/include/x86_64-linux-gnu/bits/sigevent-consts.h \
+ /usr/include/x86_64-linux-gnu/bits/sigaction.h \
+ /usr/include/x86_64-linux-gnu/bits/sigcontext.h \
+ /usr/include/x86_64-linux-gnu/bits/types/stack_t.h \
+ /usr/include/x86_64-linux-gnu/sys/ucontext.h \
+ /usr/include/x86_64-linux-gnu/bits/sigstack.h \
+ /usr/include/x86_64-linux-gnu/bits/sigstksz.h /usr/include/unistd.h \
+ /usr/include/x86_64-linux-gnu/bits/posix_opt.h \
+ /usr/include/x86_64-linux-gnu/bits/environments.h \
+ /usr/include/x86_64-linux-gnu/bits/confname.h \
+ /usr/include/x86_64-linux-gnu/bits/getopt_posix.h \
+ /usr/include/x86_64-linux-gnu/bits/getopt_core.h \
+ /usr/include/x86_64-linux-gnu/bits/unistd_ext.h \
+ /usr/include/linux/close_range.h \
+ /usr/include/x86_64-linux-gnu/bits/ss_flags.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_sigstack.h \
+ /usr/include/x86_64-linux-gnu/bits/sigthread.h \
+ /usr/include/x86_64-linux-gnu/bits/signal_ext.h \
+ /usr/include/x86_64-linux-gnu/bits/param.h /usr/include/linux/param.h \
+ /usr/include/x86_64-linux-gnu/asm/param.h \
+ /usr/include/asm-generic/param.h /usr/include/tins/config.h \
+ /usr/include/tins/pdu.h /usr/include/tins/cxxstd.h \
+ /usr/include/tins/exceptions.h /usr/include/tins/endianness.h \
+ /usr/include/tins/arp.h /usr/include/tins/hw_address.h \
+ /usr/include/c++/11/memory \
+ /usr/include/c++/11/bits/stl_raw_storage_iter.h \
+ /usr/include/c++/11/bits/align.h /usr/include/c++/11/bit \
+ /usr/include/c++/11/bits/shared_ptr.h \
+ /usr/include/c++/11/bits/shared_ptr_base.h \
+ /usr/include/c++/11/bits/allocated_ptr.h \
+ /usr/include/c++/11/ext/concurrence.h \
+ /usr/include/c++/11/bits/shared_ptr_atomic.h \
+ /usr/include/c++/11/backward/auto_ptr.h \
+ /usr/include/c++/11/pstl/glue_memory_defs.h \
+ /usr/include/c++/11/pstl/execution_defs.h /usr/include/tins/ip_address.h \
+ /usr/include/tins/bootp.h /usr/include/tins/dhcp.h \
+ /usr/include/tins/pdu_option.h /usr/include/tins/detail/type_traits.h \
+ /usr/include/tins/eapol.h /usr/include/tins/small_uint.h \
+ /usr/include/tins/ethernetII.h /usr/include/tins/ieee802_3.h \
+ /usr/include/tins/dot3.h /usr/include/tins/llc.h \
+ /usr/include/tins/icmp.h /usr/include/tins/icmp_extension.h \
+ /usr/include/tins/icmpv6.h /usr/include/tins/ipv6_address.h \
+ /usr/include/tins/dot11.h /usr/include/tins/dot11/dot11_base.h \
+ /usr/include/tins/dot11/dot11_data.h \
+ /usr/include/tins/dot11/dot11_mgmt.h \
+ /usr/include/tins/dot11/dot11_beacon.h \
+ /usr/include/tins/dot11/dot11_assoc.h \
+ /usr/include/tins/dot11/dot11_auth.h \
+ /usr/include/tins/dot11/dot11_probe.h \
+ /usr/include/tins/dot11/dot11_control.h /usr/include/tins/dot1q.h \
+ /usr/include/tins/ip.h /usr/include/tins/ipv6.h /usr/include/tins/mpls.h \
+ /usr/include/tins/packet_sender.h /usr/include/tins/network_interface.h \
+ /usr/include/tins/packet_writer.h /usr/include/tins/utils/pdu_utils.h \
+ /usr/include/pcap.h /usr/include/pcap/pcap.h \
+ /usr/include/pcap/funcattrs.h /usr/include/pcap/compiler-tests.h \
+ /usr/include/pcap/pcap-inttypes.h /usr/include/inttypes.h \
+ /usr/include/x86_64-linux-gnu/sys/time.h /usr/include/pcap/socket.h \
+ /usr/include/x86_64-linux-gnu/sys/socket.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_iovec.h \
+ /usr/include/x86_64-linux-gnu/bits/socket.h \
+ /usr/include/x86_64-linux-gnu/bits/socket_type.h \
+ /usr/include/x86_64-linux-gnu/bits/sockaddr.h \
+ /usr/include/x86_64-linux-gnu/asm/socket.h \
+ /usr/include/asm-generic/socket.h /usr/include/linux/posix_types.h \
+ /usr/include/linux/stddef.h \
+ /usr/include/x86_64-linux-gnu/asm/posix_types.h \
+ /usr/include/x86_64-linux-gnu/asm/posix_types_64.h \
+ /usr/include/asm-generic/posix_types.h \
+ /usr/include/x86_64-linux-gnu/asm/bitsperlong.h \
+ /usr/include/asm-generic/bitsperlong.h \
+ /usr/include/x86_64-linux-gnu/asm/sockios.h \
+ /usr/include/asm-generic/sockios.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
+ /usr/include/netdb.h /usr/include/netinet/in.h \
+ /usr/include/x86_64-linux-gnu/bits/in.h /usr/include/rpc/netdb.h \
+ /usr/include/x86_64-linux-gnu/bits/netdb.h /usr/include/arpa/inet.h \
+ /usr/include/pcap/bpf.h /usr/include/pcap/dlt.h \
+ /usr/include/tins/data_link_type.h /usr/include/tins/radiotap.h \
+ /usr/include/tins/rawpdu.h /usr/include/tins/snap.h \
+ /usr/include/tins/sniffer.h /usr/include/c++/11/iterator \
+ /usr/include/c++/11/bits/stream_iterator.h /usr/include/tins/packet.h \
+ /usr/include/tins/timestamp.h /usr/include/tins/tcp.h \
+ /usr/include/tins/udp.h /usr/include/tins/utils.h \
+ /usr/include/tins/utils/checksum_utils.h \
+ /usr/include/tins/utils/frequency_utils.h \
+ /usr/include/tins/utils/routing_utils.h /usr/include/c++/11/set \
+ /usr/include/c++/11/bits/stl_set.h \
+ /usr/include/c++/11/bits/stl_multiset.h \
+ /usr/include/tins/utils/resolve_utils.h \
+ /usr/include/tins/utils/radiotap_parser.h \
+ /usr/include/tins/utils/radiotap_writer.h /usr/include/tins/tcp_stream.h \
+ /usr/include/c++/11/algorithm \
  /usr/include/c++/11/pstl/glue_algorithm_defs.h \
- /usr/include/c++/11/pstl/execution_defs.h
+ /usr/include/tins/crypto.h /usr/include/tins/handshake_capturer.h \
+ /usr/include/tins/pdu_cacher.h /usr/include/tins/rsn_information.h \
+ /usr/include/tins/sll.h /usr/include/tins/dhcpv6.h \
+ /usr/include/tins/pppoe.h /usr/include/tins/stp.h \
+ /usr/include/tins/address_range.h \
+ /usr/include/tins/detail/address_helpers.h \
+ /usr/include/tins/pdu_allocator.h /usr/include/tins/ipsec.h \
+ /usr/include/tins/ip_reassembler.h /usr/include/tins/ppi.h \
+ /usr/include/tins/pdu_iterator.h

@@ -1,96 +1,116 @@
 #include "DeviceMonitor.hpp"
-#include "Scanner.hpp" 
-#include "SnmpClient.hpp"
 #include <iostream>
-#include <algorithm>
+#include <chrono>
+#include <thread>
+#include <vector>
+#include <tins/tins.h>
 
-namespace net_ops::client {
 
-    DeviceMonitor::DeviceMonitor() : m_running(false) {}
+namespace net_ops::client
+{
 
-    DeviceMonitor::~DeviceMonitor() {
+    DeviceMonitor::DeviceMonitor() : m_running(false)
+    {
+    }
+
+    DeviceMonitor::~DeviceMonitor()
+    {
         Stop();
     }
 
-    void DeviceMonitor::SetTargets(const std::vector<std::string>& ips) {
+    void DeviceMonitor::SetTargets(const std::vector<std::string> &ips)
+    {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_targets.clear();
-        for(const auto& ip : ips) {
+        m_targets.reserve(ips.size());
+        
+        for (const auto& ip : ips) {
             MonitoredDevice dev;
             dev.ip = ip;
             dev.is_online = false;
-            dev.last_snmp_check = std::chrono::steady_clock::time_point::min();
+            dev.last_snmp_check = std::chrono::steady_clock::now();
             m_targets.push_back(dev);
         }
-        std::cout << "[Monitor] Watching " << ips.size() << " devices.\n";
     }
 
-    void DeviceMonitor::Start(StatusCallback callback) {
-        if (m_running) return;
-        m_callback = callback;
+    void DeviceMonitor::Start(StatusCallback callback)
+    {
+        if (m_running)
+            return;
         m_running = true;
+        m_callback = callback;
         m_thread = std::thread(&DeviceMonitor::MonitorLoop, this);
-        std::cout << "[Monitor] Background thread started.\n";
     }
 
-    void DeviceMonitor::Stop() {
+    void DeviceMonitor::Stop()
+    {
         m_running = false;
-        if (m_thread.joinable()) {
+        if (m_thread.joinable())
             m_thread.join();
-        }
     }
 
-    void DeviceMonitor::MonitorLoop() {
-        SnmpClient snmp;
+    bool Ping(const std::string &target_ip)
+    {
+        try
+        {
+            Tins::NetworkInterface iface = Tins::NetworkInterface::default_interface();
+            
+            Tins::SnifferConfiguration config;
+            config.set_promisc_mode(false);
+            config.set_filter("icmp[icmptype] == icmp-echoreply and src host " + target_ip);
+            config.set_timeout(1);
 
-        while (m_running) {
-            std::vector<MonitoredDevice> local_targets;
+            Tins::Sniffer sniffer(iface.name(), config);
+
+            Tins::IP ip = Tins::IP(target_ip) / Tins::ICMP();
+            Tins::ICMP &icmp = ip.rfind_pdu<Tins::ICMP>();
+            icmp.type(Tins::ICMP::ECHO_REQUEST);
+            icmp.id(0x1337);
+            icmp.sequence(1);
+
+            Tins::PacketSender sender;
+            sender.send(ip);
+
+            auto packet = sniffer.next_packet();
+            
+            if (packet) {
+                return true;
+            }
+        }
+        catch (const std::exception &)
+        {
+            return false;
+        }
+        return false;
+    }
+
+    void DeviceMonitor::MonitorLoop()
+    {
+        while (m_running)
+        {
+            std::vector<MonitoredDevice> devices;
             {
                 std::lock_guard<std::mutex> lock(m_mutex);
-                local_targets = m_targets;
+                devices = m_targets;
             }
 
-            if (local_targets.empty()) {
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-                continue;
-            }
-
-            auto now = std::chrono::steady_clock::now();
-
-            for (auto& dev : local_targets) {
+            for (auto &dev : devices)
+            {
                 if (!m_running) break;
 
-                bool alive = NetworkScanner::Ping(dev.ip);
-                std::string status = alive ? "ONLINE" : "OFFLINE";
-                std::string desc = "";
+                bool online = Ping(dev.ip);
+                std::string status = online ? "Online" : "Offline";
+                std::string desc = "Monitoring via libtins";
 
-                bool time_for_snmp = (now - dev.last_snmp_check) > std::chrono::seconds(60);
-
-                if (alive && time_for_snmp) {
-                    DeviceStats stats = snmp.QueryDevice(dev.ip, "public");
-                    
-                    if (stats.success) {
-                        desc = stats.description;
-                    }
-                    
-                    dev.last_snmp_check = now;
-                    
-                    {
-                        std::lock_guard<std::mutex> lock(m_mutex);
-                        for(auto& t : m_targets) {
-                            if(t.ip == dev.ip) t.last_snmp_check = now;
-                        }
-                    }
-                }
-
-                if (m_callback) {
+                if (m_callback)
+                {
                     m_callback(dev.ip, status, desc);
                 }
             }
 
-            for(int i=0; i<5; i++) {
-                if(!m_running) break;
-                std::this_thread::sleep_for(std::chrono::seconds(1));
+            for (int i = 0; i < 50; ++i) {
+                if (!m_running) break;
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
         }
     }
