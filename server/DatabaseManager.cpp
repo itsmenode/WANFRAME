@@ -86,6 +86,13 @@ namespace net_ops::server
             "message TEXT, "
             "FOREIGN KEY(physical_id) REFERENCES physical_devices(id) ON DELETE CASCADE, "
             "FOREIGN KEY(user_device_id) REFERENCES user_devices(id) ON DELETE CASCADE"
+            ");"
+
+            "CREATE TABLE IF NOT EXISTS dashboard_configs ("
+            "user_id INTEGER PRIMARY KEY, "
+            "config TEXT NOT NULL, "
+            "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, "
+            "FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE"
             ");";
 
         char *err_msg = nullptr;
@@ -441,5 +448,43 @@ namespace net_ops::server
         }
         sqlite3_finalize(stmt);
         return logs;
+    }
+
+    std::optional<std::string> DatabaseManager::GetDashboardConfig(int user_id)
+    {
+        std::lock_guard<std::mutex> lock(db_mutex_);
+        const char *sql = "SELECT config FROM dashboard_configs WHERE user_id = ?;";
+        sqlite3_stmt *stmt;
+        if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK)
+            return std::nullopt;
+
+        sqlite3_bind_int(stmt, 1, user_id);
+        std::optional<std::string> config = std::nullopt;
+        if (sqlite3_step(stmt) == SQLITE_ROW)
+        {
+            const char *config_ptr = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
+            if (config_ptr)
+                config = std::string(config_ptr);
+        }
+        sqlite3_finalize(stmt);
+        return config;
+    }
+
+    bool DatabaseManager::SetDashboardConfig(int user_id, const std::string &config)
+    {
+        std::lock_guard<std::mutex> lock(db_mutex_);
+        const char *sql =
+            "INSERT INTO dashboard_configs (user_id, config, updated_at) "
+            "VALUES (?, ?, CURRENT_TIMESTAMP) "
+            "ON CONFLICT(user_id) DO UPDATE SET config = excluded.config, updated_at = CURRENT_TIMESTAMP;";
+        sqlite3_stmt *stmt;
+        if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK)
+            return false;
+
+        sqlite3_bind_int(stmt, 1, user_id);
+        sqlite3_bind_text(stmt, 2, config.c_str(), -1, SQLITE_TRANSIENT);
+        bool ok = (sqlite3_step(stmt) == SQLITE_DONE);
+        sqlite3_finalize(stmt);
+        return ok;
     }
 }

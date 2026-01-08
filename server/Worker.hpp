@@ -43,6 +43,7 @@ namespace net_ops::server
         void HandleLogQuery(int client_fd, const std::vector<uint8_t> &payload);
         void HandleLogout(int client_fd, const std::vector<uint8_t> &payload);
         void HandleMetricsRequest(int client_fd, const std::vector<uint8_t> &payload);
+        void HandleDashboardConfig(int client_fd, const std::vector<uint8_t> &payload);
 
         NetworkCore *m_networkCore;
         std::vector<std::thread> m_threads;

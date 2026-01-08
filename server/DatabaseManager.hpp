@@ -74,5 +74,8 @@ namespace net_ops::server
 
         void SaveLog(const std::string &ip_address, const std::string &message);
         std::vector<LogEntry> GetLogsForDevice(int user_device_id, int limit = 50);
+
+        std::optional<std::string> GetDashboardConfig(int user_id);
+        bool SetDashboardConfig(int user_id, const std::string &config);
     };
 }

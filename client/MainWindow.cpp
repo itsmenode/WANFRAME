@@ -7,6 +7,10 @@
 #include <unistd.h>
 #include <QStatusBar>
 #include <QLabel>
+#include <QHBoxLayout>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 namespace net_ops::client
 {
@@ -38,6 +42,8 @@ namespace net_ops::client
     void MainWindow::SetToken(const std::string &token)
     {
         m_sessionToken = token;
+        m_dashboardConfigLoaded = false;
+        sendDashboardConfigRequest();
     }
 
     void MainWindow::showEvent(QShowEvent *event)
@@ -83,9 +89,17 @@ namespace net_ops::client
         auto central = new QWidget();
         auto layout = new QVBoxLayout(central);
 
+        auto actionLayout = new QHBoxLayout();
         m_scanBtn = new QPushButton("Scan Network (Requires Root)");
         connect(m_scanBtn, &QPushButton::clicked, this, &MainWindow::onScanClicked);
-        layout->addWidget(m_scanBtn);
+        actionLayout->addWidget(m_scanBtn);
+
+        m_saveLayoutBtn = new QPushButton("Save Dashboard Layout");
+        m_saveLayoutBtn->setToolTip("Save column visibility/order preferences");
+        connect(m_saveLayoutBtn, &QPushButton::clicked, this, &MainWindow::onSaveLayoutClicked);
+        actionLayout->addWidget(m_saveLayoutBtn);
+
+        layout->addLayout(actionLayout);
 
         auto metricsLabel = new QLabel("<b>Network Incident Metrics (Logs per Device)</b>");
         layout->addWidget(metricsLabel);
@@ -237,6 +251,24 @@ namespace net_ops::client
                 break;
             }
 
+            case net_ops::protocol::MessageType::DashboardConfigResp:
+            {
+                size_t offset = 0;
+                auto status = net_ops::protocol::UnpackString(resp->data, offset);
+                auto config = net_ops::protocol::UnpackString(resp->data, offset);
+                if (status && *status == "OK" && config && !config->empty())
+                {
+                    applyDashboardConfig(*config);
+                    m_dashboardConfigLoaded = true;
+                    statusBar()->showMessage("Dashboard layout loaded.", 3000);
+                }
+                else if (status && *status == "OK")
+                {
+                    statusBar()->showMessage("Dashboard layout saved.", 3000);
+                }
+                break;
+            }
+
             case net_ops::protocol::MessageType::ErrorResp:
             {
                 size_t offset = 0;
@@ -250,6 +282,13 @@ namespace net_ops::client
                 break;
             }
         }
+    }
+
+    void MainWindow::onSaveLayoutClicked()
+    {
+        if (m_sessionToken.empty())
+            return;
+        sendDashboardConfigSave();
     }
 
     void MainWindow::addLogEntry(const std::string &timestamp, const std::string &msg)
@@ -302,5 +341,102 @@ namespace net_ops::client
             m_monitor->SetTargets(monitorIPs);
         if (m_snmpMonitor)
             m_snmpMonitor->SetTargets(monitorIPs);
+    }
+
+    void MainWindow::sendDashboardConfigRequest()
+    {
+        if (m_sessionToken.empty() || !m_controller)
+            return;
+        std::vector<uint8_t> payload;
+        net_ops::protocol::PackString(payload, m_sessionToken);
+        net_ops::protocol::PackUint32(payload, 0);
+        m_controller->QueueRequest(net_ops::protocol::MessageType::DashboardConfigReq, payload);
+    }
+
+    void MainWindow::sendDashboardConfigSave()
+    {
+        if (m_sessionToken.empty() || !m_controller)
+            return;
+        std::vector<uint8_t> payload;
+        net_ops::protocol::PackString(payload, m_sessionToken);
+        net_ops::protocol::PackUint32(payload, 1);
+        net_ops::protocol::PackString(payload, buildDashboardConfig());
+        m_controller->QueueRequest(net_ops::protocol::MessageType::DashboardConfigReq, payload);
+    }
+
+    std::string MainWindow::buildDashboardConfig() const
+    {
+        auto serializeTable = [](const QTableWidget *table)
+        {
+            QJsonObject tableObj;
+            QJsonArray orderArray;
+            QJsonArray hiddenArray;
+            QJsonArray widthArray;
+            auto header = table->horizontalHeader();
+            int count = table->columnCount();
+            for (int visual = 0; visual < count; ++visual)
+                orderArray.append(header->logicalIndex(visual));
+            for (int logical = 0; logical < count; ++logical)
+            {
+                hiddenArray.append(table->isColumnHidden(logical));
+                widthArray.append(table->columnWidth(logical));
+            }
+            tableObj["order"] = orderArray;
+            tableObj["hidden"] = hiddenArray;
+            tableObj["widths"] = widthArray;
+            return tableObj;
+        };
+
+        QJsonObject root;
+        root["version"] = 1;
+        root["deviceTable"] = serializeTable(m_deviceTable);
+        root["metricsTable"] = serializeTable(m_metricsTable);
+        root["logTable"] = serializeTable(m_logTable);
+
+        QJsonDocument doc(root);
+        return doc.toJson(QJsonDocument::Compact).toStdString();
+    }
+
+    void MainWindow::applyDashboardConfig(const std::string &config)
+    {
+        QJsonParseError error;
+        auto doc = QJsonDocument::fromJson(QByteArray::fromStdString(config), &error);
+        if (error.error != QJsonParseError::NoError || !doc.isObject())
+            return;
+
+        auto applyTable = [](QTableWidget *table, const QJsonObject &tableObj)
+        {
+            auto header = table->horizontalHeader();
+            auto orderArray = tableObj.value("order").toArray();
+            auto hiddenArray = tableObj.value("hidden").toArray();
+            auto widthArray = tableObj.value("widths").toArray();
+            int count = table->columnCount();
+
+            if (orderArray.size() == count)
+            {
+                for (int visual = 0; visual < count; ++visual)
+                {
+                    int logical = orderArray.at(visual).toInt();
+                    int current = header->visualIndex(logical);
+                    header->moveSection(current, visual);
+                }
+            }
+
+            for (int logical = 0; logical < count; ++logical)
+            {
+                if (logical < hiddenArray.size())
+                    table->setColumnHidden(logical, hiddenArray.at(logical).toBool());
+                if (logical < widthArray.size())
+                    table->setColumnWidth(logical, widthArray.at(logical).toInt());
+            }
+        };
+
+        QJsonObject root = doc.object();
+        if (root.contains("deviceTable"))
+            applyTable(m_deviceTable, root.value("deviceTable").toObject());
+        if (root.contains("metricsTable"))
+            applyTable(m_metricsTable, root.value("metricsTable").toObject());
+        if (root.contains("logTable"))
+            applyTable(m_logTable, root.value("logTable").toObject());
     }
 }

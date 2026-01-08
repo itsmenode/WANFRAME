@@ -50,6 +50,9 @@ namespace net_ops::protocol
         MetricsReq = 0x19,
         MetricsResp = 0x20,
 
+        DashboardConfigReq = 0x21,
+        DashboardConfigResp = 0x22,
+
         ErrorResp = 0xFF
     };
 

@@ -107,6 +107,9 @@ namespace net_ops::server
             case net_ops::protocol::MessageType::MetricsReq:
                 HandleMetricsRequest(job.client_fd, job.payload);
                 break;
+            case net_ops::protocol::MessageType::DashboardConfigReq:
+                HandleDashboardConfig(job.client_fd, job.payload);
+                break;
             default:
                 std::cerr << "[Worker] Unknown message type: " << (int)job.type << "\n";
                 break;
@@ -358,5 +361,47 @@ namespace net_ops::server
             net_ops::protocol::PackString(response, m.last_status);
         }
         m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::MetricsResp, response);
+    }
+
+    void Worker::HandleDashboardConfig(int client_fd, const std::vector<uint8_t> &payload)
+    {
+        size_t offset = 0;
+        auto token = net_ops::protocol::UnpackString(payload, offset);
+        auto action = net_ops::protocol::UnpackUint32(payload, offset);
+
+        if (!token)
+            return;
+
+        auto userId = SessionManager::GetInstance().GetUserId(*token);
+        if (!userId)
+        {
+            std::vector<uint8_t> resp;
+            net_ops::protocol::PackString(resp, "AUTH_FAILED");
+            m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::ErrorResp, resp);
+            return;
+        }
+
+        uint32_t mode = action.value_or(0);
+        std::vector<uint8_t> response;
+
+        if (mode == 1)
+        {
+            auto config = net_ops::protocol::UnpackString(payload, offset);
+            if (!config)
+            {
+                net_ops::protocol::PackString(response, "INVALID_REQUEST");
+                m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::DashboardConfigResp, response);
+                return;
+            }
+            bool ok = DatabaseManager::GetInstance().SetDashboardConfig(*userId, *config);
+            net_ops::protocol::PackString(response, ok ? "OK" : "ERROR");
+            m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::DashboardConfigResp, response);
+            return;
+        }
+
+        auto config = DatabaseManager::GetInstance().GetDashboardConfig(*userId);
+        net_ops::protocol::PackString(response, config ? "OK" : "NOT_FOUND");
+        net_ops::protocol::PackString(response, config.value_or(""));
+        m_networkCore->QueueResponse(client_fd, net_ops::protocol::MessageType::DashboardConfigResp, response);
     }
 }
