@@ -8,10 +8,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 find_package(OpenSSL REQUIRED)
 find_package(PkgConfig REQUIRED)
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
-find_package(Qt6 COMPONENTS Widgets REQUIRED)
+# Remove 'REQUIRED' so the build doesn't fail without Qt
+find_package(Qt6 COMPONENTS Widgets) 
+
+if(Qt6_FOUND)
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTOUIC ON)
+    set(CMAKE_AUTORCC ON)
+endif()
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
@@ -45,6 +49,7 @@ include_directories(
 # ==========================
 #        SERVER BUILD
 # ==========================
+# The Server build remains accessible to everyone
 add_executable(Server
     server/main.cpp
     server/NetworkCore.cpp
@@ -65,27 +70,32 @@ target_link_libraries(Server
 # ==========================
 #        CLIENT BUILD
 # ==========================
-add_executable(Client
-    client/main.cpp
-    client/NetworkController.cpp
-    client/ClientNetwork.cpp
-    client/Scanner.cpp
-    client/SyslogCollector.cpp
-    client/SnmpClient.cpp
-    client/LoginWindow.cpp
-    client/MainWindow.cpp
-    client/DeviceMonitor.cpp
-    common/ByteBuffer.cpp
-)
+# Only attempt to build the Client if Qt6 was actually found
+if(Qt6_FOUND)
+    add_executable(Client
+        client/main.cpp
+        client/NetworkController.cpp
+        client/ClientNetwork.cpp
+        client/Scanner.cpp
+        client/SyslogCollector.cpp
+        client/SnmpClient.cpp
+        client/LoginWindow.cpp
+        client/MainWindow.cpp
+        client/DeviceMonitor.cpp
+        common/ByteBuffer.cpp
+    )
 
-target_link_libraries(Client
-    Qt6::Widgets
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    Threads::Threads
-    ${TINS_LIBRARIES}
-    ${PCAP_LIBRARY}
-)
+    target_link_libraries(Client
+        Qt6::Widgets
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        Threads::Threads
+        ${TINS_LIBRARIES}
+        ${PCAP_LIBRARY}
+    )
+else()
+    message(STATUS "Qt6 not found. Skipping Client build.")
+endif()
 
 # ==========================
 #      RESOURCE HANDLING
