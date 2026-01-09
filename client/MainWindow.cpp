@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <QApplication>
 #include <set>
+#include <random>
 
 namespace net_ops::client
 {
@@ -22,6 +23,9 @@ namespace net_ops::client
 
         m_discoveryTimer = new QTimer(this);
         connect(m_discoveryTimer, &QTimer::timeout, this, &MainWindow::performContinuousScan);
+
+        m_simTimer = new QTimer(this);
+        connect(m_simTimer, &QTimer::timeout, this, &MainWindow::runSimulationStep);
     }
 
     MainWindow::~MainWindow()
@@ -65,7 +69,7 @@ namespace net_ops::client
         QMainWindow::showEvent(event);
         if (!m_dataTimer->isActive())
         {
-            m_dataTimer->start(1000);
+            m_dataTimer->start(1000); 
             sendDeviceListRequest();
         }
     }
@@ -77,21 +81,16 @@ namespace net_ops::client
 
         auto topLayout = new QHBoxLayout();
         
-        m_scanBtn = new QPushButton("Start Continuous Monitoring Loop");
-        m_scanBtn->setCheckable(true); 
+        m_scanBtn = new QPushButton("Start Continuous Monitoring");
+        m_scanBtn->setCheckable(true);
         connect(m_scanBtn, &QPushButton::clicked, this, &MainWindow::onScanClicked);
         topLayout->addWidget(m_scanBtn);
 
-        auto testLogBtn = new QPushButton("Send Test Log");
-        connect(testLogBtn, &QPushButton::clicked, [this]() {
-                if (m_sessionToken.empty()) return;
-                std::vector<uint8_t> payload;
-                net_ops::protocol::PackString(payload, m_sessionToken);
-                net_ops::protocol::PackString(payload, "127.0.0.1");
-                net_ops::protocol::PackString(payload, "Manual Test Log Event");
-                m_controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, payload); 
-        });
-        topLayout->addWidget(testLogBtn);
+        m_simBtn = new QPushButton("Start Traffic Simulation");
+        m_simBtn->setCheckable(true);
+        m_simBtn->setStyleSheet("background-color: #e6f7ff; color: #004d80; font-weight: bold;");
+        connect(m_simBtn, &QPushButton::clicked, this, &MainWindow::onSimulateClicked);
+        topLayout->addWidget(m_simBtn);
         
         m_logoutBtn = new QPushButton("Logout");
         m_logoutBtn->setStyleSheet("background-color: #ffcccc;");
@@ -128,8 +127,98 @@ namespace net_ops::client
         mainLayout->addWidget(m_logTable);
 
         setCentralWidget(central);
-        setWindowTitle("WANFRAME Monitoring Dashboard");
+        setWindowTitle("WANFRAME Monitoring Dashboard - DEBUG MODE");
         resize(950, 750);
+    }
+
+    void MainWindow::onSimulateClicked()
+    {
+        if (m_simBtn->isChecked()) {
+            m_simBtn->setText("Stop Traffic Simulation");
+            m_simBtn->setStyleSheet("background-color: #ffe6e6; color: #cc0000; font-weight: bold;");
+            
+            createFakeDevices();
+            m_simTimer->start(2000);
+        } else {
+            m_simBtn->setText("Start Traffic Simulation");
+            m_simBtn->setStyleSheet("background-color: #e6f7ff; color: #004d80; font-weight: bold;");
+            m_simTimer->stop();
+        }
+    }
+
+    void MainWindow::createFakeDevices()
+    {
+        if (m_sessionToken.empty()) return;
+
+        m_fakeIps = {
+            "192.168.254.101", "192.168.254.102", "192.168.254.103",
+            "192.168.254.104", "192.168.254.105"
+        };
+        std::vector<std::string> names = {
+            "Sim-Core-Router", "Sim-Switch-Floor1", "Sim-Firewall-Ext",
+            "Sim-Auth-Server", "Sim-Wifi-Controller"
+        };
+
+        for (size_t i = 0; i < m_fakeIps.size(); ++i) {
+            std::vector<uint8_t> p;
+            net_ops::protocol::PackString(p, m_sessionToken);
+            net_ops::protocol::PackString(p, names[i]);
+            net_ops::protocol::PackString(p, m_fakeIps[i]);
+            net_ops::protocol::PackString(p, "AA:BB:CC:DD:EE:0" + std::to_string(i));
+            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::vector<uint8_t> statusP;
+            net_ops::protocol::PackString(statusP, m_sessionToken);
+            net_ops::protocol::PackString(statusP, m_fakeIps[i]);
+            net_ops::protocol::PackString(statusP, "Online");
+            net_ops::protocol::PackString(statusP, "Simulated");
+            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceStatusReq, statusP);
+        }
+        
+        sendDeviceListRequest();
+    }
+
+    void MainWindow::runSimulationStep()
+    {
+        if (m_fakeIps.empty() || m_sessionToken.empty()) return;
+
+        int idx = rand() % m_fakeIps.size();
+        std::string ip = m_fakeIps[idx];
+
+        std::vector<std::string> messages = {
+            "Interface GigabitEthernet0/1 changed state to DOWN",
+            "Interface GigabitEthernet0/1 changed state to UP",
+            "%SEC-W-LOGINFAIL: User admin failed login from 10.0.0.5",
+            "%SYS-5-CONFIG_I: Configured from console by vty0",
+            "Cpu usage threshold exceeded: 92%",
+            "Packet loss detected on uplink",
+            "Fan 2 failed, temperature rising",
+            "BGP neighbor 10.2.2.2 is Down"
+        };
+        std::string msg = messages[rand() % messages.size()];
+
+        std::vector<uint8_t> p;
+        net_ops::protocol::PackString(p, m_sessionToken);
+        net_ops::protocol::PackString(p, ip);
+        net_ops::protocol::PackString(p, msg);
+        m_controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, p);
+
+        if (rand() % 10 == 0) {
+            std::vector<uint8_t> sp;
+            net_ops::protocol::PackString(sp, m_sessionToken);
+            net_ops::protocol::PackString(sp, ip);
+            net_ops::protocol::PackString(sp, "Offline");
+            net_ops::protocol::PackString(sp, "Timeout");
+            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceStatusReq, sp);
+        } else if (rand() % 10 == 1) {
+            std::vector<uint8_t> sp;
+            net_ops::protocol::PackString(sp, m_sessionToken);
+            net_ops::protocol::PackString(sp, ip);
+            net_ops::protocol::PackString(sp, "Online");
+            net_ops::protocol::PackString(sp, "Active");
+            m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceStatusReq, sp);
+        }
     }
 
     void MainWindow::onScanClicked()
@@ -146,11 +235,10 @@ namespace net_ops::client
         if (m_scanBtn->isChecked()) {
             m_scanBtn->setText("Stop Monitoring Loop");
             m_scanBtn->setStyleSheet("background-color: #ccffcc;");
-            
-            performContinuousScan(); 
+            performContinuousScan();
             m_discoveryTimer->start(15000); 
         } else {
-            m_scanBtn->setText("Start Continuous Monitoring Loop");
+            m_scanBtn->setText("Start Continuous Monitoring");
             m_scanBtn->setStyleSheet("");
             m_discoveryTimer->stop();
             m_isScanning = false;
@@ -169,7 +257,6 @@ namespace net_ops::client
         m_scanThread = std::thread([this, token]() {
             try {
                 auto hosts = NetworkScanner::ScanLocalNetwork(); 
-                
                 for (const auto& h : hosts) {
                     std::vector<uint8_t> p;
                     net_ops::protocol::PackString(p, token);
@@ -177,8 +264,8 @@ namespace net_ops::client
                     net_ops::protocol::PackString(p, h.ip);
                     net_ops::protocol::PackString(p, h.mac);
                     m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
-
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10)); 
+                    
+                    std::this_thread::sleep_for(std::chrono::milliseconds(20));
                     std::vector<uint8_t> statusP;
                     net_ops::protocol::PackString(statusP, token);
                     net_ops::protocol::PackString(statusP, h.ip);
@@ -186,13 +273,11 @@ namespace net_ops::client
                     net_ops::protocol::PackString(statusP, "Scanned");
                     m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceStatusReq, statusP);
                 } 
-                
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 
                 std::vector<uint8_t> listP;
                 net_ops::protocol::PackString(listP, token);
                 m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP); 
-
             } catch(...) {}
             m_isScanning = false; 
         });
@@ -208,9 +293,7 @@ namespace net_ops::client
         }
         
         while (auto resp = m_controller->GetNextResponse()) {
-            if (resp->type == net_ops::protocol::MessageType::DeviceListResp) {
-                 updateDeviceList(resp->data);
-            }
+            if (resp->type == net_ops::protocol::MessageType::DeviceListResp) updateDeviceList(resp->data);
             else if (resp->type == net_ops::protocol::MessageType::LogQueryResp) { 
                 size_t offset = 0;
                 auto count = net_ops::protocol::UnpackUint32(resp->data, offset);
@@ -246,7 +329,17 @@ namespace net_ops::client
             if (id) seenIds.insert(*id);
             if (ip) monitorIPs.push_back(*ip);
             
-            if (status && (*status == "Online")) m_onlineCount++;
+            QString statusText = QString::fromStdString(*status);
+            QString infoText = QString::fromStdString(*info);
+            bool isOnline = (statusText == "Online" || statusText == "ACTIVE");
+
+            if (isOnline) {
+                statusText = "Online";
+                m_onlineCount++;
+            }
+
+            QString displayStr = statusText + " " + infoText;
+            QColor bgColor = isOnline ? QColor("#ccffcc") : QColor("#ffcccc");
 
             bool found = false;
             for(int r = 0; r < m_deviceTable->rowCount(); ++r) {
@@ -254,11 +347,8 @@ namespace net_ops::client
                 if (idItem && idItem->text().toUInt() == *id) {
                     found = true;
                     m_deviceTable->item(r, 1)->setText(QString::fromStdString(*ip));
-                    m_deviceTable->item(r, 3)->setText(QString::fromStdString(*status + " " + *info));
-                    
-                    if (*status == "Online") m_deviceTable->item(r, 3)->setBackground(QColor("#ccffcc"));
-                    else m_deviceTable->item(r, 3)->setBackground(QColor("#ffcccc"));
-                    
+                    m_deviceTable->item(r, 3)->setText(displayStr);
+                    m_deviceTable->item(r, 3)->setBackground(bgColor);
                     break;
                 }
             }
@@ -268,12 +358,13 @@ namespace net_ops::client
                 m_deviceTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(*name)));
                 m_deviceTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(*ip)));
                 m_deviceTable->setItem(row, 2, new QTableWidgetItem("Unknown"));
-                auto statusItem = new QTableWidgetItem(QString::fromStdString(*status + " " + *info));
+                auto statusItem = new QTableWidgetItem(displayStr);
+                statusItem->setBackground(bgColor);
                 m_deviceTable->setItem(row, 3, statusItem);
                 m_deviceTable->setItem(row, 4, new QTableWidgetItem(QString::number(*id)));
             }
         }
-        
+
         for (int r = m_deviceTable->rowCount() - 1; r >= 0; --r) {
              auto idItem = m_deviceTable->item(r, 4);
              if (idItem && seenIds.find(idItem->text().toUInt()) == seenIds.end()) {
@@ -292,9 +383,9 @@ namespace net_ops::client
         net_ops::protocol::PackString(p, m_sessionToken);
         m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, p);
     }
-    
+
     void MainWindow::onLogoutClicked() {
-         if (!m_sessionToken.empty()) {
+        if (!m_sessionToken.empty()) {
             std::vector<uint8_t> p;
             net_ops::protocol::PackString(p, m_sessionToken);
             m_controller->QueueRequest(net_ops::protocol::MessageType::LogoutReq, p);
@@ -338,7 +429,7 @@ namespace net_ops::client
             sendLogQueryRequest();
         }
     }
-    
+
     void MainWindow::sendLogQueryRequest()
     {
         if (m_selectedDeviceId == -1 || m_sessionToken.empty()) return;
@@ -348,7 +439,7 @@ namespace net_ops::client
         net_ops::protocol::PackUint32(p, static_cast<uint32_t>(m_selectedDeviceId));
         m_controller->QueueRequest(net_ops::protocol::MessageType::LogQueryReq, p);
     }
-    
+
     void MainWindow::addLogEntry(const std::string &timestamp, const std::string &msg)
     {
         int row = m_logTable->rowCount();

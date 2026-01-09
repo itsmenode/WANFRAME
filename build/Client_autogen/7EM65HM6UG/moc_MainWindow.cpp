@@ -23,8 +23,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_net_ops__client__MainWindow_t {
-    const uint offsetsAndSize[22];
-    char stringdata0[133];
+    const uint offsetsAndSize[26];
+    char stringdata0[169];
 };
 #define QT_MOC_LITERAL(ofs, len) \
     uint(offsetof(qt_meta_stringdata_net_ops__client__MainWindow_t, stringdata0) + ofs), len 
@@ -33,19 +33,22 @@ static const qt_meta_stringdata_net_ops__client__MainWindow_t qt_meta_stringdata
 QT_MOC_LITERAL(0, 27), // "net_ops::client::MainWindow"
 QT_MOC_LITERAL(28, 13), // "onScanClicked"
 QT_MOC_LITERAL(42, 0), // ""
-QT_MOC_LITERAL(43, 15), // "onLogoutClicked"
-QT_MOC_LITERAL(59, 8), // "pollData"
-QT_MOC_LITERAL(68, 21), // "performContinuousScan"
-QT_MOC_LITERAL(90, 16), // "onDeviceSelected"
-QT_MOC_LITERAL(107, 3), // "row"
-QT_MOC_LITERAL(111, 3), // "col"
-QT_MOC_LITERAL(115, 12), // "onFilterLogs"
-QT_MOC_LITERAL(128, 4) // "text"
+QT_MOC_LITERAL(43, 17), // "onSimulateClicked"
+QT_MOC_LITERAL(61, 15), // "onLogoutClicked"
+QT_MOC_LITERAL(77, 8), // "pollData"
+QT_MOC_LITERAL(86, 21), // "performContinuousScan"
+QT_MOC_LITERAL(108, 17), // "runSimulationStep"
+QT_MOC_LITERAL(126, 16), // "onDeviceSelected"
+QT_MOC_LITERAL(143, 3), // "row"
+QT_MOC_LITERAL(147, 3), // "col"
+QT_MOC_LITERAL(151, 12), // "onFilterLogs"
+QT_MOC_LITERAL(164, 4) // "text"
 
     },
     "net_ops::client::MainWindow\0onScanClicked\0"
-    "\0onLogoutClicked\0pollData\0"
-    "performContinuousScan\0onDeviceSelected\0"
+    "\0onSimulateClicked\0onLogoutClicked\0"
+    "pollData\0performContinuousScan\0"
+    "runSimulationStep\0onDeviceSelected\0"
     "row\0col\0onFilterLogs\0text"
 };
 #undef QT_MOC_LITERAL
@@ -56,7 +59,7 @@ static const uint qt_meta_data_net_ops__client__MainWindow[] = {
       10,       // revision
        0,       // classname
        0,    0, // classinfo
-       6,   14, // methods
+       8,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -64,20 +67,24 @@ static const uint qt_meta_data_net_ops__client__MainWindow[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags, initial metatype offsets
-       1,    0,   50,    2, 0x08,    1 /* Private */,
-       3,    0,   51,    2, 0x08,    2 /* Private */,
-       4,    0,   52,    2, 0x08,    3 /* Private */,
-       5,    0,   53,    2, 0x08,    4 /* Private */,
-       6,    2,   54,    2, 0x08,    5 /* Private */,
-       9,    1,   59,    2, 0x08,    8 /* Private */,
+       1,    0,   62,    2, 0x08,    1 /* Private */,
+       3,    0,   63,    2, 0x08,    2 /* Private */,
+       4,    0,   64,    2, 0x08,    3 /* Private */,
+       5,    0,   65,    2, 0x08,    4 /* Private */,
+       6,    0,   66,    2, 0x08,    5 /* Private */,
+       7,    0,   67,    2, 0x08,    6 /* Private */,
+       8,    2,   68,    2, 0x08,    7 /* Private */,
+      11,    1,   73,    2, 0x08,   10 /* Private */,
 
  // slots: parameters
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
-    QMetaType::Void, QMetaType::Int, QMetaType::Int,    7,    8,
-    QMetaType::Void, QMetaType::QString,   10,
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void, QMetaType::Int, QMetaType::Int,    9,   10,
+    QMetaType::Void, QMetaType::QString,   12,
 
        0        // eod
 };
@@ -89,11 +96,13 @@ void net_ops::client::MainWindow::qt_static_metacall(QObject *_o, QMetaObject::C
         (void)_t;
         switch (_id) {
         case 0: _t->onScanClicked(); break;
-        case 1: _t->onLogoutClicked(); break;
-        case 2: _t->pollData(); break;
-        case 3: _t->performContinuousScan(); break;
-        case 4: _t->onDeviceSelected((*reinterpret_cast< std::add_pointer_t<int>>(_a[1])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[2]))); break;
-        case 5: _t->onFilterLogs((*reinterpret_cast< std::add_pointer_t<QString>>(_a[1]))); break;
+        case 1: _t->onSimulateClicked(); break;
+        case 2: _t->onLogoutClicked(); break;
+        case 3: _t->pollData(); break;
+        case 4: _t->performContinuousScan(); break;
+        case 5: _t->runSimulationStep(); break;
+        case 6: _t->onDeviceSelected((*reinterpret_cast< std::add_pointer_t<int>>(_a[1])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[2]))); break;
+        case 7: _t->onFilterLogs((*reinterpret_cast< std::add_pointer_t<QString>>(_a[1]))); break;
         default: ;
         }
     }
@@ -107,7 +116,7 @@ const QMetaObject net_ops::client::MainWindow::staticMetaObject = { {
     nullptr,
 qt_incomplete_metaTypeArray<qt_meta_stringdata_net_ops__client__MainWindow_t
 , QtPrivate::TypeAndForceComplete<MainWindow, std::true_type>
-, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<int, std::false_type>, QtPrivate::TypeAndForceComplete<int, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<const QString &, std::false_type>
+, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<int, std::false_type>, QtPrivate::TypeAndForceComplete<int, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<const QString &, std::false_type>
 
 
 >,
@@ -134,13 +143,13 @@ int net_ops::client::MainWindow::qt_metacall(QMetaObject::Call _c, int _id, void
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 6)
+        if (_id < 8)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 6;
+        _id -= 8;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 6)
+        if (_id < 8)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
-        _id -= 6;
+        _id -= 8;
     }
     return _id;
 }

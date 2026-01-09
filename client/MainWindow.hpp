@@ -12,6 +12,7 @@
 #include <memory>
 #include <thread>
 #include <atomic>
+#include <vector>
 #include "NetworkController.hpp"
 #include "DeviceMonitor.hpp"
 #include "SyslogCollector.hpp"
@@ -36,9 +37,11 @@ namespace net_ops::client
 
     private slots:
         void onScanClicked();
+        void onSimulateClicked();
         void onLogoutClicked();
         void pollData();
         void performContinuousScan();
+        void runSimulationStep();
         void onDeviceSelected(int row, int col);
         void onFilterLogs(const QString &text);
 
@@ -54,9 +57,11 @@ namespace net_ops::client
         
         QTimer *m_dataTimer;
         QTimer *m_discoveryTimer;
+        QTimer *m_simTimer;
         
         std::string m_sessionToken;
         QPushButton *m_scanBtn;
+        QPushButton *m_simBtn;
         QPushButton *m_logoutBtn;
 
         std::thread m_scanThread;
@@ -65,6 +70,8 @@ namespace net_ops::client
         int m_selectedDeviceId = -1;
         int m_onlineCount = 0;
         int m_syslogPort = 0;
+        
+        std::vector<std::string> m_fakeIps;
 
         void setupUi();
         void updateDeviceList(const std::vector<uint8_t> &data);
@@ -72,5 +79,7 @@ namespace net_ops::client
         void sendDeviceListRequest();
         void sendLogQueryRequest();
         void updateStats();
+        
+        void createFakeDevices();
     };
 }
