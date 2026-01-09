@@ -38,6 +38,7 @@ namespace net_ops::client
         void onScanClicked();
         void onLogoutClicked();
         void pollData();
+        void performContinuousScan();
         void onDeviceSelected(int row, int col);
         void onFilterLogs(const QString &text);
 
@@ -52,6 +53,8 @@ namespace net_ops::client
         QLabel *m_statsLabel;
         
         QTimer *m_dataTimer;
+        QTimer *m_discoveryTimer;
+        
         std::string m_sessionToken;
         QPushButton *m_scanBtn;
         QPushButton *m_logoutBtn;

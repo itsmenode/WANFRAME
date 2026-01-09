@@ -16,8 +16,12 @@ namespace net_ops::client
     {
         setupUi();
         m_syslogCollector = std::make_unique<SyslogCollector>("syslog.txt");
+        
         m_dataTimer = new QTimer(this);
         connect(m_dataTimer, &QTimer::timeout, this, &MainWindow::pollData);
+
+        m_discoveryTimer = new QTimer(this);
+        connect(m_discoveryTimer, &QTimer::timeout, this, &MainWindow::performContinuousScan);
     }
 
     MainWindow::~MainWindow()
@@ -61,27 +65,9 @@ namespace net_ops::client
         QMainWindow::showEvent(event);
         if (!m_dataTimer->isActive())
         {
-            m_dataTimer->start(500);
+            m_dataTimer->start(1000);
             sendDeviceListRequest();
         }
-    }
-
-    void MainWindow::sendDeviceListRequest()
-    {
-        if (m_sessionToken.empty()) return;
-        std::vector<uint8_t> p;
-        net_ops::protocol::PackString(p, m_sessionToken);
-        m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, p);
-    }
-
-    void MainWindow::sendLogQueryRequest()
-    {
-        if (m_selectedDeviceId == -1 || m_sessionToken.empty()) return;
-
-        std::vector<uint8_t> p;
-        net_ops::protocol::PackString(p, m_sessionToken);
-        net_ops::protocol::PackUint32(p, static_cast<uint32_t>(m_selectedDeviceId));
-        m_controller->QueueRequest(net_ops::protocol::MessageType::LogQueryReq, p);
     }
 
     void MainWindow::setupUi()
@@ -91,7 +77,8 @@ namespace net_ops::client
 
         auto topLayout = new QHBoxLayout();
         
-        m_scanBtn = new QPushButton("Scan Network (Root Req)");
+        m_scanBtn = new QPushButton("Start Continuous Monitoring Loop");
+        m_scanBtn->setCheckable(true); 
         connect(m_scanBtn, &QPushButton::clicked, this, &MainWindow::onScanClicked);
         topLayout->addWidget(m_scanBtn);
 
@@ -113,7 +100,7 @@ namespace net_ops::client
 
         mainLayout->addLayout(topLayout);
 
-        m_statsLabel = new QLabel("<b>Network Status:</b> Loading...");
+        m_statsLabel = new QLabel("<b>Network Status:</b> Idle");
         m_statsLabel->setStyleSheet("padding: 5px; background-color: #f0f0f0; border: 1px solid #ccc;");
         mainLayout->addWidget(m_statsLabel);
 
@@ -145,8 +132,169 @@ namespace net_ops::client
         resize(950, 750);
     }
 
+    void MainWindow::onScanClicked()
+    {
+        if (m_sessionToken.empty()) return;
+
+        if (geteuid() != 0) {
+            QMessageBox::critical(this, "Permission Denied",
+                                  "Network scanning requires root privileges.\nPlease run: sudo ./Client");
+            m_scanBtn->setChecked(false);
+            return;
+        }
+
+        if (m_scanBtn->isChecked()) {
+            m_scanBtn->setText("Stop Monitoring Loop");
+            m_scanBtn->setStyleSheet("background-color: #ccffcc;");
+            
+            performContinuousScan(); 
+            m_discoveryTimer->start(15000); 
+        } else {
+            m_scanBtn->setText("Start Continuous Monitoring Loop");
+            m_scanBtn->setStyleSheet("");
+            m_discoveryTimer->stop();
+            m_isScanning = false;
+        }
+    }
+
+    void MainWindow::performContinuousScan()
+    {
+        if (m_isScanning) return;
+        m_isScanning = true;
+
+        if (m_scanThread.joinable()) m_scanThread.join();
+
+        std::string token = m_sessionToken;
+
+        m_scanThread = std::thread([this, token]() {
+            try {
+                auto hosts = NetworkScanner::ScanLocalNetwork(); 
+                
+                for (const auto& h : hosts) {
+                    std::vector<uint8_t> p;
+                    net_ops::protocol::PackString(p, token);
+                    net_ops::protocol::PackString(p, h.name);
+                    net_ops::protocol::PackString(p, h.ip);
+                    net_ops::protocol::PackString(p, h.mac);
+                    m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
+
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10)); 
+                    std::vector<uint8_t> statusP;
+                    net_ops::protocol::PackString(statusP, token);
+                    net_ops::protocol::PackString(statusP, h.ip);
+                    net_ops::protocol::PackString(statusP, "Online");
+                    net_ops::protocol::PackString(statusP, "Scanned");
+                    m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceStatusReq, statusP);
+                } 
+                
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                
+                std::vector<uint8_t> listP;
+                net_ops::protocol::PackString(listP, token);
+                m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP); 
+
+            } catch(...) {}
+            m_isScanning = false; 
+        });
+    }
+
+    void MainWindow::pollData() {
+        static int c = 0; 
+        c++;
+        
+        if (c % 2 == 0) {
+            sendLogQueryRequest();
+            sendDeviceListRequest();
+        }
+        
+        while (auto resp = m_controller->GetNextResponse()) {
+            if (resp->type == net_ops::protocol::MessageType::DeviceListResp) {
+                 updateDeviceList(resp->data);
+            }
+            else if (resp->type == net_ops::protocol::MessageType::LogQueryResp) { 
+                size_t offset = 0;
+                auto count = net_ops::protocol::UnpackUint32(resp->data, offset);
+                if (count) {
+                    m_logTable->setRowCount(0);
+                    for (uint32_t i = 0; i < *count; ++i) {
+                        auto ts = net_ops::protocol::UnpackString(resp->data, offset);
+                        auto msg = net_ops::protocol::UnpackString(resp->data, offset);
+                        if (ts && msg) addLogEntry(*ts, *msg);
+                    }
+                    updateStats();
+                }
+            }
+        }
+    }
+
+    void MainWindow::updateDeviceList(const std::vector<uint8_t> &data) {
+        size_t offset = 0;
+        auto count = net_ops::protocol::UnpackUint32(data, offset);
+        if (!count) return;
+
+        std::vector<std::string> monitorIPs;
+        std::set<uint32_t> seenIds;
+        m_onlineCount = 0;
+
+        for (uint32_t i = 0; i < *count; ++i) {
+            auto id = net_ops::protocol::UnpackUint32(data, offset);
+            auto name = net_ops::protocol::UnpackString(data, offset);
+            auto ip = net_ops::protocol::UnpackString(data, offset);
+            auto status = net_ops::protocol::UnpackString(data, offset);
+            auto info = net_ops::protocol::UnpackString(data, offset);
+
+            if (id) seenIds.insert(*id);
+            if (ip) monitorIPs.push_back(*ip);
+            
+            if (status && (*status == "Online")) m_onlineCount++;
+
+            bool found = false;
+            for(int r = 0; r < m_deviceTable->rowCount(); ++r) {
+                auto idItem = m_deviceTable->item(r, 4);
+                if (idItem && idItem->text().toUInt() == *id) {
+                    found = true;
+                    m_deviceTable->item(r, 1)->setText(QString::fromStdString(*ip));
+                    m_deviceTable->item(r, 3)->setText(QString::fromStdString(*status + " " + *info));
+                    
+                    if (*status == "Online") m_deviceTable->item(r, 3)->setBackground(QColor("#ccffcc"));
+                    else m_deviceTable->item(r, 3)->setBackground(QColor("#ffcccc"));
+                    
+                    break;
+                }
+            }
+            if (!found) {
+                int row = m_deviceTable->rowCount();
+                m_deviceTable->insertRow(row);
+                m_deviceTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(*name)));
+                m_deviceTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(*ip)));
+                m_deviceTable->setItem(row, 2, new QTableWidgetItem("Unknown"));
+                auto statusItem = new QTableWidgetItem(QString::fromStdString(*status + " " + *info));
+                m_deviceTable->setItem(row, 3, statusItem);
+                m_deviceTable->setItem(row, 4, new QTableWidgetItem(QString::number(*id)));
+            }
+        }
+        
+        for (int r = m_deviceTable->rowCount() - 1; r >= 0; --r) {
+             auto idItem = m_deviceTable->item(r, 4);
+             if (idItem && seenIds.find(idItem->text().toUInt()) == seenIds.end()) {
+                 m_deviceTable->removeRow(r);
+             }
+        }
+
+        if (m_monitor) m_monitor->SetTargets(monitorIPs);
+        updateStats();
+    }
+
+    void MainWindow::sendDeviceListRequest()
+    {
+        if (m_sessionToken.empty()) return;
+        std::vector<uint8_t> p;
+        net_ops::protocol::PackString(p, m_sessionToken);
+        m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, p);
+    }
+    
     void MainWindow::onLogoutClicked() {
-        if (!m_sessionToken.empty()) {
+         if (!m_sessionToken.empty()) {
             std::vector<uint8_t> p;
             net_ops::protocol::PackString(p, m_sessionToken);
             m_controller->QueueRequest(net_ops::protocol::MessageType::LogoutReq, p);
@@ -190,132 +338,17 @@ namespace net_ops::client
             sendLogQueryRequest();
         }
     }
-
-    void MainWindow::onScanClicked()
+    
+    void MainWindow::sendLogQueryRequest()
     {
-        if (m_sessionToken.empty()) return;
-        if (m_isScanning) return;
+        if (m_selectedDeviceId == -1 || m_sessionToken.empty()) return;
 
-        if (geteuid() != 0) {
-            QMessageBox::critical(this, "Permission Denied",
-                                  "Network scanning requires root privileges.\nPlease run: sudo ./Client");
-            return;
-        }
-
-        m_isScanning = true;
-        m_scanBtn->setText("Scanning...");
-        m_scanBtn->setEnabled(false);
-
-        if (m_scanThread.joinable()) m_scanThread.join();
-
-        std::string token = m_sessionToken;
-
-        m_scanThread = std::thread([this, token]() {
-            try {
-                auto hosts = NetworkScanner::ScanLocalNetwork(); 
-                for (const auto& h : hosts) {
-                    std::vector<uint8_t> p;
-                    net_ops::protocol::PackString(p, token);
-                    net_ops::protocol::PackString(p, h.name);
-                    net_ops::protocol::PackString(p, h.ip);
-                    net_ops::protocol::PackString(p, h.mac);
-                    m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
-                } 
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                
-                std::vector<uint8_t> listP;
-                net_ops::protocol::PackString(listP, token);
-                m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP); 
-            } catch(...) {}
-            m_isScanning = false; 
-        });
+        std::vector<uint8_t> p;
+        net_ops::protocol::PackString(p, m_sessionToken);
+        net_ops::protocol::PackUint32(p, static_cast<uint32_t>(m_selectedDeviceId));
+        m_controller->QueueRequest(net_ops::protocol::MessageType::LogQueryReq, p);
     }
-
-    void MainWindow::pollData() {
-        if (!m_isScanning && !m_scanBtn->isEnabled()) {
-            m_scanBtn->setText("Scan Network (Root Req)");
-            m_scanBtn->setEnabled(true);
-        }
-
-        static int c = 0; 
-        c++;
-        
-        if (c % 4 == 0) {
-            sendLogQueryRequest();
-            sendDeviceListRequest();
-        }
-        
-        while (auto resp = m_controller->GetNextResponse()) {
-            if (resp->type == net_ops::protocol::MessageType::DeviceListResp) updateDeviceList(resp->data);
-            else if (resp->type == net_ops::protocol::MessageType::LogQueryResp) { 
-                size_t offset = 0;
-                auto count = net_ops::protocol::UnpackUint32(resp->data, offset);
-                if (count) {
-                    m_logTable->setRowCount(0);
-                    for (uint32_t i = 0; i < *count; ++i) {
-                        auto ts = net_ops::protocol::UnpackString(resp->data, offset);
-                        auto msg = net_ops::protocol::UnpackString(resp->data, offset);
-                        if (ts && msg) addLogEntry(*ts, *msg);
-                    }
-                    updateStats();
-                }
-            }
-        }
-    }
-
-    void MainWindow::updateDeviceList(const std::vector<uint8_t> &data) {
-        size_t offset = 0;
-        auto count = net_ops::protocol::UnpackUint32(data, offset);
-        if (!count) return;
-
-        std::vector<std::string> monitorIPs;
-        std::set<uint32_t> seenIds;
-        m_onlineCount = 0;
-
-        for (uint32_t i = 0; i < *count; ++i) {
-            auto id = net_ops::protocol::UnpackUint32(data, offset);
-            auto name = net_ops::protocol::UnpackString(data, offset);
-            auto ip = net_ops::protocol::UnpackString(data, offset);
-            auto status = net_ops::protocol::UnpackString(data, offset);
-            auto info = net_ops::protocol::UnpackString(data, offset);
-
-            if (id) seenIds.insert(*id);
-            if (ip) monitorIPs.push_back(*ip);
-            
-            if (status && *status == "Online") m_onlineCount++;
-
-            bool found = false;
-            for(int r = 0; r < m_deviceTable->rowCount(); ++r) {
-                auto idItem = m_deviceTable->item(r, 4);
-                if (idItem && idItem->text().toUInt() == *id) {
-                    found = true;
-                    m_deviceTable->item(r, 1)->setText(QString::fromStdString(*ip));
-                    m_deviceTable->item(r, 3)->setText(QString::fromStdString(*status + " " + *info));
-                    break;
-                }
-            }
-            if (!found) {
-                int row = m_deviceTable->rowCount();
-                m_deviceTable->insertRow(row);
-                m_deviceTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(*name)));
-                m_deviceTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(*ip)));
-                m_deviceTable->setItem(row, 2, new QTableWidgetItem("Unknown"));
-                m_deviceTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(*status + " " + *info)));
-                m_deviceTable->setItem(row, 4, new QTableWidgetItem(QString::number(*id)));
-            }
-        }
-
-        for (int r = m_deviceTable->rowCount() - 1; r >= 0; --r) {
-             auto idItem = m_deviceTable->item(r, 4);
-             if (idItem && seenIds.find(idItem->text().toUInt()) == seenIds.end()) {
-                 m_deviceTable->removeRow(r);
-             }
-        }
-
-        if (m_monitor) m_monitor->SetTargets(monitorIPs);
-        updateStats();
-    }
-
+    
     void MainWindow::addLogEntry(const std::string &timestamp, const std::string &msg)
     {
         int row = m_logTable->rowCount();
