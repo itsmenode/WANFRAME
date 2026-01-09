@@ -5,8 +5,15 @@
 #include <csignal>
 #include <unistd.h>
 #include <fcntl.h>
+#include <thread>
+#include <vector>
+#include <cstring>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 static net_ops::server::NetworkCore *g_network_core = nullptr;
+
 void SignalHandler(int s)
 {
     if (g_network_core)
@@ -30,6 +37,40 @@ void Daemonize()
     }
 }
 
+void runDiscoveryService()
+{
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0)
+        return;
+
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(8081);
+    addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+        close(sock);
+        return;
+    }
+
+    while (true)
+    {
+        char buffer[256];
+        struct sockaddr_in clientAddr;
+        socklen_t len = sizeof(clientAddr);
+
+        int n = recvfrom(sock, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddr, &len);
+
+        if (n > 0 && std::string(buffer, n).find("WANFRAME_LOOKING") != std::string::npos)
+        {
+            const char *reply = "WANFRAME_HERE";
+            sendto(sock, reply, strlen(reply), 0, (struct sockaddr *)&clientAddr, len);
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
     bool daemon = (argc > 1 && std::string(argv[1]) == "-d");
@@ -40,9 +81,14 @@ int main(int argc, char *argv[])
 
     try
     {
+        std::thread discoveryThread(runDiscoveryService);
+        discoveryThread.detach();
+
         net_ops::server::Worker worker;
         worker.Start();
+
         net_ops::server::NetworkCore server(8080, &worker);
+
         worker.SetNetworkCore(&server);
         g_network_core = &server;
 
@@ -61,6 +107,7 @@ int main(int argc, char *argv[])
         }
 
         server.Run();
+
         worker.Stop();
         db.Shutdown();
     }
