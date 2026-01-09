@@ -1,22 +1,21 @@
 #pragma once
 
 #include <string>
-#include <thread>
 #include <functional>
+#include <thread>
 #include <atomic>
 
 namespace net_ops::client
 {
-    using LogCallback = std::function<void(const std::string &source, const std::string &message)>;
+    using LogCallback = std::function<void(const std::string &, const std::string &)>;
 
     class SyslogCollector
     {
     public:
-        explicit SyslogCollector(const std::string &logPath);
+        SyslogCollector(const std::string &logPath);
         ~SyslogCollector();
 
-        void Start(int port, LogCallback callback);
-
+        int Start(int port, LogCallback callback);
         void Stop();
 
     private:

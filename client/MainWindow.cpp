@@ -6,6 +6,8 @@
 #include <QMessageBox>
 #include <unistd.h>
 #include <QApplication>
+#include <set>
+
 namespace net_ops::client
 {
 
@@ -29,7 +31,7 @@ namespace net_ops::client
     {
         m_sessionToken = token;
         
-        m_syslogCollector->Start(5140, [this](const std::string &ip, const std::string &msg)
+        int port = m_syslogCollector->Start(5140, [this](const std::string &ip, const std::string &msg)
         {
             if (m_sessionToken.empty()) return;
             std::vector<uint8_t> p;
@@ -38,6 +40,8 @@ namespace net_ops::client
             net_ops::protocol::PackString(p, msg);
             m_controller->QueueRequest(net_ops::protocol::MessageType::LogUploadReq, p); 
         });
+        
+        m_syslogPort = port;
 
         if (m_monitor) {
             m_monitor->Start([this](const std::string &ip, const std::string &status, const std::string &info) {
@@ -151,10 +155,11 @@ namespace net_ops::client
     }
 
     void MainWindow::updateStats() {
-        QString stats = QString("<b>Devices:</b> %1 | <b>Online:</b> %2 | <b>Total Logs:</b> %3")
+        QString stats = QString("<b>Devices:</b> %1 | <b>Online:</b> %2 | <b>Total Logs:</b> %3 | <b>Syslog Port:</b> %4")
                         .arg(m_deviceTable->rowCount())
                         .arg(m_onlineCount)
-                        .arg(m_logTable->rowCount());
+                        .arg(m_logTable->rowCount())
+                        .arg(m_syslogPort);
         m_statsLabel->setText(stats);
     }
 
@@ -257,6 +262,7 @@ namespace net_ops::client
         if (!count) return;
 
         std::vector<std::string> monitorIPs;
+        std::set<uint32_t> seenIds;
         m_onlineCount = 0;
 
         for (uint32_t i = 0; i < *count; ++i) {
@@ -266,13 +272,15 @@ namespace net_ops::client
             auto status = net_ops::protocol::UnpackString(data, offset);
             auto info = net_ops::protocol::UnpackString(data, offset);
 
+            if (id) seenIds.insert(*id);
             if (ip) monitorIPs.push_back(*ip);
             
             if (status && *status == "Online") m_onlineCount++;
 
             bool found = false;
             for(int r = 0; r < m_deviceTable->rowCount(); ++r) {
-                if (m_deviceTable->item(r, 4)->text().toUInt() == *id) {
+                auto idItem = m_deviceTable->item(r, 4);
+                if (idItem && idItem->text().toUInt() == *id) {
                     found = true;
                     m_deviceTable->item(r, 1)->setText(QString::fromStdString(*ip));
                     m_deviceTable->item(r, 3)->setText(QString::fromStdString(*status + " " + *info));
@@ -289,6 +297,14 @@ namespace net_ops::client
                 m_deviceTable->setItem(row, 4, new QTableWidgetItem(QString::number(*id)));
             }
         }
+
+        for (int r = m_deviceTable->rowCount() - 1; r >= 0; --r) {
+             auto idItem = m_deviceTable->item(r, 4);
+             if (idItem && seenIds.find(idItem->text().toUInt()) == seenIds.end()) {
+                 m_deviceTable->removeRow(r);
+             }
+        }
+
         if (m_monitor) m_monitor->SetTargets(monitorIPs);
         updateStats();
     }

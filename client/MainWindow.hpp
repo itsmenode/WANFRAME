@@ -61,6 +61,7 @@ namespace net_ops::client
 
         int m_selectedDeviceId = -1;
         int m_onlineCount = 0;
+        int m_syslogPort = 0;
 
         void setupUi();
         void updateDeviceList(const std::vector<uint8_t> &data);
