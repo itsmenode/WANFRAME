@@ -222,6 +222,7 @@ namespace net_ops::client
                     m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceAddReq, p);
                 } 
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                
                 std::vector<uint8_t> listP;
                 net_ops::protocol::PackString(listP, token);
                 m_controller->QueueRequest(net_ops::protocol::MessageType::DeviceListReq, listP); 
@@ -236,7 +237,13 @@ namespace net_ops::client
             m_scanBtn->setEnabled(true);
         }
 
-        static int c = 0; if (++c % 4 == 0) sendLogQueryRequest();
+        static int c = 0; 
+        c++;
+        
+        if (c % 4 == 0) {
+            sendLogQueryRequest();
+            sendDeviceListRequest();
+        }
         
         while (auto resp = m_controller->GetNextResponse()) {
             if (resp->type == net_ops::protocol::MessageType::DeviceListResp) updateDeviceList(resp->data);

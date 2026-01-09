@@ -73,13 +73,10 @@ namespace net_ops::client
             uint32_t mask_val = IpToInt(info.netmask);
             uint32_t network_val = ip_val & mask_val;
             uint32_t broadcast_val = network_val | (~mask_val);
-
             uint32_t start_scan = network_val + 1;
             uint32_t end_scan = broadcast_val;
 
-            if ((end_scan - start_scan) > 512) {
-                start_scan = 0;
-            }
+            if ((end_scan - start_scan) > 512) start_scan = 0;
 
             if (start_scan != 0) {
                 for (uint32_t t = start_scan; t < end_scan; ++t) {
@@ -95,7 +92,6 @@ namespace net_ops::client
                 }
             }
 
-            
             auto cached = ReadSystemArpTable(iface.name());
             for (const auto& h : cached) {
                  if (h.ip != info.ip_addr.to_string()) {
@@ -106,7 +102,7 @@ namespace net_ops::client
             Tins::SnifferConfiguration config;
             config.set_promisc_mode(false);
             config.set_filter("arp or (icmp and icmp[icmptype] == icmp-echoreply)");
-            config.set_timeout(100);
+            config.set_timeout(50);
 
             Tins::Sniffer sniffer(iface.name(), config);
             Tins::PacketSender sender;
@@ -161,13 +157,11 @@ namespace net_ops::client
                     Tins::EthernetII eth = Tins::EthernetII("ff:ff:ff:ff:ff:ff", info.hw_addr) / 
                         Tins::ARP(targetIp, info.ip_addr, Tins::HWAddress<6>("00:00:00:00:00:00"), info.hw_addr);
                     sender.send(eth, iface);
-                    
                     std::this_thread::sleep_for(std::chrono::microseconds(300));
 
                     Tins::EthernetII eth2 = Tins::EthernetII("ff:ff:ff:ff:ff:ff", info.hw_addr) /
                         Tins::IP(targetIp, info.ip_addr) / Tins::ICMP();
                     sender.send(eth2, iface);
-                    
                     std::this_thread::sleep_for(std::chrono::microseconds(300));
                 } catch (...) {}
             }

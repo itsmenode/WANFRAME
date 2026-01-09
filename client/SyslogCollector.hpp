@@ -21,6 +21,7 @@ namespace net_ops::client
     private:
         std::string m_logPath;
         std::atomic<bool> m_running;
-        std::thread m_worker;
+        std::thread m_udpWorker;
+        std::thread m_fileWorker;
     };
 }
